@@ -32,6 +32,10 @@ $statusLabel = $receipt['status'] === 'confirmed' ? 'Confirmada' : ucfirst((stri
             <div><dt>Almacén</dt><dd><?= e($receipt['warehouse_name']) ?></dd></div>
             <div><dt>Documento</dt><dd><?= e($receipt['document_number'] ?: 'Sin documento') ?></dd></div>
             <div><dt>Recibido por</dt><dd><?= e($receipt['received_by_label']) ?></dd></div>
+            <div><dt>Cédula</dt><dd><?= e($receipt['received_by_document_snapshot'] ?? '—') ?></dd></div>
+            <div><dt>Posición</dt><dd><?= e($receipt['received_by_position_snapshot'] ?? '—') ?></dd></div>
+            <div><dt>Rango</dt><dd><?= e($receipt['received_by_rank_snapshot'] ?? '—') ?></dd></div>
+            <div><dt>Unidad al recibir</dt><dd><?= e($receipt['received_by_unit_name_snapshot'] ?? '—') ?></dd></div>
         </dl>
 
         <?php if (!empty($receipt['notes'])): ?>

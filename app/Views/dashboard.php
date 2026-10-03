@@ -1,23 +1,20 @@
 <?php
 declare(strict_types=1);
 
-$camisaCategoryId = 0;
-foreach ($categories as $dashboardCategory) {
-    if (($dashboardCategory['slug'] ?? '') === 'camisa') {
-        $camisaCategoryId = (int) ($dashboardCategory['id'] ?? 0);
-        break;
-    }
-}
-
-$camisaUrl = $camisaCategoryId > 0
-    ? sindesg_url('?module=inventory&category_id=' . $camisaCategoryId)
+$cards = $dashboardCategories !== [] ? $dashboardCategories : $categories;
+$featuredStock = (float) ($featuredProduct['stock_total'] ?? 0);
+$featuredName = (string) ($featuredProduct['name'] ?? 'Sin artículo destacado');
+$featuredCategory = (string) ($featuredProduct['category_name'] ?? 'Inventario');
+$featuredDescription = (string) ($featuredProduct['description'] ?? 'Cuando exista inventario, SINDESG mostrará aquí el artículo con mayor disponibilidad.');
+$featuredUrl = $featuredProduct
+    ? sindesg_url('?module=inventory&action=product&id=' . (int) $featuredProduct['id'])
     : sindesg_url('?module=inventory');
 ?>
 <section class="hero">
     <div>
         <span class="eyebrow">CENTRO DE CONTROL LOGÍSTICO</span>
         <h1>Inventario y despacho en una sola vista</h1>
-        <p>Acceso interactivo a prendas, lotes, solicitudes, distribución, P4 y reportes. Las cifras reales aparecerán al activar los movimientos de inventario.</p>
+        <p>El dashboard refleja el catálogo, fotografías y existencias reales calculadas desde el kardex.</p>
     </div>
     <div class="hero-status">
         <span class="status-dot <?= $health['sindesg']['ok'] ? 'ok' : 'warn' ?>"></span>
@@ -41,26 +38,37 @@ $camisaUrl = $camisaCategoryId > 0
     </div>
 
     <div class="category-carousel" data-carousel>
-        <?php foreach ($categories as $index => $category): ?>
+        <?php foreach ($cards as $index => $category): ?>
             <?php
             $categoryId = (int) ($category['id'] ?? 0);
-            $categoryCode = (string) ($category['code'] ?? '');
-            $categoryInitials = substr($categoryCode, 0, 2);
+            $slug = (string) ($category['slug'] ?? 'categoria');
+            $parts = array_values(array_filter(explode('-', $slug)));
+            if (count($parts) > 1) {
+                $initials = strtoupper(substr($parts[0], 0, 1) . substr($parts[1], 0, 1));
+            } else {
+                $initials = strtoupper(substr($parts[0] ?? 'CA', 0, 2));
+            }
             $categoryHref = $categoryId > 0
                 ? sindesg_url('?module=inventory&category_id=' . $categoryId)
                 : sindesg_url('?module=inventory');
+            $categoryImage = (string) ($category['image_path'] ?? '');
+            $categoryStock = (float) ($category['stock_total'] ?? 0);
             ?>
-            <a class="category-card <?= $index === 1 ? 'featured' : '' ?>"
+            <a class="category-card <?= $categoryStock > 0 ? 'featured' : '' ?>"
                href="<?= e($categoryHref) ?>"
                data-searchable="<?= e($category['name']) ?>">
                 <div class="category-photo-placeholder">
-                    <span><?= e($categoryInitials) ?></span>
-                    <small>Foto real</small>
+                    <?php if ($categoryImage !== ''): ?>
+                        <img src="<?= e(sindesg_upload_url($categoryImage)) ?>" alt="<?= e($category['name']) ?>">
+                    <?php else: ?>
+                        <span><?= e($initials) ?></span>
+                        <small>Sin fotografía</small>
+                    <?php endif; ?>
                 </div>
                 <div class="category-card-copy">
                     <strong><?= e($category['name']) ?></strong>
-                    <span class="stock-placeholder">Stock pendiente</span>
-                    <small>Entrar a la categoría</small>
+                    <span class="stock-placeholder"><?= e(number_format($categoryStock, 0, '.', ',')) ?> unidades</span>
+                    <small><?= e((int) ($category['product_count'] ?? 0)) ?> artículos · Entrar</small>
                 </div>
             </a>
         <?php endforeach; ?>
@@ -71,30 +79,37 @@ $camisaUrl = $camisaCategoryId > 0
     <article class="feature-panel">
         <div class="panel-heading">
             <div>
-                <span class="panel-icon">CA</span>
+                <span class="panel-icon">PR</span>
                 <div>
-                    <span class="eyebrow">DETALLE DE PRENDA</span>
-                    <h2>Camisa</h2>
+                    <span class="eyebrow"><?= e($featuredCategory) ?></span>
+                    <h2><?= e($featuredName) ?></h2>
                 </div>
             </div>
-            <a href="<?= e($camisaUrl) ?>">Abrir inventario →</a>
+            <a href="<?= e($featuredUrl) ?>">Abrir artículo →</a>
         </div>
 
         <div class="product-focus">
             <div class="product-copy">
-                <h3>Uniforme operativo</h3>
-                <p>Esta sección mostrará la fotografía real cargada por Servicios Generales, descripción, código, lote, marca, talla y disponibilidad.</p>
+                <h3><?= e($featuredProduct['color'] ?? 'Artículo disponible') ?></h3>
+                <p><?= e($featuredDescription) ?></p>
                 <div class="feature-tags">
-                    <span>Código interno</span>
-                    <span>Tallas</span>
-                    <span>Lotes</span>
-                    <span>Kardex</span>
+                    <?php if ($featuredProduct): ?>
+                        <span><?= e($featuredProduct['internal_code']) ?></span>
+                        <span><?= e(number_format($featuredStock, 0, '.', ',')) ?> disponibles</span>
+                        <span><?= e($featuredProduct['sex'] ?? 'no aplica') ?></span>
+                    <?php else: ?>
+                        <span>Sin movimientos</span>
+                    <?php endif; ?>
                 </div>
             </div>
-            <div class="product-image-placeholder">
-                <div class="scan-ring"></div>
-                <div class="product-monogram">CA</div>
-                <span>Imagen pendiente de carga</span>
+            <div class="product-image-placeholder dashboard-product-image">
+                <?php if (!empty($featuredProduct['primary_image'])): ?>
+                    <img src="<?= e(sindesg_upload_url((string) $featuredProduct['primary_image'])) ?>" alt="<?= e($featuredName) ?>">
+                <?php else: ?>
+                    <div class="scan-ring"></div>
+                    <div class="product-monogram">PR</div>
+                    <span>Imagen pendiente</span>
+                <?php endif; ?>
             </div>
         </div>
     </article>
@@ -106,10 +121,10 @@ $camisaUrl = $camisaCategoryId > 0
                 <span>STOCK ACTUAL</span>
             </div>
             <div class="metric-main">
-                <strong>—</strong>
+                <strong><?= e(number_format($featuredStock, 0, '.', ',')) ?></strong>
                 <span>unidades disponibles</span>
             </div>
-            <div class="metric-note">Se calculará desde movimientos de inventario.</div>
+            <div class="metric-note">Existencia real del artículo destacado, derivada de movimientos.</div>
         </article>
 
         <article class="metric-panel">
@@ -118,9 +133,13 @@ $camisaUrl = $camisaCategoryId > 0
                 <span>TALLAS DISPONIBLES</span>
             </div>
             <div class="size-row">
-                <?php foreach (['XS', 'S', 'M', 'L', 'XL', 'XXL'] as $size): ?>
-                    <span><?= e($size) ?><small>—</small></span>
-                <?php endforeach; ?>
+                <?php if ($featuredSizes === []): ?>
+                    <span>—<small>Sin tallas con stock</small></span>
+                <?php else: ?>
+                    <?php foreach ($featuredSizes as $size): ?>
+                        <span><?= e($size['size_name'] ?: 'S/T') ?><small><?= e(number_format((float) $size['quantity_on_hand'], 0, '.', ',')) ?></small></span>
+                    <?php endforeach; ?>
+                <?php endif; ?>
             </div>
         </article>
     </aside>
@@ -133,15 +152,26 @@ $camisaUrl = $camisaCategoryId > 0
                 <span class="panel-icon">LT</span>
                 <div>
                     <span class="eyebrow">RECEPCIÓN</span>
-                    <h2>Lotes recibidos</h2>
+                    <h2>Lotes recientes</h2>
                 </div>
             </div>
             <a href="<?= e(sindesg_url('?module=receipts')) ?>">Ver módulo →</a>
         </div>
-        <div class="empty-state">
-            <strong>Aún no hay lotes en SINDESG</strong>
-            <span>La Fase 3 habilitará recepciones y entradas trazables.</span>
-        </div>
+        <?php if ($recentDashboardReceipts === []): ?>
+            <div class="empty-state">
+                <strong>Aún no hay recepciones registradas</strong>
+                <span>Las recepciones aparecerán aquí al guardarse en SINDESG.</span>
+            </div>
+        <?php else: ?>
+            <div class="dashboard-mini-list">
+                <?php foreach ($recentDashboardReceipts as $row): ?>
+                    <a href="<?= e(sindesg_url('?module=receipts&action=show&id=' . (int) $row['id'])) ?>">
+                        <span><strong><?= e($row['receipt_code']) ?></strong><small><?= e($row['lot_code']) ?> · <?= e($row['supplier_or_origin']) ?></small></span>
+                        <span><strong><?= e(number_format((float) $row['total_quantity'], 0, '.', ',')) ?></strong><small><?= e($row['status'] === 'confirmed' ? 'Confirmada' : 'Borrador') ?></small></span>
+                    </a>
+                <?php endforeach; ?>
+            </div>
+        <?php endif; ?>
     </article>
 
     <article class="table-panel">
@@ -187,6 +217,6 @@ $camisaUrl = $camisaCategoryId > 0
     </div>
     <div>
         <span class="status-dot ok"></span>
-        <span><strong>Fase actual</strong><small>Catálogo maestro · Fase 2A</small></span>
+        <span><strong>Datos del dashboard</strong><small>Catálogo y kardex en tiempo real</small></span>
     </div>
 </section>

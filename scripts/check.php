@@ -12,6 +12,7 @@ $required = [
     'public/assets/js/app.js',
     'public/assets/js/receipts.js',
     'public/assets/js/production.js',
+    'public/api/employees.php',
     'app/bootstrap.php',
     'app/Support/Database.php',
     'app/Controllers/InventoryController.php',
@@ -21,9 +22,11 @@ $required = [
     'app/Repositories/InventoryRepository.php',
     'app/Repositories/ReceiptRepository.php',
     'app/Repositories/ProductionRepository.php',
+    'app/Repositories/DashboardRepository.php',
     'app/Services/CatalogService.php',
     'app/Services/ReceiptService.php',
     'app/Services/ProductionService.php',
+    'app/Services/RrhhEmployeeDirectory.php',
     'app/Views/layout.php',
     'app/Views/dashboard.php',
     'app/Views/module.php',
@@ -48,6 +51,7 @@ $required = [
     'database/schema/004_category_codes.sql',
     'database/schema/005_receipts.sql',
     'database/schema/006_production.sql',
+    'database/schema/007_dashboard_rrhh_receipts.sql',
     'tests/catalog_schema_test.php',
     'tests/inventory_core_schema_test.php',
     'tests/category_auto_code_test.php',
@@ -57,6 +61,9 @@ $required = [
     'tests/product_base_variant_test.php',
     'tests/production_schema_test.php',
     'tests/production_logic_test.php',
+    'tests/rrhh_receiver_test.php',
+    'tests/dashboard_dynamic_test.php',
+    'tests/utf8_repair_test.php',
 ];
 
 $errors = [];

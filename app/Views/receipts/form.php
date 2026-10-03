@@ -59,10 +59,19 @@ declare(strict_types=1);
                     <input type="text" name="document_number" maxlength="120" placeholder="Orden de compra, nota, requisición, acta...">
                 </label>
 
-                <label>
-                    <span>Recibido por *</span>
-                    <input type="text" name="received_by_label" maxlength="160" required placeholder="Nombre del responsable que recibe">
-                </label>
+                <div class="employee-picker" data-employee-picker data-search-url="<?= e($employeeSearchUrl) ?>">
+                    <label>
+                        <span>Recibido por * · buscar funcionario RRHH</span>
+                        <input type="search"
+                               data-employee-search
+                               autocomplete="off"
+                               placeholder="Escriba nombre, cédula o posición..."
+                               required>
+                        <input type="hidden" name="received_by_employee_id" data-employee-id>
+                    </label>
+                    <div class="employee-results" data-employee-results hidden></div>
+                    <div class="employee-selection" data-employee-selection hidden></div>
+                </div>
 
                 <label>
                     <span>Almacén destino</span>

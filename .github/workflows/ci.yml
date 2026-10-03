@@ -56,3 +56,12 @@ jobs:
 
       - name: Production logic test
         run: php tests/production_logic_test.php
+
+      - name: RRHH receiver test
+        run: php tests/rrhh_receiver_test.php
+
+      - name: Dynamic dashboard test
+        run: php tests/dashboard_dynamic_test.php
+
+      - name: UTF-8 repair test
+        run: php tests/utf8_repair_test.php

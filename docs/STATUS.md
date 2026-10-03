@@ -123,3 +123,14 @@ Los insumos son opcionales porque no toda confección necesita tener materiales 
 **Fase 5 — Integración RRHH2029.**
 
 Se habilitará la consulta de funcionarios y estructura territorial oficial en modo de solo lectura, sin duplicar la fuente maestra.
+
+
+## Correcciones posteriores a la prueba local
+
+Se corrigieron tres observaciones detectadas durante la validación:
+
+1. **Recibido por** ahora se selecciona mediante búsqueda de funcionario en RRHH2029, no mediante texto libre. SINDESG conserva `employee_id` y un snapshot de cédula, posición, rango y unidad al momento de la recepción.
+2. El **dashboard** dejó de usar valores demostrativos para catálogo/stock. Ahora consume fotografías, existencias, tallas y recepciones reales.
+3. Se agregó una migración de reparación UTF-8 para categorías afectadas por la canalización de SQL en Windows PowerShell.
+
+La consulta de funcionarios continúa siendo de solo lectura hacia RRHH2029.

@@ -150,7 +150,13 @@ final class ReceiptRepository
                         supplier_or_origin,
                         document_number,
                         received_at,
+                        received_by_employee_id,
                         received_by_label,
+                        received_by_document_snapshot,
+                        received_by_position_snapshot,
+                        received_by_rank_snapshot,
+                        received_by_unit_id_snapshot,
+                        received_by_unit_name_snapshot,
                         notes,
                         status
                     )
@@ -162,7 +168,13 @@ final class ReceiptRepository
                         :supplier_or_origin,
                         :document_number,
                         :received_at,
+                        :received_by_employee_id,
                         :received_by_label,
+                        :received_by_document_snapshot,
+                        :received_by_position_snapshot,
+                        :received_by_rank_snapshot,
+                        :received_by_unit_id_snapshot,
+                        :received_by_unit_name_snapshot,
                         :notes,
                         'draft'
                     )
@@ -175,7 +187,13 @@ final class ReceiptRepository
                 'supplier_or_origin' => $data['supplier_or_origin'],
                 'document_number' => $data['document_number'],
                 'received_at' => $data['received_at'],
+                'received_by_employee_id' => $data['received_by_employee_id'],
                 'received_by_label' => $data['received_by_label'],
+                'received_by_document_snapshot' => $data['received_by_document_snapshot'],
+                'received_by_position_snapshot' => $data['received_by_position_snapshot'],
+                'received_by_rank_snapshot' => $data['received_by_rank_snapshot'],
+                'received_by_unit_id_snapshot' => $data['received_by_unit_id_snapshot'],
+                'received_by_unit_name_snapshot' => $data['received_by_unit_name_snapshot'],
                 'notes' => $data['notes'],
             ]);
 

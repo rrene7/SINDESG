@@ -338,3 +338,12 @@ button { color: inherit; }
     .size-row { grid-template-columns: repeat(2, 1fr); }
     .module-hero { display: grid; }
 }
+
+.category-photo-placeholder img{width:100%;height:135px;object-fit:contain;padding:8px;filter:drop-shadow(0 12px 18px rgba(0,0,0,.28))}
+.dashboard-product-image img{width:100%;height:320px;object-fit:contain;padding:18px;position:relative;z-index:2}
+.dashboard-mini-list{display:grid;gap:8px;margin-top:14px}
+.dashboard-mini-list a{display:flex;justify-content:space-between;gap:18px;padding:12px 13px;border:1px solid rgba(53,178,255,.16);border-radius:12px;background:rgba(3,19,37,.40)}
+.dashboard-mini-list a:hover{border-color:rgba(37,196,255,.48);background:rgba(12,76,126,.20)}
+.dashboard-mini-list span{display:block}
+.dashboard-mini-list strong,.dashboard-mini-list small{display:block}
+.dashboard-mini-list small{margin-top:4px;color:var(--muted);font-size:.72rem}
