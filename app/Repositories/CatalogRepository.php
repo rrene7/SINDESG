@@ -218,26 +218,35 @@ final class CatalogRepository
         string $mimeType,
         int $sizeBytes
     ): void {
-        $primaryStatement = $this->pdo->prepare(
-            'SELECT COUNT(*) FROM product_images WHERE product_id = :product_id AND is_primary = 1'
-        );
-        $primaryStatement->execute(['product_id' => $productId]);
-        $isPrimary = ((int) $primaryStatement->fetchColumn()) === 0 ? 1 : 0;
+        $this->pdo->beginTransaction();
 
-        $statement = $this->pdo->prepare(
-            'INSERT INTO product_images
-                (product_id, path, original_name, mime_type, size_bytes, is_primary)
-             VALUES
-                (:product_id, :path, :original_name, :mime_type, :size_bytes, :is_primary)'
-        );
-        $statement->execute([
-            'product_id' => $productId,
-            'path' => $path,
-            'original_name' => $originalName,
-            'mime_type' => $mimeType,
-            'size_bytes' => $sizeBytes,
-            'is_primary' => $isPrimary,
-        ]);
+        try {
+            $clear = $this->pdo->prepare(
+                'UPDATE product_images SET is_primary = 0 WHERE product_id = :product_id'
+            );
+            $clear->execute(['product_id' => $productId]);
+
+            $statement = $this->pdo->prepare(
+                'INSERT INTO product_images
+                    (product_id, path, original_name, mime_type, size_bytes, is_primary)
+                 VALUES
+                    (:product_id, :path, :original_name, :mime_type, :size_bytes, 1)'
+            );
+            $statement->execute([
+                'product_id' => $productId,
+                'path' => $path,
+                'original_name' => $originalName,
+                'mime_type' => $mimeType,
+                'size_bytes' => $sizeBytes,
+            ]);
+
+            $this->pdo->commit();
+        } catch (\Throwable $exception) {
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+            throw $exception;
+        }
     }
 
     public function findOrCreateSize(?string $name): ?int
