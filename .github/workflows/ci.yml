@@ -83,3 +83,12 @@ jobs:
 
       - name: Warehouses RRHH test
         run: php tests/warehouses_rrhh_test.php
+
+      - name: Requests schema test
+        run: php tests/requests_schema_test.php
+
+      - name: Requests logic test
+        run: php tests/requests_logic_test.php
+
+      - name: Requests stock reservation test
+        run: php tests/requests_stock_test.php
