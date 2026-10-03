@@ -25,23 +25,28 @@ declare(strict_types=1);
     <?php foreach ($warehouses as $warehouse): ?>
         <?php
         $isCentral = $warehouse['warehouse_type'] === 'CENTRAL';
-        $currentUnit = !$isCentral && !empty($warehouse['organization_unit_id'])
+        $isTransit = $warehouse['warehouse_type'] === 'TRANSIT';
+        $isP4 = $warehouse['warehouse_type'] === 'P4';
+        $currentUnit = $isP4 && !empty($warehouse['organization_unit_id'])
             ? ($currentUnits[(int) $warehouse['organization_unit_id']] ?? null)
             : null;
-        $displayName = $isCentral
-            ? $warehouse['name']
-            : ($currentUnit['official_name'] ?? $warehouse['organization_unit_name_snapshot'] ?? $warehouse['name']);
+        $displayName = $isP4
+            ? ($currentUnit['official_name'] ?? $warehouse['organization_unit_name_snapshot'] ?? $warehouse['name'])
+            : $warehouse['name'];
+        $warehouseBadge = $isCentral ? 'CENTRAL' : ($isTransit ? 'TRÁNSITO' : 'P4');
         ?>
-        <a class="warehouse-card <?= $isCentral ? 'central' : '' ?> <?= (int) $warehouse['is_active'] === 1 ? 'active' : 'inactive' ?>"
+        <a class="warehouse-card <?= $isCentral ? 'central' : ($isTransit ? 'transit' : 'p4') ?> <?= (int) $warehouse['is_active'] === 1 ? 'active' : 'inactive' ?>"
            href="<?= e(sindesg_url('?module=warehouses&action=show&id=' . (int) $warehouse['id'])) ?>">
             <div class="warehouse-card-head">
-                <span class="warehouse-badge"><?= e($isCentral ? 'CENTRAL' : 'P4') ?></span>
+                <span class="warehouse-badge"><?= e($warehouseBadge) ?></span>
                 <span class="warehouse-state"><?= (int) $warehouse['is_active'] === 1 ? 'Activo' : 'Inactivo' ?></span>
             </div>
             <h2><?= e($displayName) ?></h2>
             <code><?= e($warehouse['code']) ?></code>
-            <?php if (!$isCentral): ?>
+            <?php if ($isP4): ?>
                 <p><?= e($currentUnit['unit_type'] ?? $warehouse['organization_unit_type_snapshot'] ?? 'Unidad RRHH') ?></p>
+            <?php elseif ($isTransit): ?>
+                <p>Inventario temporal entre el Almacén Central y los P4</p>
             <?php else: ?>
                 <p>Servicios Generales · recepción y distribución institucional</p>
             <?php endif; ?>

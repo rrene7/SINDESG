@@ -240,3 +240,14 @@ Ejemplo esperado para una adscripción en Gestión Estratégica:
 `Dirección Nacional de Telemática → Oficina de Gestión Estratégica`.
 
 El mismo contexto se muestra en la búsqueda de funcionarios y en el selector de **Recibido por** de Recepción.
+
+
+## Ajustes posteriores a validación local de Fase 8
+
+La prueba real confirmó la contabilidad esperada: **Central 18 + Tránsito 0 + P4 2 = 20 unidades institucionales**.
+
+Se ajustó la presentación para reflejar correctamente esa realidad:
+- `TRANSIT-SG` se identifica como **TRÁNSITO**, nunca como P4;
+- el almacén de tránsito no muestra vínculo RRHH, responsable P4 ni controles de activar/inactivar P4;
+- el dashboard denomina el total como **stock institucional** y muestra el desglose Central / P4 / Tránsito;
+- se incorporó una reparación idempotente del nombre **Almacén Central de Servicios Generales** para instalaciones afectadas por codificación histórica.

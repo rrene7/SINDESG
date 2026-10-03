@@ -100,6 +100,29 @@ final class DashboardRepository
         return $statement->fetchAll();
     }
 
+    public function stockBreakdownForProduct(int $productId): array
+    {
+        $statement = $this->pdo->prepare(<<<'SQL'
+            SELECT
+                CAST(COALESCE(SUM(CASE WHEN w.warehouse_type = 'CENTRAL' THEN vs.quantity_on_hand ELSE 0 END), 0) AS DECIMAL(14,3)) AS central_stock,
+                CAST(COALESCE(SUM(CASE WHEN w.warehouse_type = 'P4' THEN vs.quantity_on_hand ELSE 0 END), 0) AS DECIMAL(14,3)) AS p4_stock,
+                CAST(COALESCE(SUM(CASE WHEN w.warehouse_type = 'TRANSIT' THEN vs.quantity_on_hand ELSE 0 END), 0) AS DECIMAL(14,3)) AS transit_stock
+            FROM product_variants pv
+            LEFT JOIN v_inventory_stock vs ON vs.product_variant_id = pv.id
+            LEFT JOIN warehouses w ON w.id = vs.warehouse_id
+            WHERE pv.product_id = :product_id
+              AND pv.status = 'active'
+        SQL);
+        $statement->execute(['product_id' => $productId]);
+        $row = $statement->fetch() ?: [];
+
+        return [
+            'central' => (float) ($row['central_stock'] ?? 0),
+            'p4' => (float) ($row['p4_stock'] ?? 0),
+            'transit' => (float) ($row['transit_stock'] ?? 0),
+        ];
+    }
+
     public function recentReceipts(int $limit = 4): array
     {
         $limit = max(1, min($limit, 10));
