@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace App\Controllers;
 
 use App\Repositories\CatalogRepository;
+use App\Repositories\InventoryRepository;
 use App\Services\CatalogService;
 use InvalidArgumentException;
 use PDO;
@@ -12,11 +13,13 @@ use Throwable;
 final class InventoryController
 {
     private CatalogRepository $repository;
+    private InventoryRepository $inventory;
     private CatalogService $service;
 
     public function __construct(PDO $pdo)
     {
         $this->repository = new CatalogRepository($pdo);
+        $this->inventory = new InventoryRepository($pdo);
         $this->service = new CatalogService($this->repository);
     }
 
@@ -48,7 +51,7 @@ final class InventoryController
                 'view' => SINDESG_ROOT . '/app/Views/inventory/unavailable.php',
                 'title' => 'Inventario',
                 'data' => [
-                    'catalogError' => 'El catálogo todavía no está disponible en esta instalación. Aplique la migración 002_catalog.sql y vuelva a intentarlo.',
+                    'catalogError' => 'El inventario todavía no está disponible en esta instalación. Aplique las migraciones 002_catalog.sql y 003_inventory_core.sql y vuelva a intentarlo.',
                 ],
             ];
         }
@@ -84,28 +87,53 @@ final class InventoryController
                 ];
             }
 
+            $variants = $this->repository->variantsForProduct($productId);
+            $stockRows = $this->inventory->stockByProduct($productId);
+            $stockMap = [];
+
+            foreach ($stockRows as $stockRow) {
+                $stockMap[(int) $stockRow['variant_id']] = $stockRow;
+            }
+
+            foreach ($variants as &$variant) {
+                $stock = $stockMap[(int) $variant['id']] ?? null;
+                $variant['stock_total'] = $stock['stock_total'] ?? 0;
+                $variant['stock_central'] = $stock['stock_central'] ?? 0;
+            }
+            unset($variant);
+
             return [
                 'view' => SINDESG_ROOT . '/app/Views/inventory/product-show.php',
                 'title' => (string) $product['name'],
                 'data' => [
                     'product' => $product,
-                    'variants' => $this->repository->variantsForProduct($productId),
+                    'variants' => $variants,
                     'sizes' => $this->repository->listSizes(),
                     'brands' => $this->repository->listBrands(),
+                    'recentMovements' => $this->inventory->recentMovementsForProduct($productId),
+                    'warehouses' => $this->inventory->warehouses(),
                 ],
             ];
         }
 
         $categoryId = isset($query['category_id']) ? (int) $query['category_id'] : null;
         $search = trim((string) ($query['q'] ?? ''));
+        $products = $this->repository->listProducts($categoryId, $search);
+        $productStock = $this->inventory->productStockMap();
+
+        foreach ($products as &$product) {
+            $product['stock_total'] = $productStock[(int) $product['id']] ?? 0;
+        }
+        unset($product);
 
         return [
             'view' => SINDESG_ROOT . '/app/Views/inventory/index.php',
             'title' => 'Inventario',
             'data' => [
                 'catalogStats' => $this->repository->stats(),
+                'inventoryStats' => $this->inventory->overview(),
                 'catalogCategories' => $this->repository->listCategories(),
-                'products' => $this->repository->listProducts($categoryId, $search),
+                'products' => $products,
                 'selectedCategoryId' => $categoryId,
                 'catalogSearch' => $search,
             ],
