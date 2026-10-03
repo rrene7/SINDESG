@@ -17,7 +17,11 @@ declare(strict_types=1);
     <article><span>Categorías</span><strong><?= e($catalogStats['categories']) ?></strong></article>
     <article><span>Artículos</span><strong><?= e($catalogStats['products']) ?></strong></article>
     <article><span>Variantes</span><strong><?= e($catalogStats['variants']) ?></strong></article>
-    <article class="stock-stat"><span>Stock institucional</span><strong><?= e(number_format((float) $inventoryStats['total_stock'], 0, '.', ',')) ?></strong><small>Derivado del kardex</small></article>
+    <article class="stock-stat">
+        <span>Stock disponible</span>
+        <strong><?= e(number_format((float) $inventoryStats['available_stock'], 0, '.', ',')) ?></strong>
+        <small><?= e(number_format((float) $inventoryStats['total_stock'], 0, '.', ',')) ?> unidades institucionales</small>
+    </article>
 </section>
 
 <section class="inventory-health-grid">
@@ -98,12 +102,12 @@ declare(strict_types=1);
                     <h2><?= e($product['name']) ?></h2>
                     <code><?= e($product['internal_code']) ?></code>
                     <div class="product-stock-line">
-                        <span>Existencia</span>
-                        <strong><?= e(number_format((float) $product['stock_total'], 0, '.', ',')) ?></strong>
+                        <span>Disponible</span>
+                        <strong><?= e(number_format((float) $product['stock_available'], 0, '.', ',')) ?></strong>
                     </div>
                     <div class="product-meta">
-                        <span><?= e($product['variant_count']) ?> variantes</span>
-                        <span><?= e(ucfirst((string) $product['sex'])) ?></span>
+                        <span><?= e(number_format((float) $product['stock_total'], 0, '.', ',')) ?> institucionales</span>
+                        <span><?= e($product['variant_count']) ?> variantes · <?= e(ucfirst((string) $product['sex'])) ?></span>
                     </div>
                 </div>
             </a>

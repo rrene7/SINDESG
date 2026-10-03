@@ -3,9 +3,17 @@ declare(strict_types=1);
 
 $productTotalStock = 0.0;
 $productCentralStock = 0.0;
+$productCommittedStock = 0.0;
+$productAvailableStock = 0.0;
+$productP4Stock = 0.0;
+$productTransitStock = 0.0;
 foreach ($variants as $variantStockRow) {
     $productTotalStock += (float) ($variantStockRow['stock_total'] ?? 0);
     $productCentralStock += (float) ($variantStockRow['stock_central'] ?? 0);
+    $productCommittedStock += (float) ($variantStockRow['stock_committed'] ?? 0);
+    $productAvailableStock += (float) ($variantStockRow['stock_available'] ?? 0);
+    $productP4Stock += (float) ($variantStockRow['stock_p4'] ?? 0);
+    $productTransitStock += (float) ($variantStockRow['stock_transit'] ?? 0);
 }
 ?>
 <section class="product-detail">
@@ -34,8 +42,12 @@ foreach ($variants as $variantStockRow) {
             <div><dt>Color general</dt><dd><?= e($product['color'] ?: 'No definido') ?></dd></div>
             <div><dt>Estado</dt><dd><?= e(ucfirst((string) $product['status'])) ?></dd></div>
             <div><dt>Variantes</dt><dd><?= e(count($variants)) ?></dd></div>
+            <div class="stock-detail"><dt>Disponible</dt><dd><?= e(number_format($productAvailableStock, 0, '.', ',')) ?></dd></div>
+            <div class="stock-detail"><dt>Central físico</dt><dd><?= e(number_format($productCentralStock, 0, '.', ',')) ?></dd></div>
+            <div class="stock-detail"><dt>Comprometido</dt><dd><?= e(number_format($productCommittedStock, 0, '.', ',')) ?></dd></div>
+            <div class="stock-detail"><dt>En P4</dt><dd><?= e(number_format($productP4Stock, 0, '.', ',')) ?></dd></div>
+            <div class="stock-detail"><dt>En tránsito</dt><dd><?= e(number_format($productTransitStock, 0, '.', ',')) ?></dd></div>
             <div class="stock-detail"><dt>Stock institucional</dt><dd><?= e(number_format($productTotalStock, 0, '.', ',')) ?></dd></div>
-            <div class="stock-detail"><dt>Almacén Central</dt><dd><?= e(number_format($productCentralStock, 0, '.', ',')) ?></dd></div>
         </dl>
 
         <form class="photo-update-form" method="post" enctype="multipart/form-data"
@@ -78,8 +90,12 @@ foreach ($variants as $variantStockRow) {
                         <th>Cód. institucional</th>
                         <th>Cód. proveedor</th>
                         <th>Color</th>
-                        <th>Central</th>
-                        <th>Total</th>
+                        <th>Disponible</th>
+                        <th>Central físico</th>
+                        <th>Comprometido</th>
+                        <th>P4</th>
+                        <th>Tránsito</th>
+                        <th>Institucional</th>
                     </tr>
                     </thead>
                     <tbody>
@@ -91,8 +107,12 @@ foreach ($variants as $variantStockRow) {
                             <td><?= e($variant['institutional_code'] ?: '—') ?></td>
                             <td><?= e($variant['supplier_code'] ?: '—') ?></td>
                             <td><?= e($variant['color'] ?: $product['color'] ?: '—') ?></td>
+                            <td class="stock-cell strong"><?= e(number_format((float) $variant['stock_available'], 0, '.', ',')) ?></td>
                             <td class="stock-cell"><?= e(number_format((float) $variant['stock_central'], 0, '.', ',')) ?></td>
-                            <td class="stock-cell strong"><?= e(number_format((float) $variant['stock_total'], 0, '.', ',')) ?></td>
+                            <td class="stock-cell"><?= e(number_format((float) $variant['stock_committed'], 0, '.', ',')) ?></td>
+                            <td class="stock-cell"><?= e(number_format((float) $variant['stock_p4'], 0, '.', ',')) ?></td>
+                            <td class="stock-cell"><?= e(number_format((float) $variant['stock_transit'], 0, '.', ',')) ?></td>
+                            <td class="stock-cell"><?= e(number_format((float) $variant['stock_total'], 0, '.', ',')) ?></td>
                         </tr>
                     <?php endforeach; ?>
                     </tbody>

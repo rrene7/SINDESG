@@ -116,6 +116,7 @@ $required = [
     'tests/distribution_logic_test.php',
     'tests/distribution_accounting_test.php',
     'tests/post_phase8_display_test.php',
+    'tests/inventory_availability_test.php',
 ];
 
 $errors = [];

@@ -107,6 +107,10 @@ final class InventoryController
                 $stock = $stockMap[(int) $variant['id']] ?? null;
                 $variant['stock_total'] = $stock['stock_total'] ?? 0;
                 $variant['stock_central'] = $stock['stock_central'] ?? 0;
+                $variant['stock_committed'] = $stock['stock_committed'] ?? 0;
+                $variant['stock_available'] = $stock['stock_available'] ?? 0;
+                $variant['stock_p4'] = $stock['stock_p4'] ?? 0;
+                $variant['stock_transit'] = $stock['stock_transit'] ?? 0;
             }
             unset($variant);
 
@@ -130,7 +134,13 @@ final class InventoryController
         $productStock = $this->inventory->productStockMap();
 
         foreach ($products as &$product) {
-            $product['stock_total'] = $productStock[(int) $product['id']] ?? 0;
+            $stock = $productStock[(int) $product['id']] ?? [];
+            $product['stock_total'] = $stock['stock_total'] ?? 0;
+            $product['stock_central'] = $stock['stock_central'] ?? 0;
+            $product['stock_committed'] = $stock['stock_committed'] ?? 0;
+            $product['stock_available'] = $stock['stock_available'] ?? 0;
+            $product['stock_p4'] = $stock['stock_p4'] ?? 0;
+            $product['stock_transit'] = $stock['stock_transit'] ?? 0;
         }
         unset($product);
 
