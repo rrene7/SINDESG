@@ -78,30 +78,30 @@ final class RrhhRepository
                     SELECT ancestor.official_name
                     FROM organization_units_current ancestor
                     WHERE FIND_IN_SET(
-                        LPAD(CAST(ancestor.id AS CHAR), 6, '0'),
+                        LPAD(CAST(ancestor.id AS CHAR), 6, "0"),
                         REPLACE(
-                            COALESCE(ou.hierarchy_path, LPAD(CAST(ou.id AS CHAR), 6, '0')),
-                            '/',
-                            ','
+                            COALESCE(ou.hierarchy_path, LPAD(CAST(ou.id AS CHAR), 6, "0")),
+                            "/",
+                            ","
                         )
                     ) > 0
                       AND ancestor.unit_type IN ("direccion_nacional", "direccion_general", "direccion")
-                    ORDER BY LENGTH(COALESCE(ancestor.hierarchy_path, '')) DESC, ancestor.id DESC
+                    ORDER BY LENGTH(COALESCE(ancestor.hierarchy_path, "")) DESC, ancestor.id DESC
                     LIMIT 1
                 ) AS direction_name,
                 (
                     SELECT ancestor.official_name
                     FROM organization_units_current ancestor
                     WHERE FIND_IN_SET(
-                        LPAD(CAST(ancestor.id AS CHAR), 6, '0'),
+                        LPAD(CAST(ancestor.id AS CHAR), 6, "0"),
                         REPLACE(
-                            COALESCE(ou.hierarchy_path, LPAD(CAST(ou.id AS CHAR), 6, '0')),
-                            '/',
-                            ','
+                            COALESCE(ou.hierarchy_path, LPAD(CAST(ou.id AS CHAR), 6, "0")),
+                            "/",
+                            ","
                         )
                     ) > 0
                       AND ancestor.unit_type = "oficina"
-                    ORDER BY LENGTH(COALESCE(ancestor.hierarchy_path, '')) DESC, ancestor.id DESC
+                    ORDER BY LENGTH(COALESCE(ancestor.hierarchy_path, "")) DESC, ancestor.id DESC
                     LIMIT 1
                 ) AS office_name
             FROM employees e
@@ -169,30 +169,30 @@ final class RrhhRepository
                     SELECT ancestor.official_name
                     FROM organization_units_current ancestor
                     WHERE FIND_IN_SET(
-                        LPAD(CAST(ancestor.id AS CHAR), 6, '0'),
+                        LPAD(CAST(ancestor.id AS CHAR), 6, "0"),
                         REPLACE(
-                            COALESCE(ou.hierarchy_path, LPAD(CAST(ou.id AS CHAR), 6, '0')),
-                            '/',
-                            ','
+                            COALESCE(ou.hierarchy_path, LPAD(CAST(ou.id AS CHAR), 6, "0")),
+                            "/",
+                            ","
                         )
                     ) > 0
                       AND ancestor.unit_type IN ("direccion_nacional", "direccion_general", "direccion")
-                    ORDER BY LENGTH(COALESCE(ancestor.hierarchy_path, '')) DESC, ancestor.id DESC
+                    ORDER BY LENGTH(COALESCE(ancestor.hierarchy_path, "")) DESC, ancestor.id DESC
                     LIMIT 1
                 ) AS direction_name,
                 (
                     SELECT ancestor.official_name
                     FROM organization_units_current ancestor
                     WHERE FIND_IN_SET(
-                        LPAD(CAST(ancestor.id AS CHAR), 6, '0'),
+                        LPAD(CAST(ancestor.id AS CHAR), 6, "0"),
                         REPLACE(
-                            COALESCE(ou.hierarchy_path, LPAD(CAST(ou.id AS CHAR), 6, '0')),
-                            '/',
-                            ','
+                            COALESCE(ou.hierarchy_path, LPAD(CAST(ou.id AS CHAR), 6, "0")),
+                            "/",
+                            ","
                         )
                     ) > 0
                       AND ancestor.unit_type = "oficina"
-                    ORDER BY LENGTH(COALESCE(ancestor.hierarchy_path, '')) DESC, ancestor.id DESC
+                    ORDER BY LENGTH(COALESCE(ancestor.hierarchy_path, "")) DESC, ancestor.id DESC
                     LIMIT 1
                 ) AS office_name,
                 ua.start_date AS unit_assignment_start_date
