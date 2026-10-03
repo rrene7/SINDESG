@@ -5,8 +5,16 @@ $root = dirname(__DIR__);
 $repository = file_get_contents($root . '/app/Repositories/ReceiptRepository.php');
 $service = file_get_contents($root . '/app/Services/ReceiptService.php');
 $form = file_get_contents($root . '/app/Views/receipts/form.php');
+$catalog = file_get_contents($root . '/app/Repositories/CatalogRepository.php');
+$router = file_get_contents($root . '/public/index.php');
 
-foreach (['repository' => $repository, 'service' => $service, 'form' => $form] as $name => $content) {
+foreach ([
+    'repository' => $repository,
+    'service' => $service,
+    'form' => $form,
+    'catalog' => $catalog,
+    'router' => $router,
+] as $name => $content) {
     if ($content === false) {
         fwrite(STDERR, "[ERROR] No se pudo leer {$name}." . PHP_EOL);
         exit(1);
@@ -32,6 +40,16 @@ foreach ($repositoryRules as $fragment) {
 
 if (str_contains($form, 'name="receipt_code"') || str_contains($form, 'name="lot_code"')) {
     fwrite(STDERR, "[ERROR] Los códigos de recepción/lote no pueden ser editables." . PHP_EOL);
+    exit(1);
+}
+
+if (!str_contains($catalog, 'public function listVariantOptions(): array')) {
+    fwrite(STDERR, "[ERROR] El catálogo no expone variantes para recepción." . PHP_EOL);
+    exit(1);
+}
+
+if (!str_contains($router, 'new ReceiptsController')) {
+    fwrite(STDERR, "[ERROR] El módulo de recepción no está conectado al enrutador." . PHP_EOL);
     exit(1);
 }
 

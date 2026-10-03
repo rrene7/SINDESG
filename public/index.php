@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 use App\Controllers\InventoryController;
+use App\Controllers\ReceiptsController;
 use App\Repositories\CatalogRepository;
 
 require dirname(__DIR__) . '/app/bootstrap.php';
@@ -19,7 +20,7 @@ $modules = [
         'short' => 'Recepción',
         'icon' => 'RL',
         'phase' => 'Fase 3',
-        'description' => 'Ingreso por compra, confección interna, transferencia, donación o devolución.',
+        'description' => 'Ingreso por compra, transferencia, donación, devolución u otro origen autorizado.',
     ],
     'production' => [
         'label' => 'Producción interna',
@@ -80,14 +81,14 @@ $modules = [
 ];
 
 $fallbackCategories = [
-    ['id' => 0, 'name' => 'Suéter', 'code' => 'SUET', 'slug' => 'sueter'],
-    ['id' => 0, 'name' => 'Camisa', 'code' => 'CAM', 'slug' => 'camisa'],
-    ['id' => 0, 'name' => 'Pantalón', 'code' => 'PANT', 'slug' => 'pantalon'],
-    ['id' => 0, 'name' => 'Falda', 'code' => 'FALD', 'slug' => 'falda'],
-    ['id' => 0, 'name' => 'Camisa MNJ', 'code' => 'MNJ', 'slug' => 'camisa-mnj'],
-    ['id' => 0, 'name' => 'Botas', 'code' => 'BOTA', 'slug' => 'botas'],
-    ['id' => 0, 'name' => 'Gorras', 'code' => 'GORR', 'slug' => 'gorras'],
-    ['id' => 0, 'name' => 'Kepis', 'code' => 'KEPI', 'slug' => 'kepis'],
+    ['id' => 0, 'name' => 'Suéter', 'code' => 'CAT', 'slug' => 'sueter'],
+    ['id' => 0, 'name' => 'Camisa', 'code' => 'CAT', 'slug' => 'camisa'],
+    ['id' => 0, 'name' => 'Pantalón', 'code' => 'CAT', 'slug' => 'pantalon'],
+    ['id' => 0, 'name' => 'Falda', 'code' => 'CAT', 'slug' => 'falda'],
+    ['id' => 0, 'name' => 'Camisa MNJ', 'code' => 'CAT', 'slug' => 'camisa-mnj'],
+    ['id' => 0, 'name' => 'Botas', 'code' => 'CAT', 'slug' => 'botas'],
+    ['id' => 0, 'name' => 'Gorras', 'code' => 'CAT', 'slug' => 'gorras'],
+    ['id' => 0, 'name' => 'Kepis', 'code' => 'CAT', 'slug' => 'kepis'],
 ];
 
 $health = [
@@ -131,6 +132,24 @@ if ($currentModule === 'dashboard') {
             $_GET,
             $_POST,
             $_FILES,
+            $_SERVER['REQUEST_METHOD'] ?? 'GET'
+        );
+
+        $pageTitle = $result['title'];
+        $contentView = $result['view'];
+        extract($result['data'], EXTR_SKIP);
+    }
+} elseif ($currentModule === 'receipts') {
+    if (!$health['sindesg']['ok']) {
+        $pageTitle = 'Recepción de lotes';
+        $receiptError = 'No existe conexión con la base SINDESG. Verifique MariaDB y config/database.php.';
+        $contentView = dirname(__DIR__) . '/app/Views/receipts/unavailable.php';
+    } else {
+        $controller = new ReceiptsController($database->connection('sindesg'));
+        $result = $controller->handle(
+            (string) ($_GET['action'] ?? 'index'),
+            $_GET,
+            $_POST,
             $_SERVER['REQUEST_METHOD'] ?? 'GET'
         );
 
