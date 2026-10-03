@@ -29,6 +29,17 @@ declare(strict_types=1);
             <div><dt>Variantes</dt><dd><?= e(count($variants)) ?></dd></div>
         </dl>
 
+        <form class="photo-update-form" method="post" enctype="multipart/form-data"
+              action="<?= e(sindesg_url('?module=inventory&action=save-image')) ?>">
+            <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
+            <input type="hidden" name="product_id" value="<?= e($product['id']) ?>">
+            <label>
+                <span><?= !empty($product['primary_image']) ? 'Reemplazar fotografía' : 'Cargar fotografía' ?></span>
+                <input type="file" name="main_image" accept="image/jpeg,image/png,image/webp" required>
+            </label>
+            <button class="secondary-button" type="submit">Guardar fotografía</button>
+        </form>
+
         <a class="secondary-button" href="<?= e(sindesg_url('?module=inventory')) ?>">← Volver al inventario</a>
     </div>
 </section>
