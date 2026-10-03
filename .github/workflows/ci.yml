@@ -50,3 +50,9 @@ jobs:
 
       - name: Product base variant test
         run: php tests/product_base_variant_test.php
+
+      - name: Production schema test
+        run: php tests/production_schema_test.php
+
+      - name: Production logic test
+        run: php tests/production_logic_test.php

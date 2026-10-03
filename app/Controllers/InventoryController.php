@@ -69,7 +69,7 @@ final class InventoryController
 
         if ($action === 'new-product') {
             $returnTo = (string) ($query['return_to'] ?? 'inventory');
-            if (!in_array($returnTo, ['inventory', 'receipts'], true)) {
+            if (!in_array($returnTo, ['inventory', 'receipts', 'production'], true)) {
                 $returnTo = 'inventory';
             }
 
@@ -167,6 +167,11 @@ final class InventoryController
             if (($post['return_to'] ?? '') === 'receipts') {
                 flash('success', 'Artículo y primera variante listos para usar en la recepción.');
                 $this->redirect('?module=receipts&action=new');
+            }
+
+            if (($post['return_to'] ?? '') === 'production') {
+                flash('success', 'Artículo y primera variante listos para usar en producción.');
+                $this->redirect('?module=production&action=new');
             }
 
             $this->redirect('?module=inventory&action=product&id=' . $result['id']);
