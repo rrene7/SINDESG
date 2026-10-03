@@ -21,6 +21,9 @@ $flashMessages = pull_flash();
     <?php if ($currentModule === 'people'): ?>
         <link rel="stylesheet" href="<?= e(sindesg_asset('css/people.css')) ?>">
     <?php endif; ?>
+    <?php if ($currentModule === 'warehouses'): ?>
+        <link rel="stylesheet" href="<?= e(sindesg_asset('css/warehouses.css')) ?>">
+    <?php endif; ?>
 </head>
 <body>
 <div class="app-shell">
@@ -131,6 +134,9 @@ window.SINDESG_SEARCH_ITEMS = <?= json_encode(array_merge(
 <?php endif; ?>
 <?php if ($currentModule === 'production'): ?>
     <script src="<?= e(sindesg_asset('js/production.js')) ?>"></script>
+<?php endif; ?>
+<?php if ($currentModule === 'warehouses'): ?>
+    <script src="<?= e(sindesg_asset('js/warehouses.js')) ?>"></script>
 <?php endif; ?>
 </body>
 </html>

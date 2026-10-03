@@ -5,6 +5,7 @@ use App\Controllers\InventoryController;
 use App\Controllers\ReceiptsController;
 use App\Controllers\ProductionController;
 use App\Controllers\PeopleController;
+use App\Controllers\WarehousesController;
 use App\Repositories\CatalogRepository;
 use App\Repositories\DashboardRepository;
 
@@ -189,6 +190,24 @@ if ($currentModule === 'dashboard') {
         $contentView = dirname(__DIR__) . '/app/Views/production/unavailable.php';
     } else {
         $controller = new ProductionController($database->connection('sindesg'));
+        $result = $controller->handle(
+            (string) ($_GET['action'] ?? 'index'),
+            $_GET,
+            $_POST,
+            $_SERVER['REQUEST_METHOD'] ?? 'GET'
+        );
+
+        $pageTitle = $result['title'];
+        $contentView = $result['view'];
+        extract($result['data'], EXTR_SKIP);
+    }
+} elseif ($currentModule === 'warehouses') {
+    if (!$health['sindesg']['ok']) {
+        $pageTitle = 'Almacenes y P4';
+        $warehouseError = 'No existe conexión con la base SINDESG. Verifique MariaDB y config/database.php.';
+        $contentView = dirname(__DIR__) . '/app/Views/warehouses/unavailable.php';
+    } else {
+        $controller = new WarehousesController($database);
         $result = $controller->handle(
             (string) ($_GET['action'] ?? 'index'),
             $_GET,

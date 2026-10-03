@@ -286,6 +286,92 @@ final class RrhhRepository
         SQL);
     }
 
+    public function searchUnits(string $query, int $limit = 30): array
+    {
+        $query = trim($query);
+        if (mb_strlen($query) < 2) {
+            return [];
+        }
+
+        $limit = max(1, min($limit, 50));
+        $term = '%' . $query . '%';
+
+        return $this->database->rrhhRead('
+            SELECT
+                ou.id,
+                ou.parent_id,
+                ou.system_code,
+                ou.institutional_code,
+                ou.official_name,
+                ou.official_abbreviation,
+                ou.unit_type,
+                ou.moi_level,
+                ou.hierarchy_path,
+                ou.lifecycle_status,
+                ou.is_active
+            FROM organization_units_current ou
+            WHERE ou.is_active = 1
+              AND COALESCE(ou.lifecycle_status, "vigente") = "vigente"
+              AND (
+                    ou.official_name LIKE :name_term
+                 OR ou.system_code LIKE :system_term
+                 OR ou.institutional_code LIKE :institutional_term
+                 OR ou.official_abbreviation LIKE :abbreviation_term
+              )
+            ORDER BY ou.official_name
+            LIMIT ' . $limit, [
+                'name_term' => $term,
+                'system_term' => $term,
+                'institutional_term' => $term,
+                'abbreviation_term' => $term,
+            ]);
+    }
+
+    public function unitsByIds(array $unitIds): array
+    {
+        $unitIds = array_values(array_unique(array_filter(
+            array_map('intval', $unitIds),
+            static fn (int $id): bool => $id > 0
+        )));
+
+        if ($unitIds === []) {
+            return [];
+        }
+
+        $params = [];
+        $placeholders = [];
+        foreach ($unitIds as $index => $unitId) {
+            $key = 'unit_' . $index;
+            $placeholders[] = ':' . $key;
+            $params[$key] = $unitId;
+        }
+
+        $rows = $this->database->rrhhRead(
+            'SELECT
+                id,
+                parent_id,
+                system_code,
+                institutional_code,
+                official_name,
+                official_abbreviation,
+                unit_type,
+                moi_level,
+                hierarchy_path,
+                lifecycle_status,
+                is_active
+             FROM organization_units_current
+             WHERE id IN (' . implode(',', $placeholders) . ')',
+            $params
+        );
+
+        $map = [];
+        foreach ($rows as $row) {
+            $map[(int) $row['id']] = $row;
+        }
+
+        return $map;
+    }
+
     public function findUnit(int $unitId): ?array
     {
         if ($unitId <= 0) {
