@@ -20,7 +20,7 @@ final class CatalogRepository
             FROM categories c
             LEFT JOIN products p ON p.category_id = c.id AND p.status <> 'deleted'
             GROUP BY c.id
-            ORDER BY c.sort_order, c.name
+            ORDER BY c.sort_order, c.id
         SQL;
 
         return $this->pdo->query($sql)->fetchAll();
@@ -134,13 +134,6 @@ final class CatalogRepository
         )->fetchAll();
     }
 
-    public function categoryCodeExists(string $code): bool
-    {
-        $statement = $this->pdo->prepare('SELECT 1 FROM categories WHERE code = :code LIMIT 1');
-        $statement->execute(['code' => $code]);
-        return (bool) $statement->fetchColumn();
-    }
-
     public function categorySlugExists(string $slug): bool
     {
         $statement = $this->pdo->prepare('SELECT 1 FROM categories WHERE slug = :slug LIMIT 1');
@@ -148,20 +141,48 @@ final class CatalogRepository
         return (bool) $statement->fetchColumn();
     }
 
-    public function createCategory(string $code, string $slug, string $name, ?string $description): int
+    public function createCategory(string $slug, string $name, ?string $description): int
     {
-        $statement = $this->pdo->prepare(
-            'INSERT INTO categories (code, slug, name, description, sort_order, is_active)
-             VALUES (:code, :slug, :name, :description, 900, 1)'
-        );
-        $statement->execute([
-            'code' => $code,
-            'slug' => $slug,
-            'name' => $name,
-            'description' => $description,
-        ]);
+        $this->pdo->beginTransaction();
 
-        return (int) $this->pdo->lastInsertId();
+        try {
+            $temporaryCode = 'TMP-' . strtoupper(bin2hex(random_bytes(6)));
+
+            $statement = $this->pdo->prepare(
+                'INSERT INTO categories (code, slug, name, description, sort_order, is_active)
+                 VALUES (:code, :slug, :name, :description, 0, 1)'
+            );
+            $statement->execute([
+                'code' => $temporaryCode,
+                'slug' => $slug,
+                'name' => $name,
+                'description' => $description,
+            ]);
+
+            $categoryId = (int) $this->pdo->lastInsertId();
+            $code = sprintf('CAT-%06d', $categoryId);
+            $sortOrder = $categoryId * 10;
+
+            $update = $this->pdo->prepare(
+                'UPDATE categories
+                 SET code = :code, sort_order = :sort_order
+                 WHERE id = :id'
+            );
+            $update->execute([
+                'code' => $code,
+                'sort_order' => $sortOrder,
+                'id' => $categoryId,
+            ]);
+
+            $this->pdo->commit();
+            return $categoryId;
+        } catch (\Throwable $exception) {
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+
+            throw $exception;
+        }
     }
 
     public function createProduct(array $data): int
