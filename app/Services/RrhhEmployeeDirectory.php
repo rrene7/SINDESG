@@ -32,36 +32,8 @@ final class RrhhEmployeeDirectory
                 s.name AS status_name,
                 ou.id AS organization_unit_id,
                 ou.official_name AS organization_unit_name,
-                (
-                    SELECT ancestor.official_name
-                    FROM organization_units_current ancestor
-                    WHERE FIND_IN_SET(
-                        LPAD(CAST(ancestor.id AS CHAR), 6, "0"),
-                        REPLACE(
-                            COALESCE(ou.hierarchy_path, LPAD(CAST(ou.id AS CHAR), 6, "0")),
-                            "/",
-                            ","
-                        )
-                    ) > 0
-                      AND ancestor.unit_type IN ("direccion_nacional", "direccion_general", "direccion")
-                    ORDER BY LENGTH(COALESCE(ancestor.hierarchy_path, "")) DESC, ancestor.id DESC
-                    LIMIT 1
-                ) AS direction_name,
-                (
-                    SELECT ancestor.official_name
-                    FROM organization_units_current ancestor
-                    WHERE FIND_IN_SET(
-                        LPAD(CAST(ancestor.id AS CHAR), 6, "0"),
-                        REPLACE(
-                            COALESCE(ou.hierarchy_path, LPAD(CAST(ou.id AS CHAR), 6, "0")),
-                            "/",
-                            ","
-                        )
-                    ) > 0
-                      AND ancestor.unit_type = "oficina"
-                    ORDER BY LENGTH(COALESCE(ancestor.hierarchy_path, "")) DESC, ancestor.id DESC
-                    LIMIT 1
-                ) AS office_name
+                ou.unit_type,
+                ou.hierarchy_path
             FROM employees e
             LEFT JOIN ranks r ON r.id = e.rank_id
             LEFT JOIN statuses s ON s.id = e.status_id
@@ -97,6 +69,8 @@ final class RrhhEmployeeDirectory
             'position_term' => $term,
         ]);
 
+        $rows = $this->withOrganizationContext($rows);
+
         return array_map([$this, 'normalize'], $rows);
     }
 
@@ -117,36 +91,8 @@ final class RrhhEmployeeDirectory
                 s.name AS status_name,
                 ou.id AS organization_unit_id,
                 ou.official_name AS organization_unit_name,
-                (
-                    SELECT ancestor.official_name
-                    FROM organization_units_current ancestor
-                    WHERE FIND_IN_SET(
-                        LPAD(CAST(ancestor.id AS CHAR), 6, "0"),
-                        REPLACE(
-                            COALESCE(ou.hierarchy_path, LPAD(CAST(ou.id AS CHAR), 6, "0")),
-                            "/",
-                            ","
-                        )
-                    ) > 0
-                      AND ancestor.unit_type IN ("direccion_nacional", "direccion_general", "direccion")
-                    ORDER BY LENGTH(COALESCE(ancestor.hierarchy_path, "")) DESC, ancestor.id DESC
-                    LIMIT 1
-                ) AS direction_name,
-                (
-                    SELECT ancestor.official_name
-                    FROM organization_units_current ancestor
-                    WHERE FIND_IN_SET(
-                        LPAD(CAST(ancestor.id AS CHAR), 6, "0"),
-                        REPLACE(
-                            COALESCE(ou.hierarchy_path, LPAD(CAST(ou.id AS CHAR), 6, "0")),
-                            "/",
-                            ","
-                        )
-                    ) > 0
-                      AND ancestor.unit_type = "oficina"
-                    ORDER BY LENGTH(COALESCE(ancestor.hierarchy_path, "")) DESC, ancestor.id DESC
-                    LIMIT 1
-                ) AS office_name
+                ou.unit_type,
+                ou.hierarchy_path
             FROM employees e
             LEFT JOIN ranks r ON r.id = e.rank_id
             LEFT JOIN statuses s ON s.id = e.status_id
@@ -171,7 +117,97 @@ final class RrhhEmployeeDirectory
 
         $rows = $this->database->rrhhRead($sql, ['employee_id' => $employeeId]);
 
+        $rows = $this->withOrganizationContext($rows);
+
         return isset($rows[0]) ? $this->normalize($rows[0]) : null;
+    }
+
+    private function withOrganizationContext(array $rows): array
+    {
+        if ($rows === []) {
+            return [];
+        }
+
+        $ids = [];
+        foreach ($rows as $row) {
+            foreach ($this->hierarchyIds($row) as $unitId) {
+                $ids[$unitId] = true;
+            }
+        }
+
+        $unitsById = [];
+        if ($ids !== []) {
+            $params = [];
+            $placeholders = [];
+
+            foreach (array_keys($ids) as $index => $unitId) {
+                $key = 'unit_' . $index;
+                $placeholders[] = ':' . $key;
+                $params[$key] = $unitId;
+            }
+
+            $units = $this->database->rrhhRead(
+                'SELECT id, official_name, unit_type
+                 FROM organization_units_current
+                 WHERE id IN (' . implode(',', $placeholders) . ')',
+                $params
+            );
+
+            foreach ($units as $unit) {
+                $unitsById[(int) $unit['id']] = $unit;
+            }
+        }
+
+        foreach ($rows as &$row) {
+            $directionName = '';
+            $officeName = '';
+
+            foreach ($this->hierarchyIds($row) as $unitId) {
+                $unit = $unitsById[$unitId] ?? null;
+                if ($unit === null) {
+                    continue;
+                }
+
+                $type = (string) ($unit['unit_type'] ?? '');
+                $name = (string) ($unit['official_name'] ?? '');
+
+                if (in_array($type, ['direccion_nacional', 'direccion_general', 'direccion'], true)) {
+                    $directionName = $name;
+                }
+
+                if ($type === 'oficina') {
+                    $officeName = $name;
+                }
+            }
+
+            $row['direction_name'] = $directionName;
+            $row['office_name'] = $officeName;
+        }
+        unset($row);
+
+        return $rows;
+    }
+
+    private function hierarchyIds(array $row): array
+    {
+        $path = trim((string) ($row['hierarchy_path'] ?? ''));
+        $ids = [];
+
+        if ($path !== '') {
+            foreach (explode('/', $path) as $part) {
+                $unitId = (int) ltrim(trim($part), '0');
+                if ($unitId > 0) {
+                    $ids[] = $unitId;
+                }
+            }
+        }
+
+        $currentUnitId = (int) ($row['organization_unit_id'] ?? 0);
+        if ($currentUnitId > 0 && !in_array($currentUnitId, $ids, true)) {
+            $ids[] = $currentUnitId;
+        }
+
+        return array_values(array_unique($ids));
     }
 
     private function normalize(array $row): array
