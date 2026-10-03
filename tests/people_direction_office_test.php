@@ -19,8 +19,9 @@ foreach ([$repository, $directory] as $content) {
     foreach ([
         "AS direction_name",
         "AS office_name",
-        "ancestor.unit_type = 'oficina'",
-        "ancestor.unit_type IN ('direccion_nacional', 'direccion_general', 'direccion')",
+        'ancestor.unit_type =',
+        'direccion_nacional',
+        'oficina',
         "FIND_IN_SET",
         "ou.hierarchy_path",
     ] as $fragment) {
