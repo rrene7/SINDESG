@@ -4,6 +4,7 @@ declare(strict_types=1);
 use App\Controllers\InventoryController;
 use App\Controllers\ReceiptsController;
 use App\Controllers\ProductionController;
+use App\Controllers\PeopleController;
 use App\Repositories\CatalogRepository;
 use App\Repositories\DashboardRepository;
 
@@ -193,6 +194,22 @@ if ($currentModule === 'dashboard') {
             $_GET,
             $_POST,
             $_SERVER['REQUEST_METHOD'] ?? 'GET'
+        );
+
+        $pageTitle = $result['title'];
+        $contentView = $result['view'];
+        extract($result['data'], EXTR_SKIP);
+    }
+} elseif ($currentModule === 'people') {
+    if (!$health['rrhh']['ok']) {
+        $pageTitle = 'Funcionarios';
+        $peopleError = 'No existe conexión de solo lectura con RRHH2029. Verifique config/database.php y MariaDB.';
+        $contentView = dirname(__DIR__) . '/app/Views/people/unavailable.php';
+    } else {
+        $controller = new PeopleController($database);
+        $result = $controller->handle(
+            (string) ($_GET['action'] ?? 'index'),
+            $_GET
         );
 
         $pageTitle = $result['title'];

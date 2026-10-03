@@ -65,3 +65,9 @@ jobs:
 
       - name: UTF-8 repair test
         run: php tests/utf8_repair_test.php
+
+      - name: RRHH people module test
+        run: php tests/rrhh_people_module_test.php
+
+      - name: RRHH read-only contract test
+        run: php tests/rrhh_readonly_test.php

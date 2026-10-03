@@ -18,6 +18,9 @@ $flashMessages = pull_flash();
     <?php if ($currentModule === 'production'): ?>
         <link rel="stylesheet" href="<?= e(sindesg_asset('css/production.css')) ?>">
     <?php endif; ?>
+    <?php if ($currentModule === 'people'): ?>
+        <link rel="stylesheet" href="<?= e(sindesg_asset('css/people.css')) ?>">
+    <?php endif; ?>
 </head>
 <body>
 <div class="app-shell">
