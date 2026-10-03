@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Repositories\ReceiptRepository;
+use App\Services\RrhhEmployeeDirectory;
 use DateTimeImmutable;
 use InvalidArgumentException;
 
@@ -17,8 +18,10 @@ final class ReceiptService
         'other',
     ];
 
-    public function __construct(private ReceiptRepository $repository)
-    {
+    public function __construct(
+        private ReceiptRepository $repository,
+        private RrhhEmployeeDirectory $employeeDirectory
+    ) {
     }
 
     public function createDraft(array $input): int
@@ -26,7 +29,7 @@ final class ReceiptService
         $sourceType = trim((string) ($input['source_type'] ?? ''));
         $supplierOrOrigin = trim((string) ($input['supplier_or_origin'] ?? ''));
         $documentNumber = $this->nullableText($input['document_number'] ?? null);
-        $receivedBy = trim((string) ($input['received_by_label'] ?? ''));
+        $receivedByEmployeeId = (int) ($input['received_by_employee_id'] ?? 0);
         $notes = $this->nullableText($input['notes'] ?? null);
         $receivedAt = $this->normalizeDateTime((string) ($input['received_at'] ?? ''));
 
@@ -38,16 +41,19 @@ final class ReceiptService
             throw new InvalidArgumentException('Indique el proveedor u origen del lote.');
         }
 
-        if ($receivedBy === '') {
-            throw new InvalidArgumentException('Indique quién recibe el lote.');
+        if ($receivedByEmployeeId <= 0) {
+            throw new InvalidArgumentException('Busque y seleccione el funcionario que recibe el lote.');
+        }
+
+        $receiver = $this->employeeDirectory->findEligibleEmployee($receivedByEmployeeId);
+        if ($receiver === null) {
+            throw new InvalidArgumentException(
+                'El funcionario seleccionado no está disponible en RRHH2029 o no cumple las condiciones para registrar la recepción.'
+            );
         }
 
         if (mb_strlen($supplierOrOrigin) > 180) {
             throw new InvalidArgumentException('El proveedor u origen es demasiado largo.');
-        }
-
-        if (mb_strlen($receivedBy) > 160) {
-            throw new InvalidArgumentException('El nombre del responsable es demasiado largo.');
         }
 
         $variantIds = $input['variant_id'] ?? [];
@@ -118,7 +124,13 @@ final class ReceiptService
             'supplier_or_origin' => $supplierOrOrigin,
             'document_number' => $documentNumber,
             'received_at' => $receivedAt,
-            'received_by_label' => $receivedBy,
+            'received_by_employee_id' => (int) $receiver['employee_id'],
+            'received_by_label' => trim((string) $receiver['display_name']),
+            'received_by_document_snapshot' => $receiver['document_number'],
+            'received_by_position_snapshot' => $receiver['position_number'],
+            'received_by_rank_snapshot' => $receiver['rank_name'],
+            'received_by_unit_id_snapshot' => $receiver['organization_unit_id'],
+            'received_by_unit_name_snapshot' => $receiver['organization_unit_name'],
             'notes' => $notes,
         ], $items);
     }

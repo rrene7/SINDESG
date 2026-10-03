@@ -6,6 +6,8 @@ namespace App\Controllers;
 use App\Repositories\CatalogRepository;
 use App\Repositories\ReceiptRepository;
 use App\Services\ReceiptService;
+use App\Services\RrhhEmployeeDirectory;
+use App\Support\Database;
 use InvalidArgumentException;
 use PDO;
 use Throwable;
@@ -16,10 +18,13 @@ final class ReceiptsController
     private ReceiptService $service;
     private CatalogRepository $catalog;
 
-    public function __construct(PDO $pdo)
+    public function __construct(PDO $pdo, Database $database)
     {
         $this->repository = new ReceiptRepository($pdo);
-        $this->service = new ReceiptService($this->repository);
+        $this->service = new ReceiptService(
+            $this->repository,
+            new RrhhEmployeeDirectory($database)
+        );
         $this->catalog = new CatalogRepository($pdo);
     }
 
@@ -51,7 +56,7 @@ final class ReceiptsController
                 'view' => SINDESG_ROOT . '/app/Views/receipts/unavailable.php',
                 'title' => 'Recepción de lotes',
                 'data' => [
-                    'receiptError' => 'El módulo de recepción aún no está disponible en esta instalación. Aplique la migración 005_receipts.sql y vuelva a intentarlo.',
+                    'receiptError' => 'El módulo de recepción aún no está disponible en esta instalación. Aplique las migraciones pendientes, incluida 007_dashboard_rrhh_receipts.sql, y vuelva a intentarlo.',
                 ],
             ];
         }
@@ -67,6 +72,7 @@ final class ReceiptsController
                     'variantOptions' => $this->catalog->listVariantOptions(),
                     'sourceTypes' => ReceiptService::sourceTypes(),
                     'defaultReceivedAt' => date('Y-m-d\TH:i'),
+                    'employeeSearchUrl' => sindesg_url('public/api/employees.php'),
                 ],
             ];
         }

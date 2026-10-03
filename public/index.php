@@ -5,6 +5,7 @@ use App\Controllers\InventoryController;
 use App\Controllers\ReceiptsController;
 use App\Controllers\ProductionController;
 use App\Repositories\CatalogRepository;
+use App\Repositories\DashboardRepository;
 
 require dirname(__DIR__) . '/app/bootstrap.php';
 
@@ -120,6 +121,28 @@ if ($currentModule !== 'dashboard' && !isset($modules[$currentModule])) {
 
 if ($currentModule === 'dashboard') {
     $pageTitle = 'Dashboard';
+    $dashboardCategories = [];
+    $featuredProduct = null;
+    $featuredSizes = [];
+    $recentDashboardReceipts = [];
+
+    if ($health['sindesg']['ok']) {
+        try {
+            $dashboardRepository = new DashboardRepository($database->connection('sindesg'));
+            $dashboardCategories = $dashboardRepository->categoryCards();
+            $featuredProduct = $dashboardRepository->featuredProduct();
+            $featuredSizes = $featuredProduct
+                ? $dashboardRepository->sizesForProduct((int) $featuredProduct['id'])
+                : [];
+            $recentDashboardReceipts = $dashboardRepository->recentReceipts(4);
+        } catch (\Throwable $exception) {
+            $dashboardCategories = [];
+            $featuredProduct = null;
+            $featuredSizes = [];
+            $recentDashboardReceipts = [];
+        }
+    }
+
     $contentView = dirname(__DIR__) . '/app/Views/dashboard.php';
 } elseif ($currentModule === 'inventory') {
     if (!$health['sindesg']['ok']) {
@@ -146,7 +169,7 @@ if ($currentModule === 'dashboard') {
         $receiptError = 'No existe conexión con la base SINDESG. Verifique MariaDB y config/database.php.';
         $contentView = dirname(__DIR__) . '/app/Views/receipts/unavailable.php';
     } else {
-        $controller = new ReceiptsController($database->connection('sindesg'));
+        $controller = new ReceiptsController($database->connection('sindesg'), $database);
         $result = $controller->handle(
             (string) ($_GET['action'] ?? 'index'),
             $_GET,
