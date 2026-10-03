@@ -272,3 +272,16 @@ Institucional = Central físico + P4 + Tránsito
 ```
 
 Las tarjetas de categorías y las tallas disponibles ahora priorizan la disponibilidad real del Almacén Central, mientras el total institucional queda como información secundaria.
+
+
+## Ajuste de disponibilidad en módulo Inventario
+
+El módulo Inventario adopta la misma semántica operativa del dashboard:
+
+- **Disponible** es el dato principal para decidir nuevas entregas.
+- **Central físico** muestra la existencia real en el Almacén Central.
+- **Comprometido** representa aprobación pendiente de despacho.
+- **P4** y **Tránsito** muestran dónde se encuentra el resto del inventario institucional.
+- **Institucional** permanece como total físico de la institución.
+
+La tarjeta de cada artículo ya no usa el total institucional bajo la etiqueta genérica "Existencia". Ahora muestra **Disponible** y conserva el total institucional como contexto secundario.

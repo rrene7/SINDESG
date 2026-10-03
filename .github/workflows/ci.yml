@@ -104,3 +104,6 @@ jobs:
 
       - name: Post phase 8 display test
         run: php tests/post_phase8_display_test.php
+
+      - name: Inventory availability display test
+        run: php tests/inventory_availability_test.php
