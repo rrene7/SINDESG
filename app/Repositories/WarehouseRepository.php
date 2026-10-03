@@ -207,6 +207,10 @@ final class WarehouseRepository
             throw new RuntimeException('El almacén solicitado no existe.');
         }
 
+        if ($warehouse['warehouse_type'] === 'CENTRAL') {
+            throw new RuntimeException('El Almacén Central no puede inactivarse desde el módulo P4.');
+        }
+
         if ($warehouse['warehouse_type'] !== 'P4') {
             throw new RuntimeException('Solo los almacenes P4 pueden activarse o inactivarse desde este módulo.');
         }
