@@ -71,3 +71,6 @@ jobs:
 
       - name: RRHH read-only contract test
         run: php tests/rrhh_readonly_test.php
+
+      - name: Direction and office test
+        run: php tests/people_direction_office_test.php
