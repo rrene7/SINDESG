@@ -1,0 +1,171 @@
+(() => {
+    const debounce = (callback, delay = 220) => {
+        let timer = null;
+        return (...args) => {
+            window.clearTimeout(timer);
+            timer = window.setTimeout(() => callback(...args), delay);
+        };
+    };
+
+    const renderHistory = async (root, employeeId) => {
+        const historyUrl = root.dataset.historyUrl || '';
+        const panel = document.querySelector('[data-history-preview]');
+        const body = document.querySelector('[data-history-preview-body]');
+
+        if (!historyUrl || !panel || !body || !employeeId) return;
+
+        panel.hidden = false;
+        body.textContent = 'Consultando entregas anteriores...';
+
+        try {
+            const response = await fetch(
+                historyUrl + '?employee_id=' + encodeURIComponent(employeeId),
+                {headers: {'Accept': 'application/json'}}
+            );
+            const payload = await response.json();
+
+            body.innerHTML = '';
+
+            if (!response.ok || !payload.ok) {
+                body.textContent = payload.message || 'No fue posible consultar el historial.';
+                return;
+            }
+
+            if (!payload.items?.length) {
+                body.innerHTML = '<div class="history-preview-empty">Sin entregas confirmadas anteriores.</div>';
+                return;
+            }
+
+            payload.items.forEach((row) => {
+                const item = document.createElement('div');
+                item.className = 'history-preview-row';
+
+                const title = document.createElement('strong');
+                title.textContent = row.product_name;
+
+                const variant = document.createElement('span');
+                variant.textContent = row.variant_code
+                    + (row.size_name ? ' · Talla ' + row.size_name : '');
+
+                const meta = document.createElement('span');
+                meta.textContent = Number(row.quantity).toLocaleString()
+                    + ' · ' + new Date(row.delivered_at.replace(' ', 'T')).toLocaleDateString();
+
+                item.append(title, variant, meta);
+                body.appendChild(item);
+            });
+        } catch (error) {
+            body.textContent = 'No fue posible consultar el historial.';
+        }
+    };
+
+    document.querySelectorAll('[data-delivery-picker]').forEach((root) => {
+        const input = root.querySelector('[data-delivery-search]');
+        const hiddenId = root.querySelector('[data-delivery-id]');
+        const results = root.querySelector('[data-delivery-results]');
+        const selection = root.querySelector('[data-delivery-selection]');
+        const endpoint = root.dataset.searchUrl || '';
+        let sequence = 0;
+
+        const clearSelection = () => {
+            hiddenId.value = '';
+            selection.hidden = true;
+            selection.textContent = '';
+        };
+
+        const showStatus = (message) => {
+            results.innerHTML = '';
+            const el = document.createElement('div');
+            el.className = 'delivery-picker-status';
+            el.textContent = message;
+            results.appendChild(el);
+            results.hidden = false;
+        };
+
+        const search = debounce(async () => {
+            const query = input.value.trim();
+
+            if (query.length < 2) {
+                results.hidden = true;
+                return;
+            }
+
+            const current = ++sequence;
+            showStatus('Buscando en RRHH2029...');
+
+            try {
+                const response = await fetch(
+                    endpoint + '?q=' + encodeURIComponent(query),
+                    {headers: {'Accept': 'application/json'}}
+                );
+                const payload = await response.json();
+
+                if (current !== sequence) return;
+
+                if (!response.ok || !payload.ok) {
+                    showStatus(payload.message || 'No fue posible consultar RRHH2029.');
+                    return;
+                }
+
+                results.innerHTML = '';
+
+                if (!payload.items?.length) {
+                    showStatus('No se encontraron funcionarios.');
+                    return;
+                }
+
+                payload.items.forEach((employee) => {
+                    const button = document.createElement('button');
+                    button.type = 'button';
+                    button.className = 'delivery-picker-result';
+
+                    const title = document.createElement('strong');
+                    title.textContent = employee.display_name;
+
+                    const meta = document.createElement('span');
+                    meta.textContent = [
+                        employee.document_number ? 'Cédula ' + employee.document_number : null,
+                        employee.position_number ? 'Pos. ' + employee.position_number : null,
+                        employee.direction_name ? 'Dirección: ' + employee.direction_name : null,
+                        employee.office_name ? 'Oficina: ' + employee.office_name : null
+                    ].filter(Boolean).join(' · ');
+
+                    button.append(title, meta);
+
+                    button.addEventListener('click', () => {
+                        hiddenId.value = employee.employee_id;
+                        input.value = employee.display_name;
+                        selection.textContent = meta.textContent;
+                        selection.hidden = false;
+                        results.hidden = true;
+
+                        if (root.hasAttribute('data-recipient-picker')) {
+                            renderHistory(root, employee.employee_id);
+                        }
+                    });
+
+                    results.appendChild(button);
+                });
+
+                results.hidden = false;
+            } catch (error) {
+                if (current === sequence) {
+                    showStatus('No fue posible consultar RRHH2029.');
+                }
+            }
+        });
+
+        input?.addEventListener('input', () => {
+            clearSelection();
+            search();
+        });
+
+        input?.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') results.hidden = true;
+        });
+
+        document.addEventListener('click', (event) => {
+            if (!root.contains(event.target)) results.hidden = true;
+        });
+    });
+})();

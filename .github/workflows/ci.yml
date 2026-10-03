@@ -107,3 +107,12 @@ jobs:
 
       - name: Inventory availability display test
         run: php tests/inventory_availability_test.php
+
+      - name: Individual deliveries schema test
+        run: php tests/deliveries_schema_test.php
+
+      - name: Individual deliveries logic test
+        run: php tests/deliveries_logic_test.php
+
+      - name: Individual deliveries accounting test
+        run: php tests/deliveries_accounting_test.php

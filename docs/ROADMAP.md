@@ -235,7 +235,7 @@ Mover 100 unidades del Central a un P4:
 - Disminución de inventario del P4.
 
 ### Criterio de cierre
-Cada unidad entregada puede rastrearse desde su recepción/lote hasta el funcionario final.
+Cada entrega queda rastreada hasta el funcionario final mediante P4, variante, solicitud y transferencia cuando aplique. La asignación exacta a un lote físico específico requiere una capa explícita de procedencia cuando existan varios lotes mezclados de la misma variante; SINDESG no inventará esa asociación.
 
 ---
 
@@ -343,8 +343,8 @@ No importar directamente una hoja completa sin validación y conciliación previ
 
 Estado actual del desarrollo por bloques:
 
-- Fases 0–7: implementadas y validadas en XAMPP.
-- Fase 8: Distribución Almacén Central → P4 implementada.
-- Siguiente bloque después de validar Fase 8 en XAMPP: **Fase 9 — Despacho individual P4 → funcionario**.
+- Fases 0–8: implementadas y validadas en XAMPP.
+- Fase 9: Despacho individual P4 → funcionario implementada.
+- Siguiente bloque después de validar Fase 9 en XAMPP: **Fase 10 — Cambios, devoluciones, bajas y ajustes**.
 
 No se iniciará un módulo posterior hasta verificar el bloque anterior en GitHub y en el entorno local.

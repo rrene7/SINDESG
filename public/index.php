@@ -8,6 +8,7 @@ use App\Controllers\PeopleController;
 use App\Controllers\WarehousesController;
 use App\Controllers\RequestsController;
 use App\Controllers\DistributionController;
+use App\Controllers\DeliveryController;
 use App\Repositories\CatalogRepository;
 use App\Repositories\DashboardRepository;
 
@@ -233,6 +234,24 @@ if ($currentModule === 'dashboard') {
         $contentView = dirname(__DIR__) . '/app/Views/requests/unavailable.php';
     } else {
         $controller = new RequestsController($database);
+        $result = $controller->handle(
+            (string) ($_GET['action'] ?? 'index'),
+            $_GET,
+            $_POST,
+            $_SERVER['REQUEST_METHOD'] ?? 'GET'
+        );
+
+        $pageTitle = $result['title'];
+        $contentView = $result['view'];
+        extract($result['data'], EXTR_SKIP);
+    }
+} elseif ($currentModule === 'deliveries') {
+    if (!$health['sindesg']['ok']) {
+        $pageTitle = 'Despacho individual';
+        $deliveryError = 'No existe conexión con la base SINDESG. Verifique MariaDB y config/database.php.';
+        $contentView = dirname(__DIR__) . '/app/Views/deliveries/unavailable.php';
+    } else {
+        $controller = new DeliveryController($database);
         $result = $controller->handle(
             (string) ($_GET['action'] ?? 'index'),
             $_GET,
