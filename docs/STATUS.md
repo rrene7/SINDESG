@@ -118,11 +118,27 @@ Guardar el borrador no altera el inventario. Al confirmar, SINDESG primero valid
 
 Los insumos son opcionales porque no toda confección necesita tener materiales detallados desde el inicio del sistema. Cuando se registran, la orden no puede confirmarse si algún insumo supera la existencia disponible en el Almacén Central.
 
+## Fase 5
+
+**Integración RRHH2029 — implementada.**
+
+Incluye:
+- búsqueda de funcionarios por nombre, apellido, cédula o posición;
+- ficha vigente con `employee_id`, cédula, posición, rango, estado y unidad;
+- navegación de la estructura oficial vigente;
+- consulta de subunidades;
+- consulta de funcionarios asignados a una unidad;
+- uso directo de RRHH2029 como fuente maestra;
+- cero tablas espejo de personal o territorio en SINDESG;
+- consultas exclusivamente de lectura.
+
+Los cambios de personal o estructura realizados en RRHH2029 se reflejan al volver a consultar SINDESG.
+
 ## Próximo bloque
 
-**Fase 5 — Integración RRHH2029.**
+**Fase 6 — Almacenes y P4.**
 
-Se habilitará la consulta de funcionarios y estructura territorial oficial en modo de solo lectura, sin duplicar la fuente maestra.
+SINDESG utilizará las unidades oficiales de RRHH2029 para vincular los almacenes/P4, pero la habilitación de una unidad como P4 seguirá siendo una decisión propia de SINDESG.
 
 
 ## Correcciones posteriores a la prueba local
