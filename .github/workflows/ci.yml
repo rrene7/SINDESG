@@ -74,3 +74,12 @@ jobs:
 
       - name: Direction and office test
         run: php tests/people_direction_office_test.php
+
+      - name: Warehouses schema test
+        run: php tests/warehouses_schema_test.php
+
+      - name: Warehouses logic test
+        run: php tests/warehouses_logic_test.php
+
+      - name: Warehouses RRHH test
+        run: php tests/warehouses_rrhh_test.php

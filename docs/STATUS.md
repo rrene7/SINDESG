@@ -134,11 +134,29 @@ Incluye:
 
 Los cambios de personal o estructura realizados en RRHH2029 se reflejan al volver a consultar SINDESG.
 
+## Fase 6
+
+**Almacenes y P4 — implementada.**
+
+Incluye:
+- Almacén Central institucional;
+- alta explícita de P4 desde una unidad vigente de RRHH2029;
+- búsqueda de unidad por nombre o código;
+- código P4 automático;
+- responsable seleccionado desde RRHH2029;
+- snapshot histórico de unidad y responsable;
+- activación/inactivación sin borrar historial;
+- existencia separada por almacén derivada del kardex;
+- detalle de stock por artículo, variante, talla y marca;
+- actualización del nombre actual de la unidad desde RRHH2029 sin sobrescribir el snapshot histórico.
+
+Una unidad de RRHH no se convierte automáticamente en P4. La habilitación pertenece exclusivamente a SINDESG.
+
 ## Próximo bloque
 
-**Fase 6 — Almacenes y P4.**
+**Fase 7 — Solicitudes.**
 
-SINDESG utilizará las unidades oficiales de RRHH2029 para vincular los almacenes/P4, pero la habilitación de una unidad como P4 seguirá siendo una decisión propia de SINDESG.
+Se iniciará el flujo P4 → Almacén Central para registrar necesidades, revisión y aprobación.
 
 
 ## Correcciones posteriores a la prueba local
