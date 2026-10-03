@@ -1,5 +1,12 @@
 <?php
 declare(strict_types=1);
+
+$productTotalStock = 0.0;
+$productCentralStock = 0.0;
+foreach ($variants as $variantStockRow) {
+    $productTotalStock += (float) ($variantStockRow['stock_total'] ?? 0);
+    $productCentralStock += (float) ($variantStockRow['stock_central'] ?? 0);
+}
 ?>
 <section class="product-detail">
     <div class="product-detail-visual">
@@ -27,6 +34,8 @@ declare(strict_types=1);
             <div><dt>Color general</dt><dd><?= e($product['color'] ?: 'No definido') ?></dd></div>
             <div><dt>Estado</dt><dd><?= e(ucfirst((string) $product['status'])) ?></dd></div>
             <div><dt>Variantes</dt><dd><?= e(count($variants)) ?></dd></div>
+            <div class="stock-detail"><dt>Stock institucional</dt><dd><?= e(number_format($productTotalStock, 0, '.', ',')) ?></dd></div>
+            <div class="stock-detail"><dt>Almacén Central</dt><dd><?= e(number_format($productCentralStock, 0, '.', ',')) ?></dd></div>
         </dl>
 
         <form class="photo-update-form" method="post" enctype="multipart/form-data"
@@ -48,8 +57,8 @@ declare(strict_types=1);
     <article class="variant-table-panel">
         <div class="inventory-section-head">
             <div>
-                <span class="eyebrow">VARIANTES</span>
-                <h2>Tallas, marcas y códigos</h2>
+                <span class="eyebrow">VARIANTES Y EXISTENCIAS</span>
+                <h2>Tallas, marcas, códigos y stock</h2>
             </div>
         </div>
 
@@ -69,6 +78,8 @@ declare(strict_types=1);
                         <th>Cód. institucional</th>
                         <th>Cód. proveedor</th>
                         <th>Color</th>
+                        <th>Central</th>
+                        <th>Total</th>
                     </tr>
                     </thead>
                     <tbody>
@@ -80,6 +91,8 @@ declare(strict_types=1);
                             <td><?= e($variant['institutional_code'] ?: '—') ?></td>
                             <td><?= e($variant['supplier_code'] ?: '—') ?></td>
                             <td><?= e($variant['color'] ?: $product['color'] ?: '—') ?></td>
+                            <td class="stock-cell"><?= e(number_format((float) $variant['stock_central'], 0, '.', ',')) ?></td>
+                            <td class="stock-cell strong"><?= e(number_format((float) $variant['stock_total'], 0, '.', ',')) ?></td>
                         </tr>
                     <?php endforeach; ?>
                     </tbody>
@@ -135,4 +148,55 @@ declare(strict_types=1);
             <button class="primary-button" type="submit">Agregar variante</button>
         </form>
     </aside>
+</section>
+
+<section class="kardex-panel">
+    <div class="inventory-section-head">
+        <div>
+            <span class="eyebrow">KARDEX</span>
+            <h2>Movimientos recientes</h2>
+        </div>
+        <span class="ledger-rule">Las existencias se calculan desde este historial.</span>
+    </div>
+
+    <?php if ($recentMovements === []): ?>
+        <div class="catalog-empty compact">
+            <h3>Sin movimientos registrados</h3>
+            <p>Las recepciones, producción, transferencias y despachos de las próximas fases generarán aquí sus movimientos automáticamente.</p>
+        </div>
+    <?php else: ?>
+        <div class="responsive-table">
+            <table>
+                <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Almacén</th>
+                    <th>Variante</th>
+                    <th>Movimiento</th>
+                    <th>Entrada</th>
+                    <th>Salida</th>
+                    <th>Referencia</th>
+                </tr>
+                </thead>
+                <tbody>
+                <?php foreach ($recentMovements as $movement): ?>
+                    <tr>
+                        <td><?= e(date('d/m/Y H:i', strtotime((string) $movement['occurred_at']))) ?></td>
+                        <td><?= e($movement['warehouse_name']) ?></td>
+                        <td>
+                            <code><?= e($movement['variant_code']) ?></code>
+                            <?php if (!empty($movement['size_name'])): ?>
+                                <small class="table-subline">Talla <?= e($movement['size_name']) ?></small>
+                            <?php endif; ?>
+                        </td>
+                        <td><?= e(str_replace('_', ' ', ucfirst((string) $movement['movement_kind']))) ?></td>
+                        <td class="movement-in"><?= $movement['direction'] === 'IN' ? e(number_format((float) $movement['quantity'], 0, '.', ',')) : '—' ?></td>
+                        <td class="movement-out"><?= $movement['direction'] === 'OUT' ? e(number_format((float) $movement['quantity'], 0, '.', ',')) : '—' ?></td>
+                        <td><?= e($movement['reference_code'] ?: $movement['document_number'] ?: '—') ?></td>
+                    </tr>
+                <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+    <?php endif; ?>
 </section>

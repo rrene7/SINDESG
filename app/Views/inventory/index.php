@@ -3,9 +3,9 @@ declare(strict_types=1);
 ?>
 <section class="inventory-hero">
     <div>
-        <span class="eyebrow">FASE 2A · CATÁLOGO MAESTRO</span>
+        <span class="eyebrow">FASE 2B · INVENTARIO TRAZABLE</span>
         <h1>Inventario</h1>
-        <p>Administra categorías, artículos, fotografías y variantes. El stock real se incorporará en el siguiente bloque mediante movimientos trazables.</p>
+        <p>Administra el catálogo y consulta existencias calculadas desde movimientos. El saldo no se edita manualmente.</p>
     </div>
     <div class="inventory-actions">
         <a class="secondary-button" href="<?= e(sindesg_url('?module=inventory&action=new-category')) ?>">+ Nueva categoría</a>
@@ -17,7 +17,25 @@ declare(strict_types=1);
     <article><span>Categorías</span><strong><?= e($catalogStats['categories']) ?></strong></article>
     <article><span>Artículos</span><strong><?= e($catalogStats['products']) ?></strong></article>
     <article><span>Variantes</span><strong><?= e($catalogStats['variants']) ?></strong></article>
-    <article><span>Stock</span><strong>—</strong><small>Fase 2B</small></article>
+    <article class="stock-stat"><span>Stock institucional</span><strong><?= e(number_format((float) $inventoryStats['total_stock'], 0, '.', ',')) ?></strong><small>Derivado del kardex</small></article>
+</section>
+
+<section class="inventory-health-grid">
+    <article>
+        <span>Almacenes activos</span>
+        <strong><?= e($inventoryStats['warehouses']) ?></strong>
+        <small>Almacén Central habilitado</small>
+    </article>
+    <article>
+        <span>Movimientos registrados</span>
+        <strong><?= e($inventoryStats['movements']) ?></strong>
+        <small>Entradas y salidas trazables</small>
+    </article>
+    <article>
+        <span>Variantes con existencia</span>
+        <strong><?= e($inventoryStats['variants_with_stock']) ?></strong>
+        <small>Saldo mayor que cero</small>
+    </article>
 </section>
 
 <section class="catalog-toolbar">
@@ -79,6 +97,10 @@ declare(strict_types=1);
                     <span class="product-category"><?= e($product['category_name']) ?></span>
                     <h2><?= e($product['name']) ?></h2>
                     <code><?= e($product['internal_code']) ?></code>
+                    <div class="product-stock-line">
+                        <span>Existencia</span>
+                        <strong><?= e(number_format((float) $product['stock_total'], 0, '.', ',')) ?></strong>
+                    </div>
                     <div class="product-meta">
                         <span><?= e($product['variant_count']) ?> variantes</span>
                         <span><?= e(ucfirst((string) $product['sex'])) ?></span>

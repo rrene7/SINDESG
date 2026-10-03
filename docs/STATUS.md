@@ -2,7 +2,7 @@
 
 ## Fase 1
 
-**Núcleo técnico y dashboard navegable — completada en GitHub.**
+**Núcleo técnico y dashboard navegable — completada.**
 
 Incluye:
 - estructura PHP;
@@ -14,40 +14,62 @@ Incluye:
 - búsqueda;
 - CI.
 
-## Bloque actual
+## Fase 2A
 
-**Fase 2A — Catálogo maestro de artículos.**
+**Catálogo maestro — completada.**
 
 Incluye:
 - categorías;
 - productos;
 - variantes;
-- tallas dinámicas;
-- marcas dinámicas;
-- código interno SINDESG;
-- código institucional/ISTMO opcional;
-- código de proveedor opcional;
+- tallas y marcas dinámicas;
+- código SINDESG;
+- códigos externos opcionales;
 - fotografía principal;
-- listado y filtros;
-- detalle del artículo;
-- formularios con CSRF;
-- migración `002_catalog.sql`;
-- pruebas estáticas del esquema.
+- filtros y detalle;
+- formularios con CSRF.
 
-## Importante
+## Bloque actual
 
-Todavía no se muestran cantidades de inventario ficticias.
+**Fase 2B — Almacén Central, movimientos y existencias.**
 
-El stock se implementará en **Fase 2B** mediante movimientos de inventario. Una cantidad no se editará manualmente como un saldo aislado.
+Incluye:
+- tabla de almacenes;
+- Almacén Central de Servicios Generales;
+- kardex base por variante;
+- movimientos con dirección entrada/salida;
+- cantidad decimal para soportar materiales además de unidades;
+- referencia documental;
+- actor descriptivo;
+- `source_key` para evitar duplicados en futuras importaciones;
+- vista de stock por almacén y variante;
+- vista de stock agregado por producto;
+- stock institucional en el catálogo;
+- stock Central/total por variante;
+- movimientos recientes en el detalle de producto.
 
-## Fotografías
+## Regla de inventario
 
-Las fotografías reales se cargan desde el formulario de artículo y se almacenan localmente en:
+SINDESG no guarda un saldo editable como fuente de verdad.
 
-`storage/uploads/catalog/`
+La existencia se obtiene de:
 
-Los archivos cargados no se versionan en Git.
+```text
+SUM(entradas) - SUM(salidas)
+```
+
+sobre el historial de `inventory_movements`.
+
+Una transferencia futura Central → P4 generará una salida en origen y una entrada en destino sin alterar el total institucional.
+
+## Sin datos ficticios
+
+La migración 003 crea la estructura y el Almacén Central, pero no inserta movimientos artificiales.
+
+Hasta que se registren recepciones o se migren históricos validados, el stock correcto es cero.
 
 ## Próximo bloque
 
-**Fase 2B — Almacén Central, movimientos base y cálculo de existencias.**
+**Fase 3 — Recepción de lotes.**
+
+La recepción será la primera operación funcional que generará movimientos `IN` reales hacia el Almacén Central.

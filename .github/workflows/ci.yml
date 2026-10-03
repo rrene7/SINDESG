@@ -32,3 +32,6 @@ jobs:
 
       - name: Catalog schema test
         run: php tests/catalog_schema_test.php
+
+      - name: Inventory core schema test
+        run: php tests/inventory_core_schema_test.php
