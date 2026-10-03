@@ -43,6 +43,7 @@ $required = [
     'tests/category_auto_code_test.php',
     'tests/receipts_schema_test.php',
     'tests/receipts_logic_test.php',
+    'tests/cli_bootstrap_test.php',
 ];
 
 $errors = [];

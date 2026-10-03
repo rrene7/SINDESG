@@ -19,7 +19,13 @@ spl_autoload_register(static function (string $class): void {
     }
 });
 
-if (session_status() !== PHP_SESSION_ACTIVE) {
+/*
+ | Las sesiones solo pertenecen al contexto web.
+ | scripts/check.php y las pruebas se ejecutan por CLI y pueden haber escrito
+ | salida antes de cargar bootstrap; intentar session_start() allí genera
+ | "headers already sent" aunque la conexión y el sistema estén correctos.
+ */
+if (PHP_SAPI !== 'cli' && session_status() !== PHP_SESSION_ACTIVE) {
     session_start();
 }
 
