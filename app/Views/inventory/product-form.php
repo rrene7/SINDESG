@@ -90,12 +90,20 @@ declare(strict_types=1);
         </label>
 
         <div class="form-actions span-2">
-            <a href="<?= e(($returnTo ?? 'inventory') === 'receipts'
-                ? sindesg_url('?module=receipts&action=new')
-                : sindesg_url('?module=inventory')) ?>">Cancelar</a>
-            <button class="primary-button" type="submit">
-                <?= ($returnTo ?? 'inventory') === 'receipts' ? 'Crear y volver a recepción' : 'Crear artículo' ?>
-            </button>
+            <?php
+            $returnTarget = match ($returnTo ?? 'inventory') {
+                'receipts' => sindesg_url('?module=receipts&action=new'),
+                'production' => sindesg_url('?module=production&action=new'),
+                default => sindesg_url('?module=inventory'),
+            };
+            $buttonLabel = match ($returnTo ?? 'inventory') {
+                'receipts' => 'Crear y volver a recepción',
+                'production' => 'Crear y volver a producción',
+                default => 'Crear artículo',
+            };
+            ?>
+            <a href="<?= e($returnTarget) ?>">Cancelar</a>
+            <button class="primary-button" type="submit"><?= e($buttonLabel) ?></button>
         </div>
     </form>
 </section>

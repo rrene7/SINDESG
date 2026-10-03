@@ -92,3 +92,34 @@ Para evitar que una recepción quede bloqueada por ausencia de variantes:
 - desde Recepción, si todavía no existen variantes, el usuario puede crear el primer artículo y volver automáticamente al formulario de recepción.
 
 Esto respeta el proceso real: un equipo puede llegar sin código, sin marca o sin talla definida y aun así debe poder ser identificado y recibido por el sistema.
+
+
+## Fase 4
+
+**Producción interna — implementada.**
+
+Incluye:
+- órdenes de producción en borrador;
+- código automático `OPR-######`;
+- lote interno automático `PLT-######`;
+- fecha/hora de producción;
+- responsable;
+- productos terminados por variante;
+- insumos consumidos opcionales;
+- validación del stock disponible en el Almacén Central;
+- confirmación transaccional;
+- movimientos `OUT` para insumos;
+- movimientos `IN` para productos terminados;
+- prevención de doble contabilización con `source_key`.
+
+Guardar el borrador no altera el inventario. Al confirmar, SINDESG primero valida los insumos y luego registra toda la operación de forma atómica.
+
+### Regla de materiales
+
+Los insumos son opcionales porque no toda confección necesita tener materiales detallados desde el inicio del sistema. Cuando se registran, la orden no puede confirmarse si algún insumo supera la existencia disponible en el Almacén Central.
+
+## Próximo bloque
+
+**Fase 5 — Integración RRHH2029.**
+
+Se habilitará la consulta de funcionarios y estructura territorial oficial en modo de solo lectura, sin duplicar la fuente maestra.

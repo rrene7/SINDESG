@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 use App\Controllers\InventoryController;
 use App\Controllers\ReceiptsController;
+use App\Controllers\ProductionController;
 use App\Repositories\CatalogRepository;
 
 require dirname(__DIR__) . '/app/bootstrap.php';
@@ -146,6 +147,24 @@ if ($currentModule === 'dashboard') {
         $contentView = dirname(__DIR__) . '/app/Views/receipts/unavailable.php';
     } else {
         $controller = new ReceiptsController($database->connection('sindesg'));
+        $result = $controller->handle(
+            (string) ($_GET['action'] ?? 'index'),
+            $_GET,
+            $_POST,
+            $_SERVER['REQUEST_METHOD'] ?? 'GET'
+        );
+
+        $pageTitle = $result['title'];
+        $contentView = $result['view'];
+        extract($result['data'], EXTR_SKIP);
+    }
+} elseif ($currentModule === 'production') {
+    if (!$health['sindesg']['ok']) {
+        $pageTitle = 'Producción interna';
+        $productionError = 'No existe conexión con la base SINDESG. Verifique MariaDB y config/database.php.';
+        $contentView = dirname(__DIR__) . '/app/Views/production/unavailable.php';
+    } else {
+        $controller = new ProductionController($database->connection('sindesg'));
         $result = $controller->handle(
             (string) ($_GET['action'] ?? 'index'),
             $_GET,
