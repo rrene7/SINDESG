@@ -1,0 +1,39 @@
+# Local configuration / secrets
+.env
+.env.*
+!.env.example
+config/database.php
+config/local.php
+
+# Logs and runtime files
+storage/logs/*
+!storage/logs/.gitkeep
+storage/cache/*
+!storage/cache/.gitkeep
+*.log
+
+# User uploads
+storage/uploads/*
+!storage/uploads/.gitkeep
+
+# OS / editor
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+
+# Temporary / backup files
+*.tmp
+*.bak
+*.swp
+*.swo
+*~
+
+# Dependency directories if adopted later
+/vendor/
+/node_modules/
+
+# Test / coverage output
+coverage/
+.phpunit.result.cache
