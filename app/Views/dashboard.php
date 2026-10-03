@@ -1,11 +1,23 @@
 <?php
 declare(strict_types=1);
+
+$camisaCategoryId = 0;
+foreach ($categories as $dashboardCategory) {
+    if (($dashboardCategory['slug'] ?? '') === 'camisa') {
+        $camisaCategoryId = (int) ($dashboardCategory['id'] ?? 0);
+        break;
+    }
+}
+
+$camisaUrl = $camisaCategoryId > 0
+    ? sindesg_url('?module=inventory&category_id=' . $camisaCategoryId)
+    : sindesg_url('?module=inventory');
 ?>
 <section class="hero">
     <div>
         <span class="eyebrow">CENTRO DE CONTROL LOGÍSTICO</span>
         <h1>Inventario y despacho en una sola vista</h1>
-        <p>Acceso interactivo a prendas, lotes, solicitudes, distribución, P4 y reportes. Las cifras reales aparecerán al activar el módulo de inventario.</p>
+        <p>Acceso interactivo a prendas, lotes, solicitudes, distribución, P4 y reportes. Las cifras reales aparecerán al activar los movimientos de inventario.</p>
     </div>
     <div class="hero-status">
         <span class="status-dot <?= $health['sindesg']['ok'] ? 'ok' : 'warn' ?>"></span>
@@ -30,11 +42,19 @@ declare(strict_types=1);
 
     <div class="category-carousel" data-carousel>
         <?php foreach ($categories as $index => $category): ?>
+            <?php
+            $categoryId = (int) ($category['id'] ?? 0);
+            $categoryCode = (string) ($category['code'] ?? '');
+            $categoryInitials = substr($categoryCode, 0, 2);
+            $categoryHref = $categoryId > 0
+                ? sindesg_url('?module=inventory&category_id=' . $categoryId)
+                : sindesg_url('?module=inventory');
+            ?>
             <a class="category-card <?= $index === 1 ? 'featured' : '' ?>"
-               href="<?= e(sindesg_url('?module=inventory&category=' . urlencode($category['key']))) ?>"
+               href="<?= e($categoryHref) ?>"
                data-searchable="<?= e($category['name']) ?>">
                 <div class="category-photo-placeholder">
-                    <span><?= e($category['initials']) ?></span>
+                    <span><?= e($categoryInitials) ?></span>
                     <small>Foto real</small>
                 </div>
                 <div class="category-card-copy">
@@ -57,7 +77,7 @@ declare(strict_types=1);
                     <h2>Camisa</h2>
                 </div>
             </div>
-            <a href="<?= e(sindesg_url('?module=inventory&category=camisa')) ?>">Abrir inventario →</a>
+            <a href="<?= e($camisaUrl) ?>">Abrir inventario →</a>
         </div>
 
         <div class="product-focus">
@@ -167,6 +187,6 @@ declare(strict_types=1);
     </div>
     <div>
         <span class="status-dot ok"></span>
-        <span><strong>Fase actual</strong><small>Núcleo técnico y dashboard</small></span>
+        <span><strong>Fase actual</strong><small>Catálogo maestro · Fase 2A</small></span>
     </div>
 </section>
