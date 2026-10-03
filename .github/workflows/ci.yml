@@ -38,3 +38,9 @@ jobs:
 
       - name: Category automatic code test
         run: php tests/category_auto_code_test.php
+
+      - name: Receipts schema test
+        run: php tests/receipts_schema_test.php
+
+      - name: Receipts logic test
+        run: php tests/receipts_logic_test.php

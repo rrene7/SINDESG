@@ -25,6 +25,8 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
 
 $app = require SINDESG_ROOT . '/config/app.php';
 
+date_default_timezone_set((string) ($app['timezone'] ?? 'America/Panama'));
+
 $databaseConfigFile = SINDESG_ROOT . '/config/database.php';
 if (!is_file($databaseConfigFile)) {
     $databaseConfigFile = SINDESG_ROOT . '/config/database.example.php';

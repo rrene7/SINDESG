@@ -120,6 +120,29 @@ final class CatalogRepository
         return $statement->fetchAll();
     }
 
+    public function listVariantOptions(): array
+    {
+        return $this->pdo->query(<<<'SQL'
+            SELECT
+                pv.id,
+                pv.internal_code AS variant_code,
+                pv.institutional_code,
+                pv.supplier_code,
+                p.name AS product_name,
+                c.name AS category_name,
+                c.sort_order AS category_sort_order,
+                s.name AS size_name,
+                b.name AS brand_name
+            FROM product_variants pv
+            INNER JOIN products p ON p.id = pv.product_id AND p.status = 'active'
+            INNER JOIN categories c ON c.id = p.category_id AND c.is_active = 1
+            LEFT JOIN sizes s ON s.id = pv.size_id
+            LEFT JOIN brands b ON b.id = pv.brand_id
+            WHERE pv.status = 'active'
+            ORDER BY c.sort_order, c.id, p.name, s.sort_order, s.name, b.name, pv.id
+        SQL)->fetchAll();
+    }
+
     public function listSizes(): array
     {
         return $this->pdo->query(
