@@ -131,6 +131,13 @@ final class InventoryController
             $this->redirect('?module=inventory&action=product&id=' . $result['id']);
         }
 
+        if ($action === 'save-image') {
+            $productId = (int) ($post['product_id'] ?? 0);
+            $this->service->replaceProductImage($productId, $files['main_image'] ?? null);
+            flash('success', 'Fotografía principal actualizada.');
+            $this->redirect('?module=inventory&action=product&id=' . $productId);
+        }
+
         if ($action === 'save-variant') {
             $productId = (int) ($post['product_id'] ?? 0);
             $this->service->createVariant($productId, $post);
