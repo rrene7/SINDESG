@@ -42,12 +42,14 @@ if (!str_contains($form, 'Código de categoría generado por SINDESG')) {
     exit(1);
 }
 
-if (!str_contains($repository, "sprintf('CAT-%06d', $categoryId)")) {
+$repositoryNeedle = "sprintf('CAT-%06d', " . '$categoryId' . ")";
+if (!str_contains($repository, $repositoryNeedle)) {
     fwrite(STDERR, "[ERROR] El repositorio no genera el código desde el ID permanente." . PHP_EOL);
     exit(1);
 }
 
-if (str_contains($service, "$input['code']")) {
+$manualCodeNeedle = '$input' . "['code']";
+if (str_contains($service, $manualCodeNeedle)) {
     fwrite(STDERR, "[ERROR] El servicio todavía acepta código manual desde el usuario." . PHP_EOL);
     exit(1);
 }
