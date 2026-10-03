@@ -152,11 +152,36 @@ Incluye:
 
 Una unidad de RRHH no se convierte automáticamente en P4. La habilitación pertenece exclusivamente a SINDESG.
 
+## Fase 7
+
+**Solicitudes P4 → Almacén Central — implementada.**
+
+Incluye:
+- solicitud en borrador con código automático;
+- P4 activo como origen;
+- solicitante consultado desde RRHH2029;
+- renglones por variante;
+- beneficiario opcional por renglón para solicitudes nominales;
+- cantidades solicitadas;
+- envío;
+- paso a revisión;
+- aprobación total, parcial o rechazo;
+- revisor consultado desde RRHH2029;
+- snapshots de solicitante, beneficiario y revisor;
+- validación de duplicidades;
+- validación de stock central comprometible;
+- reserva lógica de cantidades aprobadas aún no atendidas;
+- sin movimientos físicos de inventario durante la aprobación.
+
+### Regla contable
+
+Aprobar una solicitud **no mueve inventario**. El movimiento Almacén Central → P4 ocurrirá en la Fase 8. La aprobación solamente compromete disponibilidad para evitar sobreaprobar el mismo stock.
+
 ## Próximo bloque
 
-**Fase 7 — Solicitudes.**
+**Fase 8 — Distribución Almacén Central → P4.**
 
-Se iniciará el flujo P4 → Almacén Central para registrar necesidades, revisión y aprobación.
+Se utilizarán las cantidades aprobadas para preparar, autorizar, entregar y recibir transferencias.
 
 
 ## Correcciones posteriores a la prueba local

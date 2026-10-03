@@ -6,6 +6,7 @@ use App\Controllers\ReceiptsController;
 use App\Controllers\ProductionController;
 use App\Controllers\PeopleController;
 use App\Controllers\WarehousesController;
+use App\Controllers\RequestsController;
 use App\Repositories\CatalogRepository;
 use App\Repositories\DashboardRepository;
 
@@ -190,6 +191,24 @@ if ($currentModule === 'dashboard') {
         $contentView = dirname(__DIR__) . '/app/Views/production/unavailable.php';
     } else {
         $controller = new ProductionController($database->connection('sindesg'));
+        $result = $controller->handle(
+            (string) ($_GET['action'] ?? 'index'),
+            $_GET,
+            $_POST,
+            $_SERVER['REQUEST_METHOD'] ?? 'GET'
+        );
+
+        $pageTitle = $result['title'];
+        $contentView = $result['view'];
+        extract($result['data'], EXTR_SKIP);
+    }
+} elseif ($currentModule === 'requests') {
+    if (!$health['sindesg']['ok']) {
+        $pageTitle = 'Solicitudes';
+        $requestError = 'No existe conexión con la base SINDESG. Verifique MariaDB y config/database.php.';
+        $contentView = dirname(__DIR__) . '/app/Views/requests/unavailable.php';
+    } else {
+        $controller = new RequestsController($database);
         $result = $controller->handle(
             (string) ($_GET['action'] ?? 'index'),
             $_GET,

@@ -343,8 +343,8 @@ No importar directamente una hoja completa sin validación y conciliación previ
 
 Estado actual del desarrollo por bloques:
 
-- Fases 0–5: implementadas y validadas en XAMPP.
-- Fase 6: Almacenes y P4 implementada.
-- Siguiente bloque después de validar Fase 6 en XAMPP: **Fase 7 — Solicitudes**.
+- Fases 0–6: implementadas y validadas en XAMPP.
+- Fase 7: Solicitudes P4 → Almacén Central implementada.
+- Siguiente bloque después de validar Fase 7 en XAMPP: **Fase 8 — Distribución Almacén Central → P4**.
 
 No se iniciará un módulo posterior hasta verificar el bloque anterior en GitHub y en el entorno local.
