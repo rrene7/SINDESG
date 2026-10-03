@@ -44,6 +44,11 @@ final class CatalogService
         $description = $this->nullableText($input['description'] ?? null);
         $sex = trim((string) ($input['sex'] ?? 'no_aplica'));
         $color = $this->nullableText($input['color'] ?? null);
+        $initialSize = trim((string) ($input['initial_size_value'] ?? ''));
+        $initialBrand = trim((string) ($input['initial_brand_name'] ?? ''));
+        $initialInstitutionalCode = $this->nullableText($input['initial_institutional_code'] ?? null);
+        $initialSupplierCode = $this->nullableText($input['initial_supplier_code'] ?? null);
+        $initialVariantColor = $this->nullableText($input['initial_variant_color'] ?? null);
 
         if ($categoryId <= 0) {
             throw new InvalidArgumentException('Seleccione una categoría.');
@@ -58,6 +63,14 @@ final class CatalogService
             throw new InvalidArgumentException('El valor de sexo/aplicación no es válido.');
         }
 
+        if (strlen($initialSize) > 40) {
+            throw new InvalidArgumentException('La talla inicial es demasiado larga.');
+        }
+
+        if (strlen($initialBrand) > 120) {
+            throw new InvalidArgumentException('La marca inicial es demasiado larga.');
+        }
+
         $validatedImage = $this->validateImage($image);
 
         $productId = $this->repository->createProduct([
@@ -66,6 +79,11 @@ final class CatalogService
             'description' => $description,
             'sex' => $sex,
             'color' => $color,
+            'initial_size_value' => $initialSize,
+            'initial_brand_name' => $initialBrand,
+            'initial_institutional_code' => $initialInstitutionalCode,
+            'initial_supplier_code' => $initialSupplierCode,
+            'initial_variant_color' => $initialVariantColor,
         ]);
 
         $warning = null;

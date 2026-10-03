@@ -13,9 +13,9 @@ declare(strict_types=1);
 <?php if ($variantOptions === []): ?>
     <section class="receipt-empty">
         <div class="receipt-empty-mark">!</div>
-        <h2>No hay variantes disponibles</h2>
-        <p>Antes de recibir un lote debe existir por lo menos una variante activa en el catálogo: artículo + talla/marca/código.</p>
-        <a class="primary-button" href="<?= e(sindesg_url('?module=inventory')) ?>">Ir al inventario</a>
+        <h2>Prepare el primer artículo para recibir este lote</h2>
+        <p>No debe crear una variante por separado. Registre el artículo y SINDESG generará automáticamente una primera variante stockable, incluso si no tiene talla, marca o código externo. Al terminar volverá a esta recepción.</p>
+        <a class="primary-button" href="<?= e(sindesg_url('?module=inventory&action=new-product&return_to=receipts')) ?>">+ Crear artículo para este lote</a>
     </section>
 <?php else: ?>
     <form class="receipt-form" method="post" action="<?= e(sindesg_url('?module=receipts&action=save-draft')) ?>">

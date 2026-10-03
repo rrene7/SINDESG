@@ -47,3 +47,6 @@ jobs:
 
       - name: CLI bootstrap session test
         run: php tests/cli_bootstrap_test.php
+
+      - name: Product base variant test
+        run: php tests/product_base_variant_test.php
