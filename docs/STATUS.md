@@ -1,34 +1,53 @@
 # Estado del proyecto SINDESG
 
+## Fase 1
+
+**Núcleo técnico y dashboard navegable — completada en GitHub.**
+
+Incluye:
+- estructura PHP;
+- XAMPP/MariaDB;
+- base propia `sindesg`;
+- conexión RRHH preparada en solo lectura;
+- dashboard responsive;
+- navegación;
+- búsqueda;
+- CI.
+
 ## Bloque actual
 
-**Fase 1 — Núcleo técnico y dashboard navegable**
+**Fase 2A — Catálogo maestro de artículos.**
 
-Este bloque incorpora:
-- estructura PHP inicial;
-- configuración separada;
-- conexión MariaDB preparada;
-- base propia `sindesg`;
-- adaptador RRHH con consultas restringidas a lectura;
-- dashboard responsive;
-- navegación a módulos;
-- categorías visuales iniciales basadas en los registros existentes;
-- búsqueda rápida;
-- script de validación;
-- CI de sintaxis PHP.
+Incluye:
+- categorías;
+- productos;
+- variantes;
+- tallas dinámicas;
+- marcas dinámicas;
+- código interno SINDESG;
+- código institucional/ISTMO opcional;
+- código de proveedor opcional;
+- fotografía principal;
+- listado y filtros;
+- detalle del artículo;
+- formularios con CSRF;
+- migración `002_catalog.sql`;
+- pruebas estáticas del esquema.
 
-## Datos
+## Importante
 
-La Fase 1 no carga cifras ficticias de stock.
+Todavía no se muestran cantidades de inventario ficticias.
 
-El dashboard muestra estados vacíos hasta que las fases de catálogo, recepción e inventario incorporen movimientos reales.
+El stock se implementará en **Fase 2B** mediante movimientos de inventario. Una cantidad no se editará manualmente como un saldo aislado.
 
-## Imágenes
+## Fotografías
 
-Las tarjetas utilizan marcadores visuales temporales. Las fotografías reales de prendas y equipos se cargarán desde SINDESG cuando se implemente el catálogo.
+Las fotografías reales se cargan desde el formulario de artículo y se almacenan localmente en:
+
+`storage/uploads/catalog/`
+
+Los archivos cargados no se versionan en Git.
 
 ## Próximo bloque
 
-Después de validar esta fase en GitHub y XAMPP:
-
-**Fase 2 — Catálogo maestro e inventario.**
+**Fase 2B — Almacén Central, movimientos base y cálculo de existencias.**

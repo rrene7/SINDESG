@@ -1,6 +1,9 @@
 <?php
 declare(strict_types=1);
 
+use App\Controllers\InventoryController;
+use App\Repositories\CatalogRepository;
+
 require dirname(__DIR__) . '/app/bootstrap.php';
 
 $modules = [
@@ -76,16 +79,36 @@ $modules = [
     ],
 ];
 
-$categories = [
-    ['name' => 'Suéter', 'key' => 'sueter', 'initials' => 'SU'],
-    ['name' => 'Camisa', 'key' => 'camisa', 'initials' => 'CA'],
-    ['name' => 'Pantalón', 'key' => 'pantalon', 'initials' => 'PA'],
-    ['name' => 'Falda', 'key' => 'falda', 'initials' => 'FA'],
-    ['name' => 'Camisa MNJ', 'key' => 'camisa-mnj', 'initials' => 'MN'],
-    ['name' => 'Botas', 'key' => 'botas', 'initials' => 'BO'],
-    ['name' => 'Gorras', 'key' => 'gorras', 'initials' => 'GO'],
-    ['name' => 'Kepis', 'key' => 'kepis', 'initials' => 'KE'],
+$fallbackCategories = [
+    ['id' => 0, 'name' => 'Suéter', 'code' => 'SUET', 'slug' => 'sueter'],
+    ['id' => 0, 'name' => 'Camisa', 'code' => 'CAM', 'slug' => 'camisa'],
+    ['id' => 0, 'name' => 'Pantalón', 'code' => 'PANT', 'slug' => 'pantalon'],
+    ['id' => 0, 'name' => 'Falda', 'code' => 'FALD', 'slug' => 'falda'],
+    ['id' => 0, 'name' => 'Camisa MNJ', 'code' => 'MNJ', 'slug' => 'camisa-mnj'],
+    ['id' => 0, 'name' => 'Botas', 'code' => 'BOTA', 'slug' => 'botas'],
+    ['id' => 0, 'name' => 'Gorras', 'code' => 'GORR', 'slug' => 'gorras'],
+    ['id' => 0, 'name' => 'Kepis', 'code' => 'KEPI', 'slug' => 'kepis'],
 ];
+
+$health = [
+    'sindesg' => $database->health('sindesg'),
+    'rrhh' => $database->health('rrhh'),
+];
+
+$categories = $fallbackCategories;
+
+if ($health['sindesg']['ok']) {
+    try {
+        $catalogRepository = new CatalogRepository($database->connection('sindesg'));
+        $databaseCategories = $catalogRepository->listCategories();
+
+        if ($databaseCategories !== []) {
+            $categories = $databaseCategories;
+        }
+    } catch (\Throwable $exception) {
+        $categories = $fallbackCategories;
+    }
+}
 
 $currentModule = $_GET['module'] ?? 'dashboard';
 if ($currentModule !== 'dashboard' && !isset($modules[$currentModule])) {
@@ -93,14 +116,28 @@ if ($currentModule !== 'dashboard' && !isset($modules[$currentModule])) {
     $currentModule = 'not-found';
 }
 
-$health = [
-    'sindesg' => $database->health('sindesg'),
-    'rrhh' => $database->health('rrhh'),
-];
-
 if ($currentModule === 'dashboard') {
     $pageTitle = 'Dashboard';
     $contentView = dirname(__DIR__) . '/app/Views/dashboard.php';
+} elseif ($currentModule === 'inventory') {
+    if (!$health['sindesg']['ok']) {
+        $pageTitle = 'Inventario';
+        $catalogError = 'No existe conexión con la base SINDESG. Verifique MariaDB y config/database.php.';
+        $contentView = dirname(__DIR__) . '/app/Views/inventory/unavailable.php';
+    } else {
+        $controller = new InventoryController($database->connection('sindesg'));
+        $result = $controller->handle(
+            (string) ($_GET['action'] ?? 'index'),
+            $_GET,
+            $_POST,
+            $_FILES,
+            $_SERVER['REQUEST_METHOD'] ?? 'GET'
+        );
+
+        $pageTitle = $result['title'];
+        $contentView = $result['view'];
+        extract($result['data'], EXTR_SKIP);
+    }
 } elseif ($currentModule === 'not-found') {
     $pageTitle = 'Módulo no encontrado';
     $contentView = dirname(__DIR__) . '/app/Views/module.php';

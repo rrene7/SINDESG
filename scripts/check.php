@@ -6,15 +6,26 @@ $required = [
     'index.php',
     'public/index.php',
     'public/assets/css/app.css',
+    'public/assets/css/inventory.css',
     'public/assets/js/app.js',
     'app/bootstrap.php',
     'app/Support/Database.php',
+    'app/Controllers/InventoryController.php',
+    'app/Repositories/CatalogRepository.php',
+    'app/Services/CatalogService.php',
     'app/Views/layout.php',
     'app/Views/dashboard.php',
     'app/Views/module.php',
+    'app/Views/inventory/index.php',
+    'app/Views/inventory/product-form.php',
+    'app/Views/inventory/product-show.php',
+    'app/Views/inventory/category-form.php',
+    'app/Views/inventory/unavailable.php',
     'config/app.php',
     'config/database.example.php',
     'database/schema/001_bootstrap.sql',
+    'database/schema/002_catalog.sql',
+    'tests/catalog_schema_test.php',
 ];
 
 $errors = [];
@@ -49,4 +60,4 @@ if (in_array('--database', $argv, true)) {
     }
 }
 
-echo "[OK] Verificación Fase 1 finalizada." . PHP_EOL;
+echo "[OK] Verificación Fase 2A finalizada." . PHP_EOL;
