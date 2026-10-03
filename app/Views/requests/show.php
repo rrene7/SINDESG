@@ -16,6 +16,7 @@ $totalRequested = array_sum(array_map(static fn (array $row): float => (float) $
 $totalApproved = array_sum(array_map(static fn (array $row): float => (float) $row['quantity_approved'], $requestItems));
 $totalDispatched = array_sum(array_map(static fn (array $row): float => (float) ($row['quantity_dispatched'] ?? 0), $requestItems));
 $totalReceived = array_sum(array_map(static fn (array $row): float => (float) ($row['quantity_received'] ?? 0), $requestItems));
+$totalDelivered = array_sum(array_map(static fn (array $row): float => (float) ($row['quantity_delivered'] ?? 0), $requestItems));
 $remainingToDistribute = max(0.0, $totalApproved - $totalDispatched);
 ?>
 <section class="request-detail-hero">
@@ -150,7 +151,7 @@ $remainingToDistribute = max(0.0, $totalApproved - $totalDispatched);
         <div class="responsive-table">
             <table>
                 <thead>
-                <tr><th>Artículo</th><th>Variante</th><th>Talla</th><th>Beneficiario</th><th>Solicitado</th><th>Stock central</th><th>Comprometible</th><th>Aprobado</th><th>Despachado</th><th>Recibido P4</th><?php if ($serviceRequest['status'] === 'draft'): ?><th></th><?php endif; ?></tr>
+                <tr><th>Artículo</th><th>Variante</th><th>Talla</th><th>Beneficiario</th><th>Solicitado</th><th>Stock central</th><th>Comprometible</th><th>Aprobado</th><th>Despachado</th><th>Recibido P4</th><th>Entregado funcionario</th><?php if ($serviceRequest['status'] === 'draft'): ?><th></th><?php endif; ?></tr>
                 </thead>
                 <tbody>
                 <?php foreach ($requestItems as $item): ?>
@@ -165,6 +166,22 @@ $remainingToDistribute = max(0.0, $totalApproved - $totalDispatched);
                         <td class="request-qty approved"><?= e(number_format((float) $item['quantity_approved'], 3, '.', ',')) ?></td>
                         <td><?= e(number_format((float) ($item['quantity_dispatched'] ?? 0), 3, '.', ',')) ?></td>
                         <td><?= e(number_format((float) ($item['quantity_received'] ?? 0), 3, '.', ',')) ?></td>
+                        <td>
+                            <?= e(number_format((float) ($item['quantity_delivered'] ?? 0), 3, '.', ',')) ?>
+                            <?php
+                            $pendingIndividual = max(
+                                0.0,
+                                (float) ($item['quantity_received'] ?? 0)
+                                - (float) ($item['quantity_delivered'] ?? 0)
+                            );
+                            ?>
+                            <?php if (!empty($item['beneficiary_employee_id']) && $pendingIndividual > 0.000001): ?>
+                                <a class="request-cell-sub"
+                                   href="<?= e(sindesg_url('?module=deliveries&action=new&request_item_id=' . (int) $item['id'])) ?>">
+                                    Entregar <?= e(number_format($pendingIndividual, 3, '.', ',')) ?>
+                                </a>
+                            <?php endif; ?>
+                        </td>
                         <?php if ($serviceRequest['status'] === 'draft'): ?>
                             <td>
                                 <form method="post" action="<?= e(sindesg_url('?module=requests&action=remove-item')) ?>">

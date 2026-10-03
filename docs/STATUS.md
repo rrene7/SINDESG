@@ -285,3 +285,56 @@ El módulo Inventario adopta la misma semántica operativa del dashboard:
 - **Institucional** permanece como total físico de la institución.
 
 La tarjeta de cada artículo ya no usa el total institucional bajo la etiqueta genérica "Existencia". Ahora muestra **Disponible** y conserva el total institucional como contexto secundario.
+
+
+## Fase 9
+
+**Despacho individual P4 → funcionario — implementada.**
+
+Incluye:
+- código automático `DSP-######`;
+- selección de P4 activo;
+- funcionario receptor consultado desde RRHH2029;
+- validación de que el receptor pertenezca a la estructura vigente atendida por el P4;
+- funcionario que entrega consultado desde RRHH2029;
+- snapshots de cédula, posición, rango, dependencia, dirección y oficina;
+- fecha/hora, documento/comprobante y observaciones;
+- una o varias variantes por despacho;
+- salida transaccional del inventario del P4;
+- prevención de doble contabilización mediante `source_key`;
+- historial de dotación por funcionario;
+- consulta de entregas previas antes de crear un nuevo despacho;
+- pendientes nominales provenientes de solicitudes con beneficiario;
+- vínculo de la entrega con el renglón de solicitud y la transferencia recibida;
+- reserva de stock nominal dentro del P4 para evitar que una entrega manual consuma unidades ya destinadas a beneficiarios;
+- comprobante imprimible desde la ficha del despacho;
+- estados `draft`, `confirmed` y `cancelled`.
+
+### Regla de stock P4
+
+Para entregas manuales:
+
+```text
+Disponible manual P4 = stock físico P4 - pendiente nominal recibido
+```
+
+Una entrega nominal consume su propia reserva. Una entrega manual no puede utilizar prendas ya recibidas para un beneficiario específico.
+
+### Trazabilidad de origen
+
+La Fase 9 enlaza:
+
+```text
+Funcionario
+← Despacho individual
+← P4
+← Transferencia
+← Solicitud
+← Variante
+```
+
+Cuando varios lotes físicos de una misma variante se mezclan en el Almacén Central, la base actual no permite afirmar cuál lote exacto terminó en una persona sin una asignación explícita de procedencia. SINDESG conserva la trazabilidad logística real disponible y no infiere un lote específico sin evidencia.
+
+## Próximo bloque
+
+**Fase 10 — Cambios, devoluciones, bajas y ajustes.**
