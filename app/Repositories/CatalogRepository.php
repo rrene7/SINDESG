@@ -245,6 +245,35 @@ final class CatalogRepository
             );
             $update->execute(['internal_code' => $internalCode, 'id' => $productId]);
 
+            $sizeId = $this->findOrCreateSize((string) ($data['initial_size_value'] ?? ''));
+            $brandId = $this->findOrCreateBrand((string) ($data['initial_brand_name'] ?? ''));
+
+            $variantStatement = $this->pdo->prepare(
+                'INSERT INTO product_variants
+                    (product_id, size_id, brand_id, internal_code, institutional_code, supplier_code, color, status)
+                 VALUES
+                    (:product_id, :size_id, :brand_id, NULL, :institutional_code, :supplier_code, :color, "active")'
+            );
+            $variantStatement->execute([
+                'product_id' => $productId,
+                'size_id' => $sizeId,
+                'brand_id' => $brandId,
+                'institutional_code' => $data['initial_institutional_code'] ?? null,
+                'supplier_code' => $data['initial_supplier_code'] ?? null,
+                'color' => $data['initial_variant_color'] ?? null,
+            ]);
+
+            $variantId = (int) $this->pdo->lastInsertId();
+            $variantCode = sprintf('SND-V-%07d', $variantId);
+
+            $variantUpdate = $this->pdo->prepare(
+                'UPDATE product_variants SET internal_code = :internal_code WHERE id = :id'
+            );
+            $variantUpdate->execute([
+                'internal_code' => $variantCode,
+                'id' => $variantId,
+            ]);
+
             $this->pdo->commit();
             return $productId;
         } catch (\Throwable $exception) {

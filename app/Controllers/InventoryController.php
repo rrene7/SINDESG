@@ -68,10 +68,18 @@ final class InventoryController
         }
 
         if ($action === 'new-product') {
+            $returnTo = (string) ($query['return_to'] ?? 'inventory');
+            if (!in_array($returnTo, ['inventory', 'receipts'], true)) {
+                $returnTo = 'inventory';
+            }
+
             return [
                 'view' => SINDESG_ROOT . '/app/Views/inventory/product-form.php',
                 'title' => 'Nuevo artículo',
-                'data' => ['catalogCategories' => $this->repository->listCategories()],
+                'data' => [
+                    'catalogCategories' => $this->repository->listCategories(),
+                    'returnTo' => $returnTo,
+                ],
             ];
         }
 
@@ -154,6 +162,11 @@ final class InventoryController
 
             if ($result['image_warning'] !== null) {
                 flash('warning', $result['image_warning']);
+            }
+
+            if (($post['return_to'] ?? '') === 'receipts') {
+                flash('success', 'Artículo y primera variante listos para usar en la recepción.');
+                $this->redirect('?module=receipts&action=new');
             }
 
             $this->redirect('?module=inventory&action=product&id=' . $result['id']);

@@ -80,3 +80,15 @@ LOT-000001
 **Fase 4 — Producción interna.**
 
 Se modelará la confección de uniformes y otros artículos elaborados dentro de Servicios Generales, incluyendo producto terminado e insumos cuando aplique.
+
+
+## Ajuste de flujo — catálogo y recepción
+
+Para evitar que una recepción quede bloqueada por ausencia de variantes:
+
+- todo artículo nuevo crea automáticamente una primera variante stockable;
+- talla, marca y códigos externos pueden quedar vacíos;
+- el código interno de la variante siempre lo genera SINDESG;
+- desde Recepción, si todavía no existen variantes, el usuario puede crear el primer artículo y volver automáticamente al formulario de recepción.
+
+Esto respeta el proceso real: un equipo puede llegar sin código, sin marca o sin talla definida y aun así debe poder ser identificado y recibido por el sistema.
