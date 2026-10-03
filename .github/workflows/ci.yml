@@ -92,3 +92,12 @@ jobs:
 
       - name: Requests stock reservation test
         run: php tests/requests_stock_test.php
+
+      - name: Distribution schema test
+        run: php tests/distribution_schema_test.php
+
+      - name: Distribution logic test
+        run: php tests/distribution_logic_test.php
+
+      - name: Distribution accounting test
+        run: php tests/distribution_accounting_test.php

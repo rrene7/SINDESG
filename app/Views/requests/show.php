@@ -14,6 +14,9 @@ $statusLabels = [
 
 $totalRequested = array_sum(array_map(static fn (array $row): float => (float) $row['quantity_requested'], $requestItems));
 $totalApproved = array_sum(array_map(static fn (array $row): float => (float) $row['quantity_approved'], $requestItems));
+$totalDispatched = array_sum(array_map(static fn (array $row): float => (float) ($row['quantity_dispatched'] ?? 0), $requestItems));
+$totalReceived = array_sum(array_map(static fn (array $row): float => (float) ($row['quantity_received'] ?? 0), $requestItems));
+$remainingToDistribute = max(0.0, $totalApproved - $totalDispatched);
 ?>
 <section class="request-detail-hero">
     <div>
@@ -72,6 +75,13 @@ $totalApproved = array_sum(array_map(static fn (array $row): float => (float) $r
             </div>
             <?php if (!empty($serviceRequest['review_notes'])): ?>
                 <div class="request-note"><strong>Observación de revisión</strong><p><?= e($serviceRequest['review_notes']) ?></p></div>
+            <?php endif; ?>
+
+            <?php if (in_array($serviceRequest['status'], ['approved', 'partially_approved'], true) && $remainingToDistribute > 0): ?>
+                <a class="primary-button request-full-button"
+                   href="<?= e(sindesg_url('?module=distribution&action=new&request_id=' . (int) $serviceRequest['id'])) ?>">
+                    Preparar distribución
+                </a>
             <?php endif; ?>
         <?php endif; ?>
     </aside>
@@ -140,7 +150,7 @@ $totalApproved = array_sum(array_map(static fn (array $row): float => (float) $r
         <div class="responsive-table">
             <table>
                 <thead>
-                <tr><th>Artículo</th><th>Variante</th><th>Talla</th><th>Beneficiario</th><th>Solicitado</th><th>Stock central</th><th>Comprometible</th><th>Aprobado</th><?php if ($serviceRequest['status'] === 'draft'): ?><th></th><?php endif; ?></tr>
+                <tr><th>Artículo</th><th>Variante</th><th>Talla</th><th>Beneficiario</th><th>Solicitado</th><th>Stock central</th><th>Comprometible</th><th>Aprobado</th><th>Despachado</th><th>Recibido P4</th><?php if ($serviceRequest['status'] === 'draft'): ?><th></th><?php endif; ?></tr>
                 </thead>
                 <tbody>
                 <?php foreach ($requestItems as $item): ?>
@@ -153,6 +163,8 @@ $totalApproved = array_sum(array_map(static fn (array $row): float => (float) $r
                         <td><?= e(number_format((float) $item['central_stock'], 3, '.', ',')) ?></td>
                         <td><?= e(number_format((float) $item['available_to_approve'], 3, '.', ',')) ?></td>
                         <td class="request-qty approved"><?= e(number_format((float) $item['quantity_approved'], 3, '.', ',')) ?></td>
+                        <td><?= e(number_format((float) ($item['quantity_dispatched'] ?? 0), 3, '.', ',')) ?></td>
+                        <td><?= e(number_format((float) ($item['quantity_received'] ?? 0), 3, '.', ',')) ?></td>
                         <?php if ($serviceRequest['status'] === 'draft'): ?>
                             <td>
                                 <form method="post" action="<?= e(sindesg_url('?module=requests&action=remove-item')) ?>">
