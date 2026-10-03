@@ -1,5 +1,7 @@
 <?php
 declare(strict_types=1);
+
+$flashMessages = pull_flash();
 ?>
 <!doctype html>
 <html lang="es">
@@ -9,6 +11,7 @@ declare(strict_types=1);
     <meta name="theme-color" content="#06172c">
     <title><?= e($pageTitle) ?> · <?= e(sindesg_config('name')) ?></title>
     <link rel="stylesheet" href="<?= e(sindesg_asset('css/app.css')) ?>">
+    <link rel="stylesheet" href="<?= e(sindesg_asset('css/inventory.css')) ?>">
 </head>
 <body>
 <div class="app-shell">
@@ -58,6 +61,16 @@ declare(strict_types=1);
         <?php endforeach; ?>
     </div>
 
+    <?php if ($flashMessages !== []): ?>
+        <div class="flash-stack" role="status" aria-live="polite">
+            <?php foreach ($flashMessages as $flashMessage): ?>
+                <div class="flash-message <?= e($flashMessage['type']) ?>">
+                    <?= e($flashMessage['message']) ?>
+                </div>
+            <?php endforeach; ?>
+        </div>
+    <?php endif; ?>
+
     <main class="main-content">
         <?php require $contentView; ?>
     </main>
@@ -97,7 +110,7 @@ window.SINDESG_SEARCH_ITEMS = <?= json_encode(array_merge(
         static fn (array $item): array => [
             'label' => $item['name'],
             'meta' => 'Categoría',
-            'url' => sindesg_url('?module=inventory&category=' . urlencode($item['key'])),
+            'url' => sindesg_url('?module=inventory&category_id=' . (int) ($item['id'] ?? 0)),
         ],
         $categories ?? []
     )
