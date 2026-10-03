@@ -27,8 +27,10 @@ $required = [
     'database/schema/001_bootstrap.sql',
     'database/schema/002_catalog.sql',
     'database/schema/003_inventory_core.sql',
+    'database/schema/004_category_codes.sql',
     'tests/catalog_schema_test.php',
     'tests/inventory_core_schema_test.php',
+    'tests/category_auto_code_test.php',
 ];
 
 $errors = [];
@@ -63,4 +65,4 @@ if (in_array('--database', $argv, true)) {
     }
 }
 
-echo "[OK] Verificación Fase 2B finalizada." . PHP_EOL;
+echo "[OK] Verificación de SINDESG finalizada." . PHP_EOL;

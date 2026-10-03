@@ -11,16 +11,18 @@ declare(strict_types=1);
     <form class="catalog-form" method="post" action="<?= e(sindesg_url('?module=inventory&action=save-category')) ?>">
         <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
 
-        <label>
+        <label class="span-2">
             <span>Nombre *</span>
             <input type="text" name="name" maxlength="120" required placeholder="Ej.: Camisa">
         </label>
 
-        <label>
-            <span>Código corto *</span>
-            <input type="text" name="code" maxlength="20" required placeholder="Ej.: CAM" pattern="[A-Za-z0-9_-]{2,20}">
-            <small>Se utilizará para generar códigos internos SINDESG.</small>
-        </label>
+        <div class="auto-code-note span-2">
+            <span class="auto-code-badge">AUTO</span>
+            <div>
+                <strong>Código de categoría generado por SINDESG</strong>
+                <small>El sistema asignará la secuencia automáticamente, por ejemplo: CAT-000011, CAT-000012, CAT-000013. El usuario no podrá modificarla.</small>
+            </div>
+        </div>
 
         <label class="span-2">
             <span>Descripción</span>

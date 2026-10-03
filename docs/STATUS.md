@@ -29,9 +29,24 @@ Incluye:
 - filtros y detalle;
 - formularios con CSRF.
 
-## Bloque actual
+### Regla de códigos de categoría
 
-**Fase 2B — Almacén Central, movimientos y existencias.**
+Los códigos de categoría no son editables por el usuario.
+
+SINDESG los genera en secuencia usando el ID permanente:
+
+```text
+CAT-000001
+CAT-000002
+CAT-000003
+...
+```
+
+Esto conserva orden de creación, unicidad y trazabilidad. La migración `004_category_codes.sql` normaliza también las categorías ya existentes.
+
+## Fase 2B
+
+**Almacén Central, movimientos y existencias — completada.**
 
 Incluye:
 - tabla de almacenes;
@@ -64,7 +79,7 @@ Una transferencia futura Central → P4 generará una salida en origen y una ent
 
 ## Sin datos ficticios
 
-La migración 003 crea la estructura y el Almacén Central, pero no inserta movimientos artificiales.
+La estructura crea el Almacén Central, pero no inserta movimientos artificiales.
 
 Hasta que se registren recepciones o se migren históricos validados, el stock correcto es cero.
 

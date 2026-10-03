@@ -15,29 +15,26 @@ final class CatalogService
     public function createCategory(array $input): int
     {
         $name = trim((string) ($input['name'] ?? ''));
-        $code = strtoupper(trim((string) ($input['code'] ?? '')));
         $description = $this->nullableText($input['description'] ?? null);
 
         if ($name === '') {
             throw new InvalidArgumentException('El nombre de la categoría es obligatorio.');
         }
 
-        if (!preg_match('/^[A-Z0-9_-]{2,20}$/', $code)) {
-            throw new InvalidArgumentException(
-                'El código debe tener entre 2 y 20 caracteres: letras, números, guion o guion bajo.'
-            );
+        $baseSlug = $this->slugify($name);
+        $slug = $baseSlug;
+        $suffix = 2;
+
+        while ($this->repository->categorySlugExists($slug)) {
+            $slug = $baseSlug . '-' . $suffix;
+            $suffix++;
+
+            if ($suffix > 9999) {
+                throw new InvalidArgumentException('No fue posible generar un identificador único para la categoría.');
+            }
         }
 
-        if ($this->repository->categoryCodeExists($code)) {
-            throw new InvalidArgumentException('Ya existe una categoría con ese código.');
-        }
-
-        $slug = $this->slugify($name);
-        if ($this->repository->categorySlugExists($slug)) {
-            $slug .= '-' . strtolower($code);
-        }
-
-        return $this->repository->createCategory($code, $slug, $name, $description);
+        return $this->repository->createCategory($slug, $name, $description);
     }
 
     public function createProduct(array $input, ?array $image): array
