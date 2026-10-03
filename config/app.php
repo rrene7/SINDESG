@@ -6,7 +6,7 @@ return [
     'full_name' => 'Sistema de Inventario y Despacho de Servicios Generales',
     'institution' => 'Policía Nacional de Panamá',
     'base_url' => '/SINDESG',
-    'version' => '0.8.1-dev',
+    'version' => '0.8.2-dev',
     'environment' => 'local',
     'timezone' => 'America/Panama',
 ];

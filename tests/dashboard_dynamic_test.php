@@ -10,21 +10,21 @@ if ($repository === false || $view === false) {
     exit(1);
 }
 
-foreach (['v_inventory_stock', 'v_inventory_product_stock', 'product_images', 'recentReceipts'] as $fragment) {
+foreach (['v_inventory_stock', 'v_inventory_product_stock', 'product_images', 'recentReceipts', 'stockBreakdownForProduct', 'quantity_dispatched', "'CENTRAL-SG'"] as $fragment) {
     if (!str_contains($repository, $fragment)) {
         fwrite(STDERR, "[ERROR] Dashboard no consume dato real: {$fragment}" . PHP_EOL);
         exit(1);
     }
 }
 
-foreach (['featuredProduct', 'featuredSizes', 'recentDashboardReceipts', 'sindesg_upload_url'] as $fragment) {
+foreach (['featuredProduct', 'featuredSizes', 'recentDashboardReceipts', 'sindesg_upload_url', 'STOCK DISPONIBLE', 'unidades libres para nuevas entregas', 'Comprometido', 'institucionales'] as $fragment) {
     if (!str_contains($view, $fragment)) {
         fwrite(STDERR, "[ERROR] Vista dashboard no renderiza dato real: {$fragment}" . PHP_EOL);
         exit(1);
     }
 }
 
-if (str_contains($view, 'Stock pendiente')) {
+if (str_contains($view, 'STOCK ACTUAL') || str_contains($view, 'Stock pendiente')) {
     fwrite(STDERR, "[ERROR] Dashboard todavía contiene stock demostrativo." . PHP_EOL);
     exit(1);
 }
