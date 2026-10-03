@@ -101,3 +101,6 @@ jobs:
 
       - name: Distribution accounting test
         run: php tests/distribution_accounting_test.php
+
+      - name: Post phase 8 display test
+        run: php tests/post_phase8_display_test.php

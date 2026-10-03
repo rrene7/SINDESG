@@ -95,7 +95,7 @@ $featuredUrl = $featuredProduct
                 <div class="feature-tags">
                     <?php if ($featuredProduct): ?>
                         <span><?= e($featuredProduct['internal_code']) ?></span>
-                        <span><?= e(number_format($featuredStock, 0, '.', ',')) ?> disponibles</span>
+                        <span><?= e(number_format($featuredStock, 0, '.', ',')) ?> institucionales</span>
                         <span><?= e($featuredProduct['sex'] ?? 'no aplica') ?></span>
                     <?php else: ?>
                         <span>Sin movimientos</span>
@@ -122,9 +122,13 @@ $featuredUrl = $featuredProduct
             </div>
             <div class="metric-main">
                 <strong><?= e(number_format($featuredStock, 0, '.', ',')) ?></strong>
-                <span>unidades disponibles</span>
+                <span>unidades institucionales</span>
             </div>
-            <div class="metric-note">Existencia real del artículo destacado, derivada de movimientos.</div>
+            <div class="metric-note">
+                Central <?= e(number_format((float) ($featuredStockBreakdown['central'] ?? 0), 0, '.', ',')) ?>
+                · P4 <?= e(number_format((float) ($featuredStockBreakdown['p4'] ?? 0), 0, '.', ',')) ?>
+                · Tránsito <?= e(number_format((float) ($featuredStockBreakdown['transit'] ?? 0), 0, '.', ',')) ?>
+            </div>
         </article>
 
         <article class="metric-panel">

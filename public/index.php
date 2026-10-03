@@ -128,6 +128,7 @@ if ($currentModule === 'dashboard') {
     $dashboardCategories = [];
     $featuredProduct = null;
     $featuredSizes = [];
+    $featuredStockBreakdown = ['central' => 0.0, 'p4' => 0.0, 'transit' => 0.0];
     $recentDashboardReceipts = [];
 
     if ($health['sindesg']['ok']) {
@@ -138,11 +139,15 @@ if ($currentModule === 'dashboard') {
             $featuredSizes = $featuredProduct
                 ? $dashboardRepository->sizesForProduct((int) $featuredProduct['id'])
                 : [];
+            $featuredStockBreakdown = $featuredProduct
+                ? $dashboardRepository->stockBreakdownForProduct((int) $featuredProduct['id'])
+                : ['central' => 0.0, 'p4' => 0.0, 'transit' => 0.0];
             $recentDashboardReceipts = $dashboardRepository->recentReceipts(4);
         } catch (\Throwable $exception) {
             $dashboardCategories = [];
             $featuredProduct = null;
             $featuredSizes = [];
+            $featuredStockBreakdown = ['central' => 0.0, 'p4' => 0.0, 'transit' => 0.0];
             $recentDashboardReceipts = [];
         }
     }

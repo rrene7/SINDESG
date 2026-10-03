@@ -53,7 +53,11 @@ final class WarehouseRepository
             LEFT JOIN v_inventory_stock vs ON vs.warehouse_id = w.id
             GROUP BY w.id
             ORDER BY
-                CASE WHEN w.warehouse_type = 'CENTRAL' THEN 0 ELSE 1 END,
+                CASE
+                    WHEN w.warehouse_type = 'CENTRAL' THEN 0
+                    WHEN w.warehouse_type = 'TRANSIT' THEN 1
+                    ELSE 2
+                END,
                 w.is_active DESC,
                 w.name
         SQL)->fetchAll();
@@ -203,8 +207,8 @@ final class WarehouseRepository
             throw new RuntimeException('El almacén solicitado no existe.');
         }
 
-        if ($warehouse['warehouse_type'] === 'CENTRAL') {
-            throw new RuntimeException('El Almacén Central no puede inactivarse desde el módulo P4.');
+        if ($warehouse['warehouse_type'] !== 'P4') {
+            throw new RuntimeException('Solo los almacenes P4 pueden activarse o inactivarse desde este módulo.');
         }
 
         $statement = $this->pdo->prepare(

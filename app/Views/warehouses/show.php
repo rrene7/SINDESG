@@ -2,13 +2,16 @@
 declare(strict_types=1);
 
 $isCentral = $warehouse['warehouse_type'] === 'CENTRAL';
-$currentName = $isCentral
-    ? $warehouse['name']
-    : ($currentUnit['official_name'] ?? $warehouse['organization_unit_name_snapshot'] ?? $warehouse['name']);
+$isTransit = $warehouse['warehouse_type'] === 'TRANSIT';
+$isP4 = $warehouse['warehouse_type'] === 'P4';
+$currentName = $isP4
+    ? ($currentUnit['official_name'] ?? $warehouse['organization_unit_name_snapshot'] ?? $warehouse['name'])
+    : $warehouse['name'];
+$heroLabel = $isCentral ? 'ALMACÉN CENTRAL' : ($isTransit ? 'INVENTARIO EN TRÁNSITO' : 'P4 · RED LOGÍSTICA');
 ?>
 <section class="warehouse-detail-hero">
     <div>
-        <span class="eyebrow"><?= e($isCentral ? 'ALMACÉN CENTRAL' : 'P4 · RED LOGÍSTICA') ?></span>
+        <span class="eyebrow"><?= e($heroLabel) ?></span>
         <h1><?= e($currentName) ?></h1>
         <p><?= e($warehouse['code']) ?> · <?= (int) $warehouse['is_active'] === 1 ? 'Activo' : 'Inactivo' ?></p>
     </div>
@@ -21,14 +24,14 @@ $currentName = $isCentral
 <section class="warehouse-detail-grid">
     <article class="warehouse-panel">
         <span class="eyebrow">IDENTIFICACIÓN</span>
-        <h2><?= e($isCentral ? 'Datos del almacén' : 'Vínculo institucional') ?></h2>
+        <h2><?= e($isP4 ? 'Vínculo institucional' : 'Datos del almacén') ?></h2>
         <dl class="warehouse-dl">
             <div><dt>Código SINDESG</dt><dd><?= e($warehouse['code']) ?></dd></div>
             <div><dt>Tipo</dt><dd><?= e($warehouse['warehouse_type']) ?></dd></div>
             <div><dt>Estado</dt><dd><?= (int) $warehouse['is_active'] === 1 ? 'Activo' : 'Inactivo' ?></dd></div>
             <div><dt>Variantes con stock</dt><dd><?= e((int) $warehouse['variants_with_stock']) ?></dd></div>
 
-            <?php if (!$isCentral): ?>
+            <?php if ($isP4): ?>
                 <div><dt>Unidad RRHH ID</dt><dd><?= e($warehouse['organization_unit_id'] ?: '—') ?></dd></div>
                 <div><dt>Unidad actual</dt><dd><?= e($currentUnit['official_name'] ?? 'RRHH no disponible') ?></dd></div>
                 <div><dt>Tipo actual</dt><dd><?= e($currentUnit['unit_type'] ?? '—') ?></dd></div>
@@ -36,7 +39,7 @@ $currentName = $isCentral
             <?php endif; ?>
         </dl>
 
-        <?php if (!$isCentral): ?>
+        <?php if ($isP4): ?>
             <div class="warehouse-snapshot">
                 <strong>Snapshot al crear el P4</strong>
                 <span><?= e($warehouse['organization_unit_name_snapshot'] ?: '—') ?></span>
@@ -49,7 +52,11 @@ $currentName = $isCentral
         <?php if ($isCentral): ?>
             <span class="eyebrow">ROL INSTITUCIONAL</span>
             <h2>Centro de recepción y distribución</h2>
-            <p class="warehouse-muted">Las recepciones y la producción interna ingresan aquí. Las futuras transferencias moverán inventario desde este almacén hacia los P4.</p>
+            <p class="warehouse-muted">Las recepciones y la producción interna ingresan aquí. Las transferencias mueven inventario desde este almacén hacia los P4.</p>
+        <?php elseif ($isTransit): ?>
+            <span class="eyebrow">ROL LOGÍSTICO</span>
+            <h2>Inventario temporal en tránsito</h2>
+            <p class="warehouse-muted">Este almacén técnico conserva las unidades desde que salen del Almacén Central hasta que el P4 confirma la recepción. No es un P4 y no se vincula a RRHH.</p>
         <?php else: ?>
             <span class="eyebrow">RESPONSABLE</span>
             <h2><?= e($warehouse['responsible_label_snapshot'] ?: 'Sin responsable') ?></h2>

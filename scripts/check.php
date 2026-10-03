@@ -90,6 +90,7 @@ $required = [
     'database/schema/008_warehouses_p4.sql',
     'database/schema/009_requests.sql',
     'database/schema/010_distribution.sql',
+    'database/schema/011_post_phase8_display.sql',
     'tests/catalog_schema_test.php',
     'tests/inventory_core_schema_test.php',
     'tests/category_auto_code_test.php',
@@ -114,6 +115,7 @@ $required = [
     'tests/distribution_schema_test.php',
     'tests/distribution_logic_test.php',
     'tests/distribution_accounting_test.php',
+    'tests/post_phase8_display_test.php',
 ];
 
 $errors = [];
