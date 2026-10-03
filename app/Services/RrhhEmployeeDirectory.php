@@ -43,7 +43,7 @@ final class RrhhEmployeeDirectory
                             ','
                         )
                     ) > 0
-                      AND ancestor.unit_type IN ('direccion_nacional', 'direccion_general', 'direccion')
+                      AND ancestor.unit_type IN ("direccion_nacional", "direccion_general", "direccion")
                     ORDER BY LENGTH(COALESCE(ancestor.hierarchy_path, '')) DESC, ancestor.id DESC
                     LIMIT 1
                 ) AS direction_name,
@@ -58,7 +58,7 @@ final class RrhhEmployeeDirectory
                             ','
                         )
                     ) > 0
-                      AND ancestor.unit_type = 'oficina'
+                      AND ancestor.unit_type = "oficina"
                     ORDER BY LENGTH(COALESCE(ancestor.hierarchy_path, '')) DESC, ancestor.id DESC
                     LIMIT 1
                 ) AS office_name
@@ -128,7 +128,7 @@ final class RrhhEmployeeDirectory
                             ','
                         )
                     ) > 0
-                      AND ancestor.unit_type IN ('direccion_nacional', 'direccion_general', 'direccion')
+                      AND ancestor.unit_type IN ("direccion_nacional", "direccion_general", "direccion")
                     ORDER BY LENGTH(COALESCE(ancestor.hierarchy_path, '')) DESC, ancestor.id DESC
                     LIMIT 1
                 ) AS direction_name,
@@ -143,7 +143,7 @@ final class RrhhEmployeeDirectory
                             ','
                         )
                     ) > 0
-                      AND ancestor.unit_type = 'oficina'
+                      AND ancestor.unit_type = "oficina"
                     ORDER BY LENGTH(COALESCE(ancestor.hierarchy_path, '')) DESC, ancestor.id DESC
                     LIMIT 1
                 ) AS office_name
