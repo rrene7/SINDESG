@@ -17,18 +17,25 @@ foreach (compact('repository', 'directory', 'index', 'show', 'receiptJs') as $na
 
 foreach ([$repository, $directory] as $content) {
     foreach ([
-        "AS direction_name",
-        "AS office_name",
-        'ancestor.unit_type =',
-        'direccion_nacional',
-        'oficina',
-        "FIND_IN_SET",
+        'withOrganizationContext',
+        'hierarchyIds',
+        'organization_units_current',
+        'WHERE id IN (',
+        "['direccion_nacional', 'direccion_general', 'direccion']",
+        "$type === 'oficina'",
+        "['direction_name']",
+        "['office_name']",
         "ou.hierarchy_path",
     ] as $fragment) {
         if (!str_contains($content, $fragment)) {
-            fwrite(STDERR, "[ERROR] Falta resolución jerárquica: {$fragment}" . PHP_EOL);
+            fwrite(STDERR, "[ERROR] Falta resolución jerárquica segura: {$fragment}" . PHP_EOL);
             exit(1);
         }
+    }
+
+    if (str_contains($content, 'FIND_IN_SET(')) {
+        fwrite(STDERR, "[ERROR] Persisten subconsultas correlacionadas de jerarquía." . PHP_EOL);
+        exit(1);
     }
 }
 
@@ -53,4 +60,4 @@ foreach (["'Dirección: ' + employee.direction_name", "'Oficina: ' + employee.of
     }
 }
 
-echo "[OK] Dirección, oficina y dependencia actual validadas." . PHP_EOL;
+echo "[OK] Dirección, oficina y dependencia actual validadas sin subconsultas correlacionadas." . PHP_EOL;
