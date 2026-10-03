@@ -29,3 +29,6 @@ jobs:
 
       - name: Project structure
         run: php scripts/check.php
+
+      - name: Catalog schema test
+        run: php tests/catalog_schema_test.php
