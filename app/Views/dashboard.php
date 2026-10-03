@@ -43,9 +43,10 @@ $featuredUrl = $featuredProduct
             $categoryId = (int) ($category['id'] ?? 0);
             $slug = (string) ($category['slug'] ?? 'categoria');
             $parts = array_values(array_filter(explode('-', $slug)));
-            $initials = strtoupper(substr($parts[0] ?? 'C', 0, 1) . substr($parts[1] ?? ($parts[0] ?? 'A'), 1, 1));
-            if (count($parts) === 1) {
-                $initials = strtoupper(substr($parts[0], 0, 2));
+            if (count($parts) > 1) {
+                $initials = strtoupper(substr($parts[0], 0, 1) . substr($parts[1], 0, 1));
+            } else {
+                $initials = strtoupper(substr($parts[0] ?? 'CA', 0, 2));
             }
             $categoryHref = $categoryId > 0
                 ? sindesg_url('?module=inventory&category_id=' . $categoryId)
