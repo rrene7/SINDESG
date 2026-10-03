@@ -251,3 +251,24 @@ Se ajustó la presentación para reflejar correctamente esa realidad:
 - el almacén de tránsito no muestra vínculo RRHH, responsable P4 ni controles de activar/inactivar P4;
 - el dashboard denomina el total como **stock institucional** y muestra el desglose Central / P4 / Tránsito;
 - se incorporó una reparación idempotente del nombre **Almacén Central de Servicios Generales** para instalaciones afectadas por codificación histórica.
+
+
+## Ajuste de concepto de stock en dashboard
+
+Después de validar la distribución Central → P4, el indicador principal del dashboard se redefinió para evitar confusión:
+
+- **Stock disponible**: unidades libres en el Almacén Central para nuevas entregas.
+- **Central físico**: existencia física actual del Almacén Central.
+- **Comprometido**: unidades aprobadas para solicitudes pero todavía no despachadas.
+- **P4**: unidades que ya están físicamente en los P4.
+- **Tránsito**: unidades despachadas por el Central y aún no recibidas por el P4.
+- **Institucional**: suma física Central + P4 + Tránsito.
+
+La fórmula operativa es:
+
+```text
+Disponible = Central físico - Comprometido
+Institucional = Central físico + P4 + Tránsito
+```
+
+Las tarjetas de categorías y las tallas disponibles ahora priorizan la disponibilidad real del Almacén Central, mientras el total institucional queda como información secundaria.

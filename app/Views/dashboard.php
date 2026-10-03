@@ -2,7 +2,10 @@
 declare(strict_types=1);
 
 $cards = $dashboardCategories !== [] ? $dashboardCategories : $categories;
-$featuredStock = (float) ($featuredProduct['stock_total'] ?? 0);
+$featuredInstitutionalStock = (float) ($featuredProduct['stock_total'] ?? 0);
+$featuredAvailableStock = (float) ($featuredStockBreakdown['available'] ?? $featuredProduct['stock_available'] ?? 0);
+$featuredCentralStock = (float) ($featuredStockBreakdown['central'] ?? 0);
+$featuredCommittedStock = (float) ($featuredStockBreakdown['committed'] ?? 0);
 $featuredName = (string) ($featuredProduct['name'] ?? 'Sin artículo destacado');
 $featuredCategory = (string) ($featuredProduct['category_name'] ?? 'Inventario');
 $featuredDescription = (string) ($featuredProduct['description'] ?? 'Cuando exista inventario, SINDESG mostrará aquí el artículo con mayor disponibilidad.');
@@ -52,9 +55,10 @@ $featuredUrl = $featuredProduct
                 ? sindesg_url('?module=inventory&category_id=' . $categoryId)
                 : sindesg_url('?module=inventory');
             $categoryImage = (string) ($category['image_path'] ?? '');
-            $categoryStock = (float) ($category['stock_total'] ?? 0);
+            $categoryInstitutionalStock = (float) ($category['stock_total'] ?? 0);
+            $categoryAvailableStock = (float) ($category['stock_available'] ?? $categoryInstitutionalStock);
             ?>
-            <a class="category-card <?= $categoryStock > 0 ? 'featured' : '' ?>"
+            <a class="category-card <?= $categoryAvailableStock > 0 ? 'featured' : '' ?>"
                href="<?= e($categoryHref) ?>"
                data-searchable="<?= e($category['name']) ?>">
                 <div class="category-photo-placeholder">
@@ -67,8 +71,8 @@ $featuredUrl = $featuredProduct
                 </div>
                 <div class="category-card-copy">
                     <strong><?= e($category['name']) ?></strong>
-                    <span class="stock-placeholder"><?= e(number_format($categoryStock, 0, '.', ',')) ?> unidades</span>
-                    <small><?= e((int) ($category['product_count'] ?? 0)) ?> artículos · Entrar</small>
+                    <span class="stock-placeholder"><?= e(number_format($categoryAvailableStock, 0, '.', ',')) ?> disponibles</span>
+                    <small><?= e((int) ($category['product_count'] ?? 0)) ?> artículos · <?= e(number_format($categoryInstitutionalStock, 0, '.', ',')) ?> institucionales · Entrar</small>
                 </div>
             </a>
         <?php endforeach; ?>
@@ -95,7 +99,8 @@ $featuredUrl = $featuredProduct
                 <div class="feature-tags">
                     <?php if ($featuredProduct): ?>
                         <span><?= e($featuredProduct['internal_code']) ?></span>
-                        <span><?= e(number_format($featuredStock, 0, '.', ',')) ?> institucionales</span>
+                        <span><?= e(number_format($featuredAvailableStock, 0, '.', ',')) ?> disponibles</span>
+                        <span><?= e(number_format($featuredInstitutionalStock, 0, '.', ',')) ?> institucionales</span>
                         <span><?= e($featuredProduct['sex'] ?? 'no aplica') ?></span>
                     <?php else: ?>
                         <span>Sin movimientos</span>
@@ -118,16 +123,18 @@ $featuredUrl = $featuredProduct
         <article class="metric-panel">
             <div class="metric-head">
                 <span class="panel-icon">ST</span>
-                <span>STOCK ACTUAL</span>
+                <span>STOCK DISPONIBLE</span>
             </div>
             <div class="metric-main">
-                <strong><?= e(number_format($featuredStock, 0, '.', ',')) ?></strong>
-                <span>unidades institucionales</span>
+                <strong><?= e(number_format($featuredAvailableStock, 0, '.', ',')) ?></strong>
+                <span>unidades libres para nuevas entregas</span>
             </div>
             <div class="metric-note">
-                Central <?= e(number_format((float) ($featuredStockBreakdown['central'] ?? 0), 0, '.', ',')) ?>
+                Central físico <?= e(number_format($featuredCentralStock, 0, '.', ',')) ?>
+                · Comprometido <?= e(number_format($featuredCommittedStock, 0, '.', ',')) ?>
                 · P4 <?= e(number_format((float) ($featuredStockBreakdown['p4'] ?? 0), 0, '.', ',')) ?>
                 · Tránsito <?= e(number_format((float) ($featuredStockBreakdown['transit'] ?? 0), 0, '.', ',')) ?>
+                · Institucional <?= e(number_format($featuredInstitutionalStock, 0, '.', ',')) ?>
             </div>
         </article>
 
