@@ -100,7 +100,7 @@ $featuredUrl = $featuredProduct
                     <?php if ($featuredProduct): ?>
                         <span><?= e($featuredProduct['internal_code']) ?></span>
                         <span><?= e(number_format($featuredAvailableStock, 0, '.', ',')) ?> disponibles</span>
-                        <span><?= e(number_format($featuredInstitutionalStock, 0, '.', ',')) ?> institucionales</span>
+                        <span><?= e(number_format($featuredInstitutionalStock, 0, '.', ',')) ?> unidades institucionales</span>
                         <span><?= e($featuredProduct['sex'] ?? 'no aplica') ?></span>
                     <?php else: ?>
                         <span>Sin movimientos</span>
