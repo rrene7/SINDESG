@@ -75,20 +75,28 @@ final class CatalogService
 
         if ($validatedImage !== null) {
             try {
-                $stored = $this->storeImage($validatedImage);
-                $this->repository->addProductImage(
-                    $productId,
-                    $stored['path'],
-                    $validatedImage['original_name'],
-                    $validatedImage['mime_type'],
-                    $validatedImage['size_bytes']
-                );
+                $this->persistProductImage($productId, $validatedImage);
             } catch (\Throwable $exception) {
-                $warning = 'El artículo fue creado, pero la imagen no pudo guardarse. Puede cargarse posteriormente.';
+                $warning = 'El artículo fue creado, pero la imagen no pudo guardarse. Puede cargarla desde el detalle del artículo.';
             }
         }
 
         return ['id' => $productId, 'image_warning' => $warning];
+    }
+
+    public function replaceProductImage(int $productId, ?array $image): void
+    {
+        if ($productId <= 0) {
+            throw new InvalidArgumentException('El artículo seleccionado no es válido.');
+        }
+
+        $validatedImage = $this->validateImage($image);
+
+        if ($validatedImage === null) {
+            throw new InvalidArgumentException('Seleccione una imagen.');
+        }
+
+        $this->persistProductImage($productId, $validatedImage);
     }
 
     public function createVariant(int $productId, array $input): int
@@ -194,6 +202,26 @@ final class CatalogService
         ];
     }
 
+    private function persistProductImage(int $productId, array $image): void
+    {
+        $stored = $this->storeImage($image);
+
+        try {
+            $this->repository->addProductImage(
+                $productId,
+                $stored['path'],
+                $image['original_name'],
+                $image['mime_type'],
+                $image['size_bytes']
+            );
+        } catch (\Throwable $exception) {
+            if (is_file($stored['absolute_path'])) {
+                @unlink($stored['absolute_path']);
+            }
+            throw $exception;
+        }
+    }
+
     private function storeImage(array $image): array
     {
         $directory = SINDESG_ROOT . '/storage/uploads/catalog';
@@ -209,6 +237,9 @@ final class CatalogService
             throw new \RuntimeException('No se pudo mover la imagen cargada.');
         }
 
-        return ['path' => 'catalog/' . $filename];
+        return [
+            'path' => 'catalog/' . $filename,
+            'absolute_path' => $destination,
+        ];
     }
 }
