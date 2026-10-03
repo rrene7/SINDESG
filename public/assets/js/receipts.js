@@ -93,16 +93,23 @@
             const meta = document.createElement('span');
             const parts = [
                 employee.document_number ? 'Cédula ' + employee.document_number : null,
-                employee.position_number ? 'Pos. ' + employee.position_number : null,
-                employee.organization_unit_name || null
+                employee.position_number ? 'Pos. ' + employee.position_number : null
             ].filter(Boolean);
             meta.textContent = parts.join(' · ');
 
-            button.append(title, meta);
+            const organization = document.createElement('span');
+            const organizationParts = [
+                employee.direction_name ? 'Dirección: ' + employee.direction_name : null,
+                employee.office_name ? 'Oficina: ' + employee.office_name : null,
+                employee.organization_unit_name ? 'Dependencia: ' + employee.organization_unit_name : null
+            ].filter(Boolean);
+            organization.textContent = organizationParts.join(' · ');
+
+            button.append(title, meta, organization);
             button.addEventListener('click', () => {
                 hiddenId.value = employee.employee_id;
                 input.value = employee.display_name;
-                selected.textContent = parts.join(' · ');
+                selected.textContent = [...parts, ...organizationParts].join(' · ');
                 selected.hidden = false;
                 results.hidden = true;
             });

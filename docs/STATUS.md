@@ -150,3 +150,17 @@ Se corrigieron tres observaciones detectadas durante la validación:
 3. Se agregó una migración de reparación UTF-8 para categorías afectadas por la canalización de SQL en Windows PowerShell.
 
 La consulta de funcionarios continúa siendo de solo lectura hacia RRHH2029.
+
+
+## Ajuste de presentación RRHH
+
+La consulta de funcionarios ahora separa explícitamente el contexto jerárquico:
+
+- **Dirección**: se resuelve desde el ancestro vigente de tipo dirección.
+- **Oficina**: se resuelve desde el ancestro vigente de tipo oficina.
+- **Dependencia actual**: conserva la unidad exacta donde está adscrito el funcionario.
+
+Ejemplo esperado para una adscripción en Gestión Estratégica:
+`Dirección Nacional de Telemática → Oficina de Gestión Estratégica`.
+
+El mismo contexto se muestra en la búsqueda de funcionarios y en el selector de **Recibido por** de Recepción.

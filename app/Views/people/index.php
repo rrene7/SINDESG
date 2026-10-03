@@ -50,7 +50,11 @@ declare(strict_types=1);
                             <span class="person-rank"><?= e($person['rank_name'] ?: 'Sin rango') ?></span>
                             <strong><?= e(trim((string) $person['first_name'] . ' ' . (string) $person['last_name'])) ?></strong>
                             <small>Cédula <?= e($person['document_number'] ?: '—') ?> · Pos. <?= e($person['position_number'] ?: '—') ?></small>
-                            <p><?= e($person['organization_unit_name'] ?: 'Sin asignación territorial vigente') ?></p>
+                            <div class="person-org-context">
+                                <span><b>Dirección:</b> <?= e($person['direction_name'] ?: '—') ?></span>
+                                <span><b>Oficina:</b> <?= e($person['office_name'] ?: '—') ?></span>
+                                <span><b>Dependencia actual:</b> <?= e($person['organization_unit_name'] ?: 'Sin asignación territorial vigente') ?></span>
+                            </div>
                         </div>
                         <span class="person-arrow">→</span>
                     </a>

@@ -73,6 +73,7 @@ $required = [
     'tests/utf8_repair_test.php',
     'tests/rrhh_people_module_test.php',
     'tests/rrhh_readonly_test.php',
+    'tests/people_direction_office_test.php',
 ];
 
 $errors = [];

@@ -73,7 +73,37 @@ final class RrhhRepository
                 ou.system_code AS organization_unit_code,
                 ou.official_name AS organization_unit_name,
                 ou.unit_type,
-                ou.hierarchy_path
+                ou.hierarchy_path,
+                (
+                    SELECT ancestor.official_name
+                    FROM organization_units_current ancestor
+                    WHERE FIND_IN_SET(
+                        LPAD(CAST(ancestor.id AS CHAR), 6, "0"),
+                        REPLACE(
+                            COALESCE(ou.hierarchy_path, LPAD(CAST(ou.id AS CHAR), 6, "0")),
+                            "/",
+                            ","
+                        )
+                    ) > 0
+                      AND ancestor.unit_type IN ("direccion_nacional", "direccion_general", "direccion")
+                    ORDER BY LENGTH(COALESCE(ancestor.hierarchy_path, "")) DESC, ancestor.id DESC
+                    LIMIT 1
+                ) AS direction_name,
+                (
+                    SELECT ancestor.official_name
+                    FROM organization_units_current ancestor
+                    WHERE FIND_IN_SET(
+                        LPAD(CAST(ancestor.id AS CHAR), 6, "0"),
+                        REPLACE(
+                            COALESCE(ou.hierarchy_path, LPAD(CAST(ou.id AS CHAR), 6, "0")),
+                            "/",
+                            ","
+                        )
+                    ) > 0
+                      AND ancestor.unit_type = "oficina"
+                    ORDER BY LENGTH(COALESCE(ancestor.hierarchy_path, "")) DESC, ancestor.id DESC
+                    LIMIT 1
+                ) AS office_name
             FROM employees e
             LEFT JOIN ranks r ON r.id = e.rank_id
             LEFT JOIN statuses s ON s.id = e.status_id
@@ -135,6 +165,36 @@ final class RrhhRepository
                 ou.unit_type,
                 ou.moi_level,
                 ou.hierarchy_path,
+                (
+                    SELECT ancestor.official_name
+                    FROM organization_units_current ancestor
+                    WHERE FIND_IN_SET(
+                        LPAD(CAST(ancestor.id AS CHAR), 6, "0"),
+                        REPLACE(
+                            COALESCE(ou.hierarchy_path, LPAD(CAST(ou.id AS CHAR), 6, "0")),
+                            "/",
+                            ","
+                        )
+                    ) > 0
+                      AND ancestor.unit_type IN ("direccion_nacional", "direccion_general", "direccion")
+                    ORDER BY LENGTH(COALESCE(ancestor.hierarchy_path, "")) DESC, ancestor.id DESC
+                    LIMIT 1
+                ) AS direction_name,
+                (
+                    SELECT ancestor.official_name
+                    FROM organization_units_current ancestor
+                    WHERE FIND_IN_SET(
+                        LPAD(CAST(ancestor.id AS CHAR), 6, "0"),
+                        REPLACE(
+                            COALESCE(ou.hierarchy_path, LPAD(CAST(ou.id AS CHAR), 6, "0")),
+                            "/",
+                            ","
+                        )
+                    ) > 0
+                      AND ancestor.unit_type = "oficina"
+                    ORDER BY LENGTH(COALESCE(ancestor.hierarchy_path, "")) DESC, ancestor.id DESC
+                    LIMIT 1
+                ) AS office_name,
                 ua.start_date AS unit_assignment_start_date
             FROM employees e
             LEFT JOIN ranks r ON r.id = e.rank_id

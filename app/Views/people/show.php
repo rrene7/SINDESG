@@ -36,6 +36,9 @@ $fullName = trim((string) $person['first_name'] . ' ' . (string) $person['last_n
             <div class="unit-focus-code"><?= e($person['organization_unit_code'] ?: 'SIN-CÓDIGO') ?></div>
             <p><?= e($person['hierarchy_path'] ?: 'Ruta jerárquica no disponible.') ?></p>
             <dl class="people-dl single">
+                <div><dt>Dirección</dt><dd><?= e($person['direction_name'] ?: '—') ?></dd></div>
+                <div><dt>Oficina</dt><dd><?= e($person['office_name'] ?: '—') ?></dd></div>
+                <div><dt>Dependencia actual</dt><dd><?= e($person['organization_unit_name'] ?: '—') ?></dd></div>
                 <div><dt>Tipo</dt><dd><?= e($person['unit_type'] ?: '—') ?></dd></div>
                 <div><dt>Nivel MOI</dt><dd><?= e($person['moi_level'] ?: '—') ?></dd></div>
                 <div><dt>Asignado desde</dt><dd><?= e($person['unit_assignment_start_date'] ?: '—') ?></dd></div>
