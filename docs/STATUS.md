@@ -295,6 +295,7 @@ Incluye:
 - código automático `DSP-######`;
 - selección de P4 activo;
 - funcionario receptor consultado desde RRHH2029;
+- validación de que el receptor pertenezca a la estructura vigente atendida por el P4;
 - funcionario que entrega consultado desde RRHH2029;
 - snapshots de cédula, posición, rango, dependencia, dirección y oficina;
 - fecha/hora, documento/comprobante y observaciones;

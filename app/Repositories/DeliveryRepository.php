@@ -100,6 +100,22 @@ final class DeliveryRepository
         return (int) $statement->fetchColumn() === 1;
     }
 
+    public function p4OrganizationUnitId(int $warehouseId): ?int
+    {
+        $statement = $this->pdo->prepare(
+            'SELECT organization_unit_id
+             FROM warehouses
+             WHERE id = :id
+               AND warehouse_type = "P4"
+               AND is_active = 1
+             LIMIT 1'
+        );
+        $statement->execute(['id' => $warehouseId]);
+        $value = $statement->fetchColumn();
+
+        return $value === false || $value === null ? null : (int) $value;
+    }
+
     public function pendingNominal(int $limit = 40): array
     {
         $limit = max(1, min($limit, 100));

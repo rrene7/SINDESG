@@ -56,6 +56,19 @@ final class DeliveryService
             );
         }
 
+        $p4OrganizationUnitId = $this->repository->p4OrganizationUnitId($p4Id);
+        if (
+            $p4OrganizationUnitId !== null
+            && !$this->employees->belongsToOrganizationUnit(
+                (int) $recipient['employee_id'],
+                $p4OrganizationUnitId
+            )
+        ) {
+            throw new InvalidArgumentException(
+                'El funcionario receptor no pertenece actualmente a la estructura atendida por este P4.'
+            );
+        }
+
         $deliveredBy = $this->employees->findEligibleEmployee(
             (int) ($input['delivered_by_employee_id'] ?? 0)
         );

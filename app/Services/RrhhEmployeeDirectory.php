@@ -122,6 +122,43 @@ final class RrhhEmployeeDirectory
         return isset($rows[0]) ? $this->normalize($rows[0]) : null;
     }
 
+    public function belongsToOrganizationUnit(int $employeeId, int $organizationUnitId): bool
+    {
+        if ($employeeId <= 0 || $organizationUnitId <= 0) {
+            return false;
+        }
+
+        $rows = $this->database->rrhhRead(
+            'SELECT
+                ou.id AS organization_unit_id,
+                ou.hierarchy_path
+             FROM employees e
+             LEFT JOIN statuses s ON s.id = e.status_id
+             LEFT JOIN employee_unit_assignments ua
+                ON ua.employee_id = e.id
+               AND ua.is_primary = 1
+               AND ua.status = "active"
+               AND ua.end_date IS NULL
+             LEFT JOIN organization_units_current ou
+                ON ou.id = ua.organization_unit_id
+             WHERE e.id = :employee_id
+               AND COALESCE(s.blocks_actions, 0) = 0
+               AND COALESCE(s.is_active, 1) = 1
+             LIMIT 1',
+            ['employee_id' => $employeeId]
+        );
+
+        if (!isset($rows[0])) {
+            return false;
+        }
+
+        return in_array(
+            $organizationUnitId,
+            $this->hierarchyIds($rows[0]),
+            true
+        );
+    }
+
     private function withOrganizationContext(array $rows): array
     {
         if ($rows === []) {
