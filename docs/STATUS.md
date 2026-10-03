@@ -177,11 +177,44 @@ Incluye:
 
 Aprobar una solicitud **no mueve inventario**. El movimiento Almacén Central → P4 ocurrirá en la Fase 8. La aprobación solamente compromete disponibilidad para evitar sobreaprobar el mismo stock.
 
+## Fase 8
+
+**Distribución Almacén Central → P4 — implementada.**
+
+Incluye:
+- preparación desde solicitudes aprobadas;
+- código automático `TRF-######`;
+- transferencias parciales;
+- preparador, autorizador, funcionario que entrega y funcionario que recibe desde RRHH2029;
+- documento/requisición;
+- validación de stock al autorizar y al despachar;
+- Almacén virtual `TRANSIT-SG`;
+- despacho transaccional Central → Tránsito;
+- recepción transaccional Tránsito → P4;
+- movimientos con `source_key` para impedir duplicidades;
+- cantidades despachadas y recibidas acumuladas por renglón de solicitud;
+- solicitud `fulfilled` cuando todo lo aprobado llega al P4.
+
+### Regla contable de transferencia
+
+Durante el tránsito el inventario institucional no desaparece:
+
+```text
+Central 20
+Despacha 2
+Central 18 + Tránsito 2 = 20
+
+P4 recibe 2
+Central 18 + Tránsito 0 + P4 2 = 20
+```
+
+Una solicitud aprobada mantiene como reserva únicamente la cantidad aprobada que todavía no ha sido despachada.
+
 ## Próximo bloque
 
-**Fase 8 — Distribución Almacén Central → P4.**
+**Fase 9 — Despacho individual P4 → funcionario.**
 
-Se utilizarán las cantidades aprobadas para preparar, autorizar, entregar y recibir transferencias.
+El P4 entregará las prendas al funcionario final, tomando como base el beneficiario registrado en la solicitud cuando exista.
 
 
 ## Correcciones posteriores a la prueba local

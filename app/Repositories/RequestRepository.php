@@ -543,7 +543,7 @@ final class RequestRepository
                 ), 0)
                 -
                 COALESCE((
-                    SELECT SUM(i.quantity_approved)
+                    SELECT SUM(GREATEST(i.quantity_approved - i.quantity_dispatched, 0))
                     FROM service_request_items i
                     INNER JOIN service_requests r ON r.id = i.request_id
                     WHERE i.product_variant_id = :commit_variant_id
