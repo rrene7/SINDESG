@@ -89,11 +89,12 @@ Una talla o variante no se resuelve creando columnas como `talla_1`, `talla_2` o
 
 ### Tipos de procedencia iniciales
 - Compra.
-- Producción interna.
 - Transferencia.
 - Donación.
 - Devolución.
 - Otro autorizado.
+
+La producción interna tiene su propio flujo en la Fase 4 para conservar separadamente la confección, los insumos consumidos y el producto terminado.
 
 ### Criterio de cierre
 - Una recepción incrementa inventario mediante movimientos, no editando saldos manualmente.
@@ -340,8 +341,10 @@ No importar directamente una hoja completa sin validación y conciliación previ
 
 # Orden de desarrollo inmediato
 
-El siguiente bloque después de esta documentación será:
+Estado actual del desarrollo por bloques:
 
-**Fase 1 — núcleo técnico + dashboard navegable en XAMPP.**
+- Fases 0–3: implementadas.
+- Fase 4: producción interna en validación.
+- Siguiente bloque después de validar Fase 4 en XAMPP: **Fase 5 — integración RRHH2029**.
 
 No se iniciará un módulo posterior hasta verificar el bloque anterior en GitHub y en el entorno local.
