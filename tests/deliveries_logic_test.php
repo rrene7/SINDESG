@@ -31,7 +31,7 @@ foreach ([
     }
 }
 
-foreach (['findEligibleEmployee', 'belongsToOrganizationUnit', 'recipient_employee_id', 'delivered_by_employee_id', 'linked_quantity', 'p4OrganizationUnitId'] as $fragment) {
+foreach (['findEligibleEmployee', 'belongsToOrganizationUnit', 'recipient_employee_id', 'delivered_by_employee_id', 'linked_quantity', 'p4OrganizationUnitId', 'scopeOverrideEnabled'] as $fragment) {
     if (!str_contains($service, $fragment)) {
         fwrite(STDERR, "[ERROR] Falta validación RRHH: {$fragment}" . PHP_EOL);
         exit(1);

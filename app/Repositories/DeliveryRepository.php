@@ -259,6 +259,8 @@ final class DeliveryRepository
                         delivered_at,
                         document_number,
                         notes,
+                        scope_override_enabled,
+                        scope_override_reason,
                         status
                     )
                 VALUES
@@ -282,6 +284,8 @@ final class DeliveryRepository
                         :delivered_at,
                         :document_number,
                         :notes,
+                        :scope_override_enabled,
+                        :scope_override_reason,
                         'draft'
                     )
             SQL);
@@ -306,6 +310,8 @@ final class DeliveryRepository
                 'delivered_at' => $data['delivered_at'],
                 'document_number' => $data['document_number'],
                 'notes' => $data['notes'],
+                'scope_override_enabled' => $data['scope_override_enabled'],
+                'scope_override_reason' => $data['scope_override_reason'],
             ]);
 
             $deliveryId = (int) $this->pdo->lastInsertId();
