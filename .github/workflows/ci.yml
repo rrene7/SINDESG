@@ -131,3 +131,9 @@ jobs:
 
       - name: Adjustments accounting test
         run: php tests/adjustments_accounting_test.php
+
+      - name: Reports logic test
+        run: php tests/reports_logic_test.php
+
+      - name: Reports export test
+        run: php tests/reports_export_test.php
