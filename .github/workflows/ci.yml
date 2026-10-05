@@ -119,3 +119,6 @@ jobs:
 
       - name: Delivery scope override test
         run: php tests/delivery_scope_override_test.php
+
+      - name: Asset cache busting test
+        run: php tests/asset_cache_busting_test.php

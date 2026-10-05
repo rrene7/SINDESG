@@ -58,7 +58,15 @@ function sindesg_url(string $path = ''): string
 
 function sindesg_asset(string $path): string
 {
-    return sindesg_url('public/assets/' . ltrim($path, '/'));
+    $relative = 'public/assets/' . ltrim($path, '/');
+    $url = sindesg_url($relative);
+    $fullPath = SINDESG_ROOT . '/' . $relative;
+
+    $version = is_file($fullPath)
+        ? (string) filemtime($fullPath)
+        : (string) sindesg_config('version', '1');
+
+    return $url . '?v=' . rawurlencode($version);
 }
 
 function sindesg_upload_url(string $path): string
