@@ -33,6 +33,9 @@ $flashMessages = pull_flash();
     <?php if ($currentModule === 'deliveries'): ?>
         <link rel="stylesheet" href="<?= e(sindesg_asset('css/deliveries.css')) ?>">
     <?php endif; ?>
+    <?php if ($currentModule === 'adjustments'): ?>
+        <link rel="stylesheet" href="<?= e(sindesg_asset('css/adjustments.css')) ?>">
+    <?php endif; ?>
 </head>
 <body>
 <div class="app-shell">
@@ -74,7 +77,7 @@ $flashMessages = pull_flash();
     </nav>
 
     <div class="more-menu" data-more-menu hidden>
-        <?php foreach (['production', 'deliveries', 'warehouses', 'people', 'audit'] as $navKey): ?>
+        <?php foreach (['production', 'deliveries', 'adjustments', 'warehouses', 'people', 'audit'] as $navKey): ?>
             <a href="<?= e(sindesg_url('?module=' . $navKey)) ?>">
                 <span class="mini-icon"><?= e($modules[$navKey]['icon']) ?></span>
                 <span><strong><?= e($modules[$navKey]['label']) ?></strong><small><?= e($modules[$navKey]['phase']) ?></small></span>
@@ -155,6 +158,9 @@ window.SINDESG_SEARCH_ITEMS = <?= json_encode(array_merge(
 <?php endif; ?>
 <?php if ($currentModule === 'deliveries'): ?>
     <script src="<?= e(sindesg_asset('js/deliveries.js')) ?>"></script>
+<?php endif; ?>
+<?php if ($currentModule === 'adjustments'): ?>
+    <script src="<?= e(sindesg_asset('js/adjustments.js')) ?>"></script>
 <?php endif; ?>
 </body>
 </html>

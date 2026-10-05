@@ -353,3 +353,51 @@ En el formulario de despacho se incorpora la casilla **Habilitar entrega**:
 - no modifica RRHH2029 ni altera la adscripción del funcionario.
 
 Esto cubre casos como comisión, traslado reciente, autorización superior o desfase temporal entre la realidad operativa y la actualización de RRHH.
+
+
+## Fase 10
+
+**Cambios, devoluciones, bajas y ajustes — implementada.**
+
+Incluye:
+- código automático `AJU-######`;
+- operaciones en borrador, confirmadas o canceladas;
+- devolución reutilizable desde funcionario al P4;
+- devolución no reutilizable con trazabilidad sin reingresar stock;
+- cambio de talla/código ligado a una entrega individual;
+- reposición ligada a una entrega individual;
+- deterioro en almacén;
+- baja autorizada;
+- pérdida;
+- faltante;
+- sobrante;
+- ajuste autorizado de entrada o salida;
+- conteo cíclico con diferencia automática;
+- responsable consultado desde RRHH2029;
+- documento soporte y motivo;
+- stock antes/después persistido al confirmar;
+- movimientos compensatorios en kardex con `source_key` idempotente;
+- bloqueo de salidas que dejarían stock negativo;
+- vínculo directo desde una entrega confirmada hacia "Devolver / cambiar".
+
+### Reglas contables
+
+SINDESG no edita saldos ni borra movimientos anteriores.
+
+```text
+Devolución reutilizable: funcionario → P4 = IN
+Devolución no reutilizable: trazabilidad, sin reingreso a stock
+Cambio reutilizable: IN variante devuelta + OUT variante nueva
+Cambio no reutilizable: OUT variante nueva
+Reposición: OUT variante de reposición
+Deterioro / baja / pérdida / faltante: OUT
+Sobrante: IN
+Ajuste autorizado: IN u OUT según documento
+Conteo: diferencia entre sistema y conteo = IN / OUT / sin movimiento
+```
+
+Para devoluciones y cambios, SINDESG controla que no se devuelva una cantidad mayor a la originalmente entregada menos devoluciones/cambios ya confirmados.
+
+## Próximo bloque
+
+**Fase 11 — Reportes y rendición.**
