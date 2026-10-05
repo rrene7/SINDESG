@@ -23,7 +23,7 @@ foreach (['scope_override_enabled', 'scope_override_reason', '013_delivery_scope
     }
 }
 
-foreach (['allow_out_of_scope', 'scope_override_reason', 'Habilitar entrega', 'entrega excepcional'] as $fragment) {
+foreach (['allow_out_of_scope', 'scope_override_reason', 'Habilitar entrega', 'Entrega excepcional'] as $fragment) {
     if (!str_contains($form, $fragment)) {
         fwrite(STDERR, "[ERROR] Casilla de excepción incompleta: {$fragment}" . PHP_EOL);
         exit(1);
