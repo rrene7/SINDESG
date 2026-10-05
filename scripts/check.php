@@ -134,6 +134,7 @@ $required = [
     'tests/deliveries_logic_test.php',
     'tests/deliveries_accounting_test.php',
     'tests/delivery_scope_override_test.php',
+    'tests/asset_cache_busting_test.php',
 ];
 
 $errors = [];
