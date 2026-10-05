@@ -338,3 +338,18 @@ Cuando varios lotes físicos de una misma variante se mezclan en el Almacén Cen
 ## Próximo bloque
 
 **Fase 10 — Cambios, devoluciones, bajas y ajustes.**
+
+
+## Ajuste Fase 9 — entrega excepcional fuera de adscripción
+
+La validación territorial del P4 se mantiene como regla por defecto, pero ya no bloquea de forma absoluta casos administrativos válidos.
+
+En el formulario de despacho se incorpora la casilla **Habilitar entrega**:
+
+- desmarcada: SINDESG exige que el funcionario pertenezca a la estructura vigente atendida por el P4;
+- marcada: permite una entrega excepcional fuera de adscripción;
+- el **motivo/autorización es obligatorio** cuando se habilita la excepción;
+- la excepción y su motivo quedan persistidos en el despacho y visibles en el comprobante;
+- no modifica RRHH2029 ni altera la adscripción del funcionario.
+
+Esto cubre casos como comisión, traslado reciente, autorización superior o desfase temporal entre la realidad operativa y la actualización de RRHH.

@@ -59,6 +59,26 @@
         }
     };
 
+    const scopeRoot = document.querySelector('[data-scope-override]');
+    if (scopeRoot) {
+        const checkbox = scopeRoot.querySelector('[data-scope-checkbox]');
+        const reasonWrap = scopeRoot.querySelector('[data-scope-reason-wrap]');
+        const reason = scopeRoot.querySelector('[data-scope-reason]');
+
+        const syncScopeOverride = () => {
+            const enabled = Boolean(checkbox?.checked);
+            if (reasonWrap) reasonWrap.hidden = !enabled;
+            if (reason) {
+                reason.required = enabled;
+                reason.disabled = !enabled;
+                if (!enabled) reason.value = '';
+            }
+        };
+
+        checkbox?.addEventListener('change', syncScopeOverride);
+        syncScopeOverride();
+    }
+
     document.querySelectorAll('[data-delivery-picker]').forEach((root) => {
         const input = root.querySelector('[data-delivery-search]');
         const hiddenId = root.querySelector('[data-delivery-id]');

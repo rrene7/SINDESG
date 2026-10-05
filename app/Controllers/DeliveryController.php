@@ -81,12 +81,35 @@ final class DeliveryController
                 );
             }
 
+            $recipientOutOfScope = false;
+            $pendingRecipientCurrent = null;
+
+            if ($pendingLine !== null) {
+                $pendingRecipientCurrent = $this->employees->findEligibleEmployee(
+                    (int) $pendingLine['beneficiary_employee_id']
+                );
+                $p4UnitId = $this->repository->p4OrganizationUnitId(
+                    (int) $pendingLine['p4_warehouse_id']
+                );
+
+                $recipientOutOfScope = $p4UnitId !== null
+                    && (
+                        $pendingRecipientCurrent === null
+                        || !$this->employees->belongsToOrganizationUnit(
+                            (int) $pendingLine['beneficiary_employee_id'],
+                            $p4UnitId
+                        )
+                    );
+            }
+
             return [
                 'view' => SINDESG_ROOT . '/app/Views/deliveries/form.php',
                 'title' => 'Nuevo despacho individual',
                 'data' => [
                     'activeP4s' => $this->repository->activeP4s(),
                     'pendingLine' => $pendingLine,
+                    'recipientOutOfScope' => $recipientOutOfScope,
+                    'pendingRecipientCurrent' => $pendingRecipientCurrent,
                     'priorHistory' => $pendingLine
                         ? $this->repository->historySummaryForEmployee(
                             (int) $pendingLine['beneficiary_employee_id'],

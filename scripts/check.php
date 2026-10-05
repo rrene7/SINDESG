@@ -103,6 +103,7 @@ $required = [
     'database/schema/010_distribution.sql',
     'database/schema/011_post_phase8_display.sql',
     'database/schema/012_individual_deliveries.sql',
+    'database/schema/013_delivery_scope_override.sql',
     'tests/catalog_schema_test.php',
     'tests/inventory_core_schema_test.php',
     'tests/category_auto_code_test.php',
@@ -132,6 +133,7 @@ $required = [
     'tests/deliveries_schema_test.php',
     'tests/deliveries_logic_test.php',
     'tests/deliveries_accounting_test.php',
+    'tests/delivery_scope_override_test.php',
 ];
 
 $errors = [];

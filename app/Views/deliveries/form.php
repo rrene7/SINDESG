@@ -92,6 +92,56 @@ $isNominal = is_array($pendingLine);
         <?php endif; ?>
     </section>
 
+    <section class="delivery-panel delivery-scope-panel <?= !empty($recipientOutOfScope) ? 'warning' : '' ?>"
+             data-scope-override>
+        <div class="delivery-section-head">
+            <div>
+                <span class="eyebrow">VALIDACIÓN DE ADSCRIPCIÓN</span>
+                <h2>Entrega excepcional</h2>
+                <p>
+                    SINDESG verifica que el receptor pertenezca a la estructura atendida por el P4.
+                    Si existe una autorización válida para entregar fuera de esa adscripción, puede habilitarla aquí.
+                </p>
+            </div>
+        </div>
+
+        <?php if (!empty($recipientOutOfScope)): ?>
+            <div class="delivery-scope-warning">
+                <strong>El funcionario no coincide con la estructura actual del P4.</strong>
+                <?php if (!empty($pendingRecipientCurrent)): ?>
+                    <span>
+                        RRHH actual:
+                        <?= e($pendingRecipientCurrent['organization_unit_name']
+                            ?: $pendingRecipientCurrent['direction_name']
+                            ?: 'Sin dependencia vigente') ?>
+                    </span>
+                <?php endif; ?>
+            </div>
+        <?php endif; ?>
+
+        <label class="delivery-override-check">
+            <input type="checkbox"
+                   name="allow_out_of_scope"
+                   value="1"
+                   data-scope-checkbox
+                   <?= !empty($recipientOutOfScope) ? '' : '' ?>>
+            <span>
+                <strong>Habilitar entrega</strong>
+                <small>Permitir excepcionalmente la entrega aunque el funcionario no pertenezca actualmente a este P4.</small>
+            </span>
+        </label>
+
+        <label class="delivery-override-reason" data-scope-reason-wrap hidden>
+            <span>Motivo / autorización *</span>
+            <input type="text"
+                   name="scope_override_reason"
+                   maxlength="255"
+                   data-scope-reason
+                   placeholder="Ej.: comisión, traslado reciente, autorización del jefe, corrección pendiente en RRHH...">
+            <small>Este motivo quedará guardado en el comprobante y en la trazabilidad del despacho.</small>
+        </label>
+    </section>
+
     <section class="delivery-panel">
         <div class="delivery-section-head">
             <div><span class="eyebrow">RESPONSABLE</span><h2>Funcionario que entrega</h2></div>

@@ -42,7 +42,14 @@ $totalQuantity = array_sum(array_map(
             <div><dt>Entrega</dt><dd><?= e($delivery['delivered_by_label_snapshot']) ?></dd></div>
             <div><dt>Documento</dt><dd><?= e($delivery['document_number'] ?: '—') ?></dd></div>
             <div><dt>Estado</dt><dd><?= e($statusLabels[$delivery['status']] ?? $delivery['status']) ?></dd></div>
+            <div><dt>Excepción de adscripción</dt><dd><?= (int) ($delivery['scope_override_enabled'] ?? 0) === 1 ? 'Sí' : 'No' ?></dd></div>
         </dl>
+        <?php if ((int) ($delivery['scope_override_enabled'] ?? 0) === 1): ?>
+            <div class="delivery-scope-audit">
+                <strong>Entrega excepcional autorizada</strong>
+                <p><?= e($delivery['scope_override_reason'] ?: 'Sin motivo registrado') ?></p>
+            </div>
+        <?php endif; ?>
         <?php if (!empty($delivery['notes'])): ?>
             <div class="delivery-note"><strong>Observaciones</strong><p><?= e($delivery['notes']) ?></p></div>
         <?php endif; ?>

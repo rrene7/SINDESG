@@ -57,15 +57,31 @@ final class DeliveryService
         }
 
         $p4OrganizationUnitId = $this->repository->p4OrganizationUnitId($p4Id);
-        if (
-            $p4OrganizationUnitId !== null
-            && !$this->employees->belongsToOrganizationUnit(
+        $recipientBelongsToP4 = $p4OrganizationUnitId === null
+            || $this->employees->belongsToOrganizationUnit(
                 (int) $recipient['employee_id'],
                 $p4OrganizationUnitId
-            )
-        ) {
+            );
+
+        $scopeOverrideEnabled = !$recipientBelongsToP4
+            && (string) ($input['allow_out_of_scope'] ?? '') === '1';
+        $scopeOverrideReason = $this->nullableText($input['scope_override_reason'] ?? null);
+
+        if (!$recipientBelongsToP4 && !$scopeOverrideEnabled) {
+            $currentUnit = trim((string) ($recipient['organization_unit_name'] ?? ''));
+            $currentDirection = trim((string) ($recipient['direction_name'] ?? ''));
+            $context = $currentUnit !== '' ? $currentUnit : $currentDirection;
+
             throw new InvalidArgumentException(
                 'El funcionario receptor no pertenece actualmente a la estructura atendida por este P4.'
+                . ($context !== '' ? ' RRHH registra: ' . $context . '.' : '')
+                . ' Si existe una autorización excepcional, marque "Habilitar entrega" e indique el motivo.'
+            );
+        }
+
+        if ($scopeOverrideEnabled && $scopeOverrideReason === null) {
+            throw new InvalidArgumentException(
+                'Indique el motivo de la entrega excepcional fuera de la adscripción del P4.'
             );
         }
 
@@ -112,6 +128,8 @@ final class DeliveryService
             'delivered_at' => $this->normalizeDateTime((string) ($input['delivered_at'] ?? '')),
             'document_number' => $this->nullableText($input['document_number'] ?? null),
             'notes' => $this->nullableText($input['notes'] ?? null),
+            'scope_override_enabled' => $scopeOverrideEnabled ? 1 : 0,
+            'scope_override_reason' => $scopeOverrideEnabled ? $scopeOverrideReason : null,
         ], $linkedLine, $linkedQuantity);
     }
 
