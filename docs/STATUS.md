@@ -401,3 +401,57 @@ Para devoluciones y cambios, SINDESG controla que no se devuelva una cantidad ma
 ## Próximo bloque
 
 **Fase 11 — Reportes y rendición.**
+
+
+## Fase 11
+
+**Reportes y rendición — implementada.**
+
+Incluye un centro de reportes de solo lectura con filtros combinables y exportación.
+
+### Reportes disponibles
+
+- stock actual por almacén/P4, categoría, artículo, talla y aplicación;
+- artículos próximos a agotarse mediante umbral configurable;
+- kardex completo;
+- entradas por período;
+- salidas por período;
+- recepciones y lotes;
+- solicitudes y pendientes;
+- transferencias Central → P4;
+- entregas individuales P4 → funcionario;
+- dotación por funcionario;
+- ajustes, devoluciones, cambios, bajas y conteos.
+
+### Filtros
+
+Según el reporte:
+- fecha desde/hasta;
+- almacén/P4;
+- categoría;
+- artículo;
+- talla;
+- aplicación/sexo del artículo;
+- estado;
+- dirección IN/OUT;
+- funcionario;
+- búsqueda por nombre, código, documento o referencia;
+- umbral de bajo stock.
+
+### Salidas
+
+- vista web tabular;
+- exportación compatible con Excel en formato `.xls` sin dependencia externa;
+- vista optimizada para impresión y **Guardar como PDF** desde el navegador.
+
+### Reglas
+
+- los reportes no escriben datos;
+- el stock se deriva de `v_inventory_stock` y del kardex;
+- los históricos usan snapshots ya persistidos;
+- RRHH2029 permanece en solo lectura;
+- la vista en pantalla limita resultados para mantener rendimiento y la exportación admite un volumen mayor.
+
+## Próximo bloque
+
+**Fase 12 — Auditoría, seguridad y administración.**

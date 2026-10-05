@@ -10,6 +10,7 @@ use App\Controllers\RequestsController;
 use App\Controllers\DistributionController;
 use App\Controllers\DeliveryController;
 use App\Controllers\AdjustmentController;
+use App\Controllers\ReportsController;
 use App\Repositories\CatalogRepository;
 use App\Repositories\DashboardRepository;
 
@@ -283,6 +284,22 @@ if ($currentModule === 'dashboard') {
             $_GET,
             $_POST,
             $_SERVER['REQUEST_METHOD'] ?? 'GET'
+        );
+
+        $pageTitle = $result['title'];
+        $contentView = $result['view'];
+        extract($result['data'], EXTR_SKIP);
+    }
+} elseif ($currentModule === 'reports') {
+    if (!$health['sindesg']['ok']) {
+        $pageTitle = 'Reportes';
+        $reportError = 'No existe conexión con la base SINDESG. Verifique MariaDB y config/database.php.';
+        $contentView = dirname(__DIR__) . '/app/Views/reports/unavailable.php';
+    } else {
+        $controller = new ReportsController($database);
+        $result = $controller->handle(
+            (string) ($_GET['action'] ?? 'index'),
+            $_GET
         );
 
         $pageTitle = $result['title'];
