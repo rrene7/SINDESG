@@ -356,6 +356,7 @@ final class AdjustmentRepository
                 rp.name AS replacement_product_name,
                 rs.name AS replacement_size_name,
                 rb.name AS replacement_brand_name,
+                d.id AS source_delivery_id,
                 d.delivery_code AS source_delivery_code
             FROM inventory_adjustments a
             INNER JOIN warehouses w ON w.id = a.warehouse_id

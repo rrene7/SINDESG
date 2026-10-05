@@ -168,8 +168,8 @@ $expectedText = match ($type) {
 
 <div class="adjustment-bottom-actions no-print">
     <a class="secondary-button" href="<?= e(sindesg_url('?module=adjustments')) ?>">← Ajustes</a>
-    <?php if (!empty($adjustment['source_delivery_item_id'])): ?>
-        <a class="secondary-button" href="<?= e(sindesg_url('?module=deliveries&action=show&id=' . (int) ($adjustment['source_delivery_item_id'] ? 0 : 0))) ?>" hidden>Entrega</a>
+    <?php if (!empty($adjustment['source_delivery_id'])): ?>
+        <a class="secondary-button" href="<?= e(sindesg_url('?module=deliveries&action=show&id=' . (int) $adjustment['source_delivery_id'])) ?>">Ver entrega original</a>
     <?php endif; ?>
     <a class="secondary-button" href="<?= e(sindesg_url('?module=warehouses&action=show&id=' . (int) $adjustment['warehouse_id'])) ?>">Ver almacén</a>
 </div>
