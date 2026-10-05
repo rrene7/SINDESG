@@ -151,7 +151,7 @@ $totalQuantity = array_sum(array_map(
         <div class="responsive-table">
             <table>
                 <thead>
-                <tr><th>Artículo</th><th>Variante</th><th>Talla</th><th>Cantidad</th><th>Origen</th><th>Transferencia</th><?php if ($delivery['status'] === 'draft'): ?><th></th><?php endif; ?></tr>
+                <tr><th>Artículo</th><th>Variante</th><th>Talla</th><th>Cantidad</th><th>Origen</th><th>Transferencia</th><?php if ($delivery['status'] === 'draft' || $delivery['status'] === 'confirmed'): ?><th></th><?php endif; ?></tr>
                 </thead>
                 <tbody>
                 <?php foreach ($deliveryItems as $item): ?>
@@ -170,6 +170,13 @@ $totalQuantity = array_sum(array_map(
                                     <input type="hidden" name="item_id" value="<?= e($item['id']) ?>">
                                     <button class="delivery-remove-button" type="submit">×</button>
                                 </form>
+                            </td>
+                        <?php elseif ($delivery['status'] === 'confirmed'): ?>
+                            <td>
+                                <a class="delivery-link"
+                                   href="<?= e(sindesg_url('?module=adjustments&action=new&source_delivery_item_id=' . (int) $item['id'])) ?>">
+                                    Devolver / cambiar
+                                </a>
                             </td>
                         <?php endif; ?>
                     </tr>

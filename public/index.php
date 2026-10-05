@@ -9,6 +9,7 @@ use App\Controllers\WarehousesController;
 use App\Controllers\RequestsController;
 use App\Controllers\DistributionController;
 use App\Controllers\DeliveryController;
+use App\Controllers\AdjustmentController;
 use App\Repositories\CatalogRepository;
 use App\Repositories\DashboardRepository;
 
@@ -56,6 +57,13 @@ $modules = [
         'icon' => 'DI',
         'phase' => 'Fase 9',
         'description' => 'Entrega final al funcionario y conservación del historial de dotación.',
+    ],
+    'adjustments' => [
+        'label' => 'Ajustes y devoluciones',
+        'short' => 'Ajustes',
+        'icon' => 'AJ',
+        'phase' => 'Fase 10',
+        'description' => 'Cambios, devoluciones, bajas, pérdidas, sobrantes, faltantes y conteos auditables.',
     ],
     'warehouses' => [
         'label' => 'Almacenes y P4',
@@ -252,6 +260,24 @@ if ($currentModule === 'dashboard') {
         $contentView = dirname(__DIR__) . '/app/Views/deliveries/unavailable.php';
     } else {
         $controller = new DeliveryController($database);
+        $result = $controller->handle(
+            (string) ($_GET['action'] ?? 'index'),
+            $_GET,
+            $_POST,
+            $_SERVER['REQUEST_METHOD'] ?? 'GET'
+        );
+
+        $pageTitle = $result['title'];
+        $contentView = $result['view'];
+        extract($result['data'], EXTR_SKIP);
+    }
+} elseif ($currentModule === 'adjustments') {
+    if (!$health['sindesg']['ok']) {
+        $pageTitle = 'Ajustes y devoluciones';
+        $adjustmentError = 'No existe conexión con la base SINDESG. Verifique MariaDB y config/database.php.';
+        $contentView = dirname(__DIR__) . '/app/Views/adjustments/unavailable.php';
+    } else {
+        $controller = new AdjustmentController($database);
         $result = $controller->handle(
             (string) ($_GET['action'] ?? 'index'),
             $_GET,

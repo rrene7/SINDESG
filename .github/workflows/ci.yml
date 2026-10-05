@@ -122,3 +122,12 @@ jobs:
 
       - name: Asset cache busting test
         run: php tests/asset_cache_busting_test.php
+
+      - name: Adjustments schema test
+        run: php tests/adjustments_schema_test.php
+
+      - name: Adjustments logic test
+        run: php tests/adjustments_logic_test.php
+
+      - name: Adjustments accounting test
+        run: php tests/adjustments_accounting_test.php
