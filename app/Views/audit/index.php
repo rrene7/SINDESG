@@ -28,13 +28,12 @@ declare(strict_types=1);
 
         <label>
             <span>Módulo</span>
-            <select name="module_filter" onchange="this.form.module_filter_value.value=this.value">
+            <select name="module_filter">
                 <option value="">Todos</option>
                 <?php foreach ($auditModules as $module): ?>
                     <option value="<?= e($module) ?>" <?= $auditFilters['module'] === $module ? 'selected' : '' ?>><?= e($module) ?></option>
                 <?php endforeach; ?>
             </select>
-            <input type="hidden" name="module_filter_value" value="<?= e($auditFilters['module']) ?>">
         </label>
 
         <label><span>Acción</span><input type="text" name="action" value="<?= e($auditFilters['action']) ?>" placeholder="Ej.: login, POST:confirm..."></label>

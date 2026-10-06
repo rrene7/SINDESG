@@ -37,7 +37,7 @@ final class AuditController
             'date_from' => trim((string) ($query['date_from'] ?? '')),
             'date_to' => trim((string) ($query['date_to'] ?? '')),
             'user_id' => max(0, (int) ($query['user_id'] ?? 0)),
-            'module' => trim((string) ($query['module'] ?? '')),
+            'module' => trim((string) ($query['module_filter'] ?? '')),
             'action' => trim((string) ($query['action'] ?? '')),
             'q' => trim((string) ($query['q'] ?? '')),
         ];
