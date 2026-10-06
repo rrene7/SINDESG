@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 
+use App\Services\AuthService;
 use App\Support\Database;
 
 define('SINDESG_ROOT', dirname(__DIR__));
@@ -26,6 +27,11 @@ spl_autoload_register(static function (string $class): void {
  | "headers already sent" aunque la conexión y el sistema estén correctos.
  */
 if (PHP_SAPI !== 'cli' && session_status() !== PHP_SESSION_ACTIVE) {
+    session_set_cookie_params([
+        'httponly' => true,
+        'secure' => false,
+        'samesite' => 'Lax',
+    ]);
     session_start();
 }
 
@@ -40,6 +46,7 @@ if (!is_file($databaseConfigFile)) {
 
 $databaseConfig = require $databaseConfigFile;
 $database = new Database($databaseConfig);
+$authService = new AuthService($database);
 
 function sindesg_config(string $key, mixed $default = null): mixed
 {
@@ -112,4 +119,92 @@ function pull_flash(): array
     unset($_SESSION['flash_messages']);
 
     return is_array($messages) ? $messages : [];
+}
+
+
+function sindesg_user(): ?array
+{
+    global $authService;
+
+    return $authService->currentUser();
+}
+
+function sindesg_can(string $permission): bool
+{
+    global $authService;
+
+    return $authService->can($permission);
+}
+
+function sindesg_permission_for(string $module, string $action = 'index', string $method = 'GET'): ?string
+{
+    if ($module === 'auth') {
+        return null;
+    }
+
+    if ($module === 'dashboard') {
+        return 'dashboard.view';
+    }
+
+    if ($module === 'admin') {
+        return 'admin.manage';
+    }
+
+    if ($module === 'audit') {
+        return 'audit.view';
+    }
+
+    $viewPermissions = [
+        'inventory' => 'inventory.view',
+        'receipts' => 'receipts.view',
+        'production' => 'production.view',
+        'people' => 'people.view',
+        'warehouses' => 'warehouses.view',
+        'requests' => 'requests.view',
+        'distribution' => 'distribution.view',
+        'deliveries' => 'deliveries.view',
+        'adjustments' => 'adjustments.view',
+        'reports' => 'reports.view',
+    ];
+
+    $managePermissions = [
+        'inventory' => 'inventory.manage',
+        'receipts' => 'receipts.manage',
+        'production' => 'production.manage',
+        'warehouses' => 'warehouses.manage',
+        'requests' => 'requests.manage',
+        'distribution' => 'distribution.manage',
+        'deliveries' => 'deliveries.manage',
+        'adjustments' => 'adjustments.manage',
+    ];
+
+    if (strtoupper($method) === 'POST') {
+        return $managePermissions[$module] ?? ($viewPermissions[$module] ?? null);
+    }
+
+    $manageGetActions = [
+        'new',
+        'create',
+        'edit',
+        'form',
+        'prepare',
+        'approve',
+    ];
+
+    if (in_array($action, $manageGetActions, true) && isset($managePermissions[$module])) {
+        return $managePermissions[$module];
+    }
+
+    return $viewPermissions[$module] ?? null;
+}
+
+function sindesg_api_authorized(bool $allowSetup = false): bool
+{
+    global $authService;
+
+    if ($allowSetup && !$authService->hasUsers()) {
+        return true;
+    }
+
+    return $authService->currentUser() !== null;
 }

@@ -455,3 +455,42 @@ Según el reporte:
 ## Próximo bloque
 
 **Fase 12 — Auditoría, seguridad y administración.**
+
+
+## Fase 12
+
+**Auditoría, seguridad y administración — implementada.**
+
+Incluye:
+- configuración guiada del primer administrador;
+- usuarios SINDESG vinculados a funcionarios vigentes de RRHH2029;
+- contraseñas almacenadas exclusivamente con `password_hash`;
+- inicio y cierre de sesión;
+- renovación de ID de sesión al autenticar;
+- expiración configurable por inactividad;
+- roles y permisos;
+- roles iniciales Administrador, Almacén Central, P4, Auditor y Consulta;
+- administración de asignación de roles;
+- edición de matriz de permisos para roles no administrativos;
+- activación/inactivación de usuarios sin borrar historial;
+- restablecimiento de contraseña por administrador;
+- protección de rutas por permiso incluso si se intenta acceder por URL directa;
+- menús visibles según permiso;
+- protección de APIs internas de RRHH y dotación;
+- auditoría automática de operaciones POST con actor, módulo, acción, registro afectado, IP, user-agent y detalle saneado;
+- exclusión de contraseñas, confirmaciones y tokens CSRF del registro de auditoría;
+- auditoría anterior/nuevo para usuarios, roles y parámetros del sistema;
+- consulta de auditoría por período, usuario, módulo, acción y texto libre;
+- parámetros de seguridad: minutos de inactividad y longitud mínima de contraseña.
+
+### Primer acceso
+
+La migración no crea credenciales predeterminadas.
+
+Si no existen usuarios, SINDESG redirige automáticamente a **Configuración inicial**, donde se selecciona un funcionario vigente de RRHH2029 y se define el primer usuario administrador.
+
+Después de crear el primer administrador, SINDESG exige autenticación.
+
+## Próximo bloque
+
+**Fase 13 — Migración controlada de históricos.**

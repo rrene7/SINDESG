@@ -6,6 +6,12 @@ use App\Repositories\RrhhRepository;
 require dirname(__DIR__, 2) . '/app/bootstrap.php';
 
 header('Content-Type: application/json; charset=utf-8');
+
+if (!sindesg_api_authorized(false)) {
+    http_response_code(401);
+    echo json_encode(['ok' => false, 'message' => 'Autenticación requerida.', 'items' => []], JSON_UNESCAPED_UNICODE);
+    exit;
+}
 header('Cache-Control: no-store');
 
 $query = trim((string) ($_GET['q'] ?? ''));

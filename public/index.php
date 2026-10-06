@@ -11,6 +11,9 @@ use App\Controllers\DistributionController;
 use App\Controllers\DeliveryController;
 use App\Controllers\AdjustmentController;
 use App\Controllers\ReportsController;
+use App\Controllers\AuthController;
+use App\Controllers\AdminController;
+use App\Controllers\AuditController;
 use App\Repositories\CatalogRepository;
 use App\Repositories\DashboardRepository;
 
@@ -94,6 +97,13 @@ $modules = [
         'phase' => 'Fase 12',
         'description' => 'Trazabilidad de acciones críticas, usuarios, cambios y movimientos.',
     ],
+    'admin' => [
+        'label' => 'Administración',
+        'short' => 'Admin',
+        'icon' => 'AD',
+        'phase' => 'Fase 12',
+        'description' => 'Usuarios, roles, permisos y parámetros del sistema.',
+    ],
 ];
 
 $fallbackCategories = [
@@ -112,6 +122,38 @@ $health = [
     'rrhh' => $database->health('rrhh'),
 ];
 
+$currentModule = $_GET['module'] ?? 'dashboard';
+$currentAction = (string) ($_GET['action'] ?? 'index');
+$currentMethod = strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET'));
+
+if ($currentModule === 'auth') {
+    $controller = new AuthController($database, $authService);
+    $result = $controller->handle($currentAction, $_GET, $_POST, $currentMethod);
+    $pageTitle = $result['title'];
+    $contentView = $result['view'];
+    extract($result['data'], EXTR_SKIP);
+    require dirname(__DIR__) . '/app/Views/auth/layout.php';
+    exit;
+}
+
+try {
+    if (!$authService->hasUsers()) {
+        header('Location: ' . sindesg_url('?module=auth&action=setup'), true, 303);
+        exit;
+    }
+} catch (Throwable $exception) {
+    $pageTitle = 'Seguridad pendiente';
+    $authError = 'Aplique la migración 015_security_audit.sql antes de continuar.';
+    $contentView = dirname(__DIR__) . '/app/Views/auth/unavailable.php';
+    require dirname(__DIR__) . '/app/Views/auth/layout.php';
+    exit;
+}
+
+if ($authService->currentUser() === null) {
+    header('Location: ' . sindesg_url('?module=auth&action=login'), true, 303);
+    exit;
+}
+
 $categories = $fallbackCategories;
 
 if ($health['sindesg']['ok']) {
@@ -127,10 +169,22 @@ if ($health['sindesg']['ok']) {
     }
 }
 
-$currentModule = $_GET['module'] ?? 'dashboard';
 if ($currentModule !== 'dashboard' && !isset($modules[$currentModule])) {
     http_response_code(404);
     $currentModule = 'not-found';
+}
+
+$requiredPermission = sindesg_permission_for($currentModule, $currentAction, $currentMethod);
+if ($requiredPermission !== null && !$authService->can($requiredPermission)) {
+    http_response_code(403);
+    $pageTitle = 'Acceso denegado';
+    $contentView = dirname(__DIR__) . '/app/Views/auth/forbidden.php';
+    require dirname(__DIR__) . '/app/Views/layout.php';
+    exit;
+}
+
+if ($currentMethod === 'POST') {
+    $authService->registerRequestAudit($currentModule, $currentAction, $_POST);
 }
 
 if ($currentModule === 'dashboard') {
@@ -306,6 +360,28 @@ if ($currentModule === 'dashboard') {
         $contentView = $result['view'];
         extract($result['data'], EXTR_SKIP);
     }
+} elseif ($currentModule === 'audit') {
+    $controller = new AuditController($database->connection('sindesg'));
+    $result = $controller->handle(
+        $currentAction,
+        $_GET
+    );
+
+    $pageTitle = $result['title'];
+    $contentView = $result['view'];
+    extract($result['data'], EXTR_SKIP);
+} elseif ($currentModule === 'admin') {
+    $controller = new AdminController($database, $authService);
+    $result = $controller->handle(
+        $currentAction,
+        $_GET,
+        $_POST,
+        $currentMethod
+    );
+
+    $pageTitle = $result['title'];
+    $contentView = $result['view'];
+    extract($result['data'], EXTR_SKIP);
 } elseif ($currentModule === 'warehouses') {
     if (!$health['sindesg']['ok']) {
         $pageTitle = 'Almacenes y P4';
