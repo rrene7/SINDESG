@@ -29,7 +29,7 @@ foreach ([
     }
 }
 
-foreach (['createFirstAdmin', 'findEligibleEmployee', 'module=auth&action=setup', 'module=auth&action=login'] as $fragment) {
+foreach (['setupFirstAdmin', 'findEligibleEmployee', 'module=auth&action=setup', 'module=auth&action=login'] as $fragment) {
     if (!str_contains($controller, $fragment) && !str_contains($router, $fragment)) {
         fwrite(STDERR, "[ERROR] Flujo de acceso incompleto: {$fragment}" . PHP_EOL);
         exit(1);
