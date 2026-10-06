@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 $flashMessages = pull_flash();
+$authUser = sindesg_user();
 ?>
 <!doctype html>
 <html lang="es">
@@ -39,6 +40,9 @@ $flashMessages = pull_flash();
     <?php if ($currentModule === 'reports'): ?>
         <link rel="stylesheet" href="<?= e(sindesg_asset('css/reports.css')) ?>">
     <?php endif; ?>
+    <?php if (in_array($currentModule, ['audit', 'admin'], true)): ?>
+        <link rel="stylesheet" href="<?= e(sindesg_asset('css/security.css')) ?>">
+    <?php endif; ?>
 </head>
 <body>
 <div class="app-shell">
@@ -62,8 +66,15 @@ $flashMessages = pull_flash();
                 <span>Buscar en SINDESG</span>
             </button>
             <div class="user-chip">
-                <span class="user-avatar">SG</span>
-                <span><strong>Servicios Generales</strong><small>Entorno local</small></span>
+                <span class="user-avatar"><?= e(strtoupper(substr((string) ($authUser['display_name'] ?? 'SG'), 0, 2))) ?></span>
+                <span>
+                    <strong><?= e($authUser['display_name'] ?? 'Usuario SINDESG') ?></strong>
+                    <small><?= e(implode(' · ', $authUser['roles'] ?? [])) ?></small>
+                </span>
+                <form method="post" action="<?= e(sindesg_url('?module=auth&action=logout')) ?>">
+                    <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
+                    <button class="logout-button" type="submit">Salir</button>
+                </form>
             </div>
         </div>
     </header>
@@ -71,20 +82,24 @@ $flashMessages = pull_flash();
     <nav class="main-nav" aria-label="Módulos principales">
         <a class="<?= $currentModule === 'dashboard' ? 'active' : '' ?>" href="<?= e(sindesg_url()) ?>">Dashboard</a>
         <?php foreach (['inventory', 'receipts', 'requests', 'distribution', 'reports'] as $navKey): ?>
-            <a class="<?= $currentModule === $navKey ? 'active' : '' ?>"
-               href="<?= e(sindesg_url('?module=' . $navKey)) ?>">
-                <?= e($modules[$navKey]['short']) ?>
-            </a>
+            <?php if (sindesg_can(sindesg_permission_for($navKey, 'index', 'GET') ?? 'dashboard.view')): ?>
+                <a class="<?= $currentModule === $navKey ? 'active' : '' ?>"
+                   href="<?= e(sindesg_url('?module=' . $navKey)) ?>">
+                    <?= e($modules[$navKey]['short']) ?>
+                </a>
+            <?php endif; ?>
         <?php endforeach; ?>
         <button class="nav-more" type="button" data-more-toggle>Más</button>
     </nav>
 
     <div class="more-menu" data-more-menu hidden>
-        <?php foreach (['production', 'deliveries', 'adjustments', 'warehouses', 'people', 'audit'] as $navKey): ?>
-            <a href="<?= e(sindesg_url('?module=' . $navKey)) ?>">
-                <span class="mini-icon"><?= e($modules[$navKey]['icon']) ?></span>
-                <span><strong><?= e($modules[$navKey]['label']) ?></strong><small><?= e($modules[$navKey]['phase']) ?></small></span>
-            </a>
+        <?php foreach (['production', 'deliveries', 'adjustments', 'warehouses', 'people', 'audit', 'admin'] as $navKey): ?>
+            <?php if (sindesg_can(sindesg_permission_for($navKey, 'index', 'GET') ?? 'dashboard.view')): ?>
+                <a href="<?= e(sindesg_url('?module=' . $navKey)) ?>">
+                    <span class="mini-icon"><?= e($modules[$navKey]['icon']) ?></span>
+                    <span><strong><?= e($modules[$navKey]['label']) ?></strong><small><?= e($modules[$navKey]['phase']) ?></small></span>
+                </a>
+            <?php endif; ?>
         <?php endforeach; ?>
     </div>
 
@@ -130,8 +145,20 @@ window.SINDESG_SEARCH_ITEMS = <?= json_encode(array_merge(
             'meta' => $item['phase'],
             'url' => sindesg_url('?module=' . $key),
         ],
-        $modules,
-        array_keys($modules)
+        array_filter(
+            $modules,
+            static fn (array $item, string $key): bool => sindesg_can(
+                sindesg_permission_for($key, 'index', 'GET') ?? 'dashboard.view'
+            ),
+            ARRAY_FILTER_USE_BOTH
+        ),
+        array_keys(array_filter(
+            $modules,
+            static fn (array $item, string $key): bool => sindesg_can(
+                sindesg_permission_for($key, 'index', 'GET') ?? 'dashboard.view'
+            ),
+            ARRAY_FILTER_USE_BOTH
+        ))
     ),
     array_map(
         static fn (array $item): array => [

@@ -137,3 +137,15 @@ jobs:
 
       - name: Reports export test
         run: php tests/reports_export_test.php
+
+      - name: Security schema test
+        run: php tests/security_schema_test.php
+
+      - name: Authentication logic test
+        run: php tests/auth_logic_test.php
+
+      - name: Audit logic test
+        run: php tests/audit_logic_test.php
+
+      - name: Security permissions test
+        run: php tests/security_permissions_test.php

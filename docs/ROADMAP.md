@@ -343,8 +343,8 @@ No importar directamente una hoja completa sin validación y conciliación previ
 
 Estado actual del desarrollo por bloques:
 
-- Fases 0–10: implementadas y validadas operativamente por bloques.
-- Fase 11: Reportes y rendición implementada.
-- Siguiente bloque después de validar Fase 11 en XAMPP: **Fase 12 — Auditoría, seguridad y administración**.
+- Fases 0–11: implementadas por bloques.
+- Fase 12: Auditoría, seguridad y administración implementada.
+- Siguiente bloque después de validar Fase 12 en XAMPP: **Fase 13 — Migración controlada de históricos**.
 
 No se iniciará un módulo posterior hasta verificar el bloque anterior en GitHub y en el entorno local.
