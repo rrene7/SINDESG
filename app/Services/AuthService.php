@@ -11,21 +11,18 @@ use RuntimeException;
 
 final class AuthService
 {
-    private SecurityRepository $security;
-    private AuditRepository $audit;
+    private ?SecurityRepository $security = null;
+    private ?AuditRepository $audit = null;
     private ?array $cachedUser = null;
     private bool $userLoaded = false;
 
     public function __construct(private Database $database)
     {
-        $pdo = $database->connection('sindesg');
-        $this->security = new SecurityRepository($pdo);
-        $this->audit = new AuditRepository($pdo);
     }
 
     public function hasUsers(): bool
     {
-        return $this->security->userCount() > 0;
+        return $this->security()->userCount() > 0;
     }
 
     public function currentUser(): ?array
@@ -46,7 +43,7 @@ final class AuthService
         }
 
         $idleMinutes = max(15, min(
-            (int) $this->security->setting('security.session_idle_minutes', '120'),
+            (int) $this->security()->setting('security.session_idle_minutes', '120'),
             720
         ));
         $lastActivity = (int) ($_SESSION['auth_last_activity'] ?? 0);
@@ -56,7 +53,7 @@ final class AuthService
             return null;
         }
 
-        $user = $this->security->findUser($userId);
+        $user = $this->security()->findUser($userId);
         if ($user === null || $user['status'] !== 'active') {
             $this->clearSession();
             return null;
@@ -64,9 +61,9 @@ final class AuthService
 
         $_SESSION['auth_last_activity'] = time();
 
-        $user['permissions'] = $this->security->permissionCodesForUser($userId);
-        $user['roles'] = $this->security->roleNamesForUser($userId);
-        $user['role_codes'] = $this->security->roleCodesForUser($userId);
+        $user['permissions'] = $this->security()->permissionCodesForUser($userId);
+        $user['roles'] = $this->security()->roleNamesForUser($userId);
+        $user['role_codes'] = $this->security()->roleCodesForUser($userId);
         $user['display_name'] = $user['display_name_snapshot'];
 
         $this->cachedUser = $user;
@@ -85,14 +82,14 @@ final class AuthService
 
     public function login(string $username, string $password): void
     {
-        $user = $this->security->findByUsername($username);
+        $user = $this->security()->findByUsername($username);
 
         if (
             $user === null
             || $user['status'] !== 'active'
             || !password_verify($password, (string) $user['password_hash'])
         ) {
-            $this->audit->log([
+            $this->audit()->log([
                 'user_id' => $user['id'] ?? null,
                 'user_label_snapshot' => $user['display_name_snapshot'] ?? $username,
                 'module_code' => 'auth',
@@ -110,11 +107,11 @@ final class AuthService
         $_SESSION['auth_last_activity'] = time();
         $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 
-        $this->security->markLogin((int) $user['id']);
+        $this->security()->markLogin((int) $user['id']);
         $this->userLoaded = false;
         $this->cachedUser = null;
 
-        $this->audit->log([
+        $this->audit()->log([
             'user_id' => (int) $user['id'],
             'user_label_snapshot' => $user['display_name_snapshot'],
             'module_code' => 'auth',
@@ -129,7 +126,7 @@ final class AuthService
         $user = $this->currentUser();
 
         if ($user !== null) {
-            $this->audit->log([
+            $this->audit()->log([
                 'user_id' => (int) $user['id'],
                 'user_label_snapshot' => $user['display_name'],
                 'module_code' => 'auth',
@@ -155,13 +152,13 @@ final class AuthService
         $username = $this->validateUsername($username);
         $this->validatePassword($password, $confirmation);
 
-        $userId = $this->security->createFirstAdmin(
+        $userId = $this->security()->createFirstAdmin(
             $employee,
             $username,
             password_hash($password, PASSWORD_DEFAULT)
         );
 
-        $this->audit->log([
+        $this->audit()->log([
             'user_id' => $userId,
             'user_label_snapshot' => $employee['display_name'],
             'module_code' => 'admin',
@@ -183,7 +180,7 @@ final class AuthService
     public function validatePassword(string $password, string $confirmation): void
     {
         $minimum = max(10, min(
-            (int) $this->security->setting('security.password_min_length', '12'),
+            (int) $this->security()->setting('security.password_min_length', '12'),
             64
         ));
 
@@ -233,7 +230,7 @@ final class AuthService
 
         register_shutdown_function(function () use ($user, $module, $action, $sanitized, $recordId): void {
             try {
-                $this->audit->log([
+                $this->audit()->log([
                     'user_id' => (int) $user['id'],
                     'user_label_snapshot' => $user['display_name'],
                     'module_code' => $module,
@@ -309,6 +306,28 @@ final class AuthService
         }
 
         return null;
+    }
+
+    private function security(): SecurityRepository
+    {
+        if ($this->security === null) {
+            $this->security = new SecurityRepository(
+                $this->database->connection('sindesg')
+            );
+        }
+
+        return $this->security;
+    }
+
+    private function audit(): AuditRepository
+    {
+        if ($this->audit === null) {
+            $this->audit = new AuditRepository(
+                $this->database->connection('sindesg')
+            );
+        }
+
+        return $this->audit;
     }
 
     private function clearSession(): void
