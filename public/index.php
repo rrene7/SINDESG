@@ -14,6 +14,7 @@ use App\Controllers\ReportsController;
 use App\Controllers\AuthController;
 use App\Controllers\AdminController;
 use App\Controllers\AuditController;
+use App\Controllers\HistoricalImportController;
 use App\Repositories\CatalogRepository;
 use App\Repositories\DashboardRepository;
 
@@ -103,6 +104,13 @@ $modules = [
         'icon' => 'AD',
         'phase' => 'Fase 12',
         'description' => 'Usuarios, roles, permisos y parámetros del sistema.',
+    ],
+    'migration' => [
+        'label' => 'Migración histórica',
+        'short' => 'Históricos',
+        'icon' => 'MH',
+        'phase' => 'Fase 13A',
+        'description' => 'Carga, depuración y staging de archivos históricos antes de incorporarlos.',
     ],
 ];
 
@@ -360,6 +368,19 @@ if ($currentModule === 'dashboard') {
         $contentView = $result['view'];
         extract($result['data'], EXTR_SKIP);
     }
+} elseif ($currentModule === 'migration') {
+    $controller = new HistoricalImportController($database);
+    $result = $controller->handle(
+        $currentAction,
+        $_GET,
+        $_POST,
+        $_FILES,
+        $currentMethod
+    );
+
+    $pageTitle = $result['title'];
+    $contentView = $result['view'];
+    extract($result['data'], EXTR_SKIP);
 } elseif ($currentModule === 'audit') {
     $controller = new AuditController($database->connection('sindesg'));
     $result = $controller->handle(

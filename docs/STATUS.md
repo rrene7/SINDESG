@@ -494,3 +494,54 @@ Después de crear el primer administrador, SINDESG exige autenticación.
 ## Próximo bloque
 
 **Fase 13 — Migración controlada de históricos.**
+
+
+## Fase 13A
+
+**Staging seguro y migración controlada de históricos — implementada.**
+
+Esta fase no carga un Excel directamente al inventario vivo.
+
+### Flujo
+
+```text
+Archivo XLSX/CSV
+→ huella SHA-256
+→ lectura por hojas
+→ staging
+→ clasificación
+→ normalización
+→ mapeo contra catálogo actual
+→ incidencias
+→ revisión
+→ archivo histórico de filas listas
+```
+
+### Reglas
+
+- se conserva archivo, hoja y fila de origen;
+- una misma huella de archivo no puede cargarse dos veces;
+- los códigos oficiales se conservan y la comparación elimina únicamente espacios para búsqueda;
+- una fila con código faltante, cantidad inválida, código no encontrado o código ambiguo queda en revisión;
+- una incidencia informada por el archivo de origen no se oculta;
+- las filas desconocidas se preservan como staging no clasificado;
+- **confirmar el lote no genera movimientos en `inventory_movements`**;
+- el inventario operativo actual no cambia;
+- las filas listas del perfil de inventario 2026 se archivan en `historical_stock_snapshots`;
+- la migración queda auditada mediante la seguridad de Fase 12.
+
+### Perfil inicial reconocido
+
+`inventory_normalized_2026`, para hojas que contengan como mínimo:
+- Código ISTMO;
+- producto/descripción;
+- talla;
+- inventario recalculado.
+
+También se preserva la hoja de incidencias del archivo fuente como material de revisión.
+
+## Próximo bloque
+
+**Fase 13B — perfiles específicos de dotaciones, cambios y devoluciones históricas.**
+
+Se construirán sobre los encabezados reales de los archivos históricos para evitar inferir columnas o importar datos incorrectamente.
