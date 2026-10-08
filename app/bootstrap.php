@@ -165,6 +165,7 @@ function sindesg_permission_for(string $module, string $action = 'index', string
         'deliveries' => 'deliveries.view',
         'adjustments' => 'adjustments.view',
         'reports' => 'reports.view',
+        'migration' => 'migration.view',
     ];
 
     $managePermissions = [
@@ -176,6 +177,7 @@ function sindesg_permission_for(string $module, string $action = 'index', string
         'distribution' => 'distribution.manage',
         'deliveries' => 'deliveries.manage',
         'adjustments' => 'adjustments.manage',
+        'migration' => 'migration.manage',
     ];
 
     if (strtoupper($method) === 'POST') {

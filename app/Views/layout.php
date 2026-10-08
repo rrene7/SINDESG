@@ -43,6 +43,9 @@ $authUser = sindesg_user();
     <?php if (in_array($currentModule, ['audit', 'admin'], true)): ?>
         <link rel="stylesheet" href="<?= e(sindesg_asset('css/security.css')) ?>">
     <?php endif; ?>
+    <?php if ($currentModule === 'migration'): ?>
+        <link rel="stylesheet" href="<?= e(sindesg_asset('css/migration.css')) ?>">
+    <?php endif; ?>
 </head>
 <body>
 <div class="app-shell">
@@ -93,7 +96,7 @@ $authUser = sindesg_user();
     </nav>
 
     <div class="more-menu" data-more-menu hidden>
-        <?php foreach (['production', 'deliveries', 'adjustments', 'warehouses', 'people', 'audit', 'admin'] as $navKey): ?>
+        <?php foreach (['production', 'deliveries', 'adjustments', 'warehouses', 'people', 'migration', 'audit', 'admin'] as $navKey): ?>
             <?php if (sindesg_can(sindesg_permission_for($navKey, 'index', 'GET') ?? 'dashboard.view')): ?>
                 <a href="<?= e(sindesg_url('?module=' . $navKey)) ?>">
                     <span class="mini-icon"><?= e($modules[$navKey]['icon']) ?></span>
@@ -194,6 +197,9 @@ window.SINDESG_SEARCH_ITEMS = <?= json_encode(array_merge(
 <?php endif; ?>
 <?php if ($currentModule === 'reports'): ?>
     <script src="<?= e(sindesg_asset('js/reports.js')) ?>"></script>
+<?php endif; ?>
+<?php if ($currentModule === 'migration'): ?>
+    <script src="<?= e(sindesg_asset('js/migration.js')) ?>"></script>
 <?php endif; ?>
 </body>
 </html>

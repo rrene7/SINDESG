@@ -149,3 +149,12 @@ jobs:
 
       - name: Security permissions test
         run: php tests/security_permissions_test.php
+
+      - name: Historical import schema test
+        run: php tests/historical_import_schema_test.php
+
+      - name: Spreadsheet reader test
+        run: php tests/spreadsheet_reader_test.php
+
+      - name: Historical import logic test
+        run: php tests/historical_import_logic_test.php
