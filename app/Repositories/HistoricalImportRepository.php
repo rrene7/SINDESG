@@ -204,7 +204,7 @@ final class HistoricalImportRepository
                 COALESCE(SUM(r.row_status = "imported"), 0) AS imported_count
             FROM historical_import_batches b
             LEFT JOIN historical_import_sheets s ON s.batch_id = b.id
-            LEFT JOIN historical_import_rows r ON r.batch_id = b.id
+            LEFT JOIN historical_import_rows r ON r.sheet_id = s.id
             GROUP BY b.id
             ORDER BY b.created_at DESC, b.id DESC
             LIMIT ' . $limit)->fetchAll();
@@ -223,7 +223,7 @@ final class HistoricalImportRepository
                 COALESCE(SUM(r.row_status = 'skipped'), 0) AS skipped_count
             FROM historical_import_batches b
             LEFT JOIN historical_import_sheets s ON s.batch_id = b.id
-            LEFT JOIN historical_import_rows r ON r.batch_id = b.id
+            LEFT JOIN historical_import_rows r ON r.sheet_id = s.id
             WHERE b.id = :id
             GROUP BY b.id
         SQL);
@@ -448,6 +448,13 @@ final class HistoricalImportRepository
             }
             throw $exception;
         }
+    }
+
+    public function deleteBatch(int $batchId): void
+    {
+        $this->pdo->prepare(
+            'DELETE FROM historical_import_batches WHERE id = :id'
+        )->execute(['id' => $batchId]);
     }
 
     public function cancelBatch(int $batchId): void

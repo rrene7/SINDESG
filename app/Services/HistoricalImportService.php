@@ -34,6 +34,7 @@ final class HistoricalImportService
         }
 
         $stored = $this->storeSourceFile($validated, $sha256);
+        $batchId = null;
 
         try {
             $sheets = $this->reader->read(
@@ -197,6 +198,24 @@ final class HistoricalImportService
         $normalizedSheet = $this->normalizeHeader($sheetName);
 
         if (str_contains($normalizedSheet, 'INCIDENCIA')) {
+            $max = min(count($rows), 20);
+
+            for ($index = 0; $index < $max; $index++) {
+                $row = is_array($rows[$index] ?? null) ? $rows[$index] : [];
+                $headers = [];
+
+                foreach ($row as $column => $value) {
+                    $normalized = $this->normalizeHeader((string) $value);
+                    if ($normalized !== '') {
+                        $headers[$normalized] = (int) $column;
+                    }
+                }
+
+                if (isset($headers['FILA ORIGEN']) && isset($headers['INCIDENCIA'])) {
+                    return ['source_issues', $index, $headers];
+                }
+            }
+
             return ['source_issues', $this->findFirstContentRow($rows), []];
         }
 
