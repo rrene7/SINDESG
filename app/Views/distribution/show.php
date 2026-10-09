@@ -95,6 +95,68 @@ $totalQuantity = array_sum(array_map(static fn (array $row): float => (float) $r
     </aside>
 </section>
 
+<?php if (in_array($distribution['status'], ['dispatched', 'received'], true)): ?>
+<section class="distribution-panel distribution-verification-panel">
+    <div class="distribution-section-head">
+        <div>
+            <span class="eyebrow">VERIFICACIÓN LOGÍSTICA</span>
+            <h2>Central → Tránsito → P4</h2>
+        </div>
+        <span class="distribution-verification-badge <?= !empty($distributionVerification['all_verified']) ? 'ok' : 'warn' ?>">
+            <?= e((int) ($distributionVerification['verified'] ?? 0)) ?>/<?= e((int) ($distributionVerification['expected'] ?? 0)) ?> renglones verificados
+        </span>
+    </div>
+
+    <div class="responsive-table">
+        <table>
+            <thead>
+            <tr>
+                <th>Artículo</th>
+                <th>Cantidad</th>
+                <th>Central OUT</th>
+                <th>Tránsito IN</th>
+                <th>Tránsito OUT</th>
+                <th>P4 IN</th>
+                <th>Central actual</th>
+                <th>Tránsito actual</th>
+                <th>P4 actual</th>
+                <th>Estado</th>
+                <th>Kardex</th>
+            </tr>
+            </thead>
+            <tbody>
+            <?php foreach (($distributionVerification['rows'] ?? []) as $row): ?>
+                <tr>
+                    <td>
+                        <strong><?= e($row['product_name']) ?></strong>
+                        <small class="table-subline"><?= e($row['variant_code']) ?><?= !empty($row['size_name']) ? ' · Talla ' . e($row['size_name']) : '' ?></small>
+                    </td>
+                    <td class="distribution-qty"><?= e(number_format((float) $row['expected_quantity'], 3, '.', ',')) ?></td>
+                    <td><?= !empty($row['dispatch_central_id']) ? e(number_format((float) $row['dispatch_central_quantity'], 3, '.', ',')) : '—' ?></td>
+                    <td><?= !empty($row['dispatch_transit_id']) ? e(number_format((float) $row['dispatch_transit_quantity'], 3, '.', ',')) : '—' ?></td>
+                    <td><?= !empty($row['receive_transit_id']) ? e(number_format((float) $row['receive_transit_quantity'], 3, '.', ',')) : '—' ?></td>
+                    <td><?= !empty($row['receive_p4_id']) ? e(number_format((float) $row['receive_p4_quantity'], 3, '.', ',')) : '—' ?></td>
+                    <td><?= e(number_format((float) $row['central_stock'], 3, '.', ',')) ?></td>
+                    <td><?= e(number_format((float) $row['transit_stock'], 3, '.', ',')) ?></td>
+                    <td><?= e(number_format((float) $row['p4_stock'], 3, '.', ',')) ?></td>
+                    <td>
+                        <span class="distribution-verification-status <?= !empty($row['verified']) ? 'ok' : 'warn' ?>">
+                            <?= e($row['verification_label']) ?>
+                        </span>
+                    </td>
+                    <td>
+                        <a class="distribution-kardex-link" href="<?= e(sindesg_url('?module=inventory&action=product&id=' . (int) $row['product_id'])) ?>">
+                            Ver artículo →
+                        </a>
+                    </td>
+                </tr>
+            <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
+</section>
+<?php endif; ?>
+
 <section class="distribution-panel">
     <div class="distribution-section-head"><div><span class="eyebrow">CONTENIDO</span><h2>Artículos transferidos</h2></div></div>
     <div class="responsive-table">
