@@ -129,6 +129,7 @@ final class DistributionRepository
                 GREATEST(i.quantity_approved - i.quantity_dispatched, 0) AS remaining_quantity,
                 i.beneficiary_label_snapshot,
                 pv.internal_code AS variant_code,
+                p.id AS product_id,
                 p.name AS product_name,
                 c.name AS category_name,
                 s.name AS size_name,
@@ -374,6 +375,124 @@ final class DistributionRepository
         $statement->execute(['distribution_id' => $distributionId]);
 
         return $statement->fetchAll();
+    }
+
+    public function movementEvidence(int $distributionId): array
+    {
+        $distribution = $this->find($distributionId);
+        if ($distribution === null) {
+            return [
+                'rows' => [],
+                'expected' => 0,
+                'verified' => 0,
+                'all_verified' => false,
+            ];
+        }
+
+        $statement = $this->pdo->prepare(<<<'SQL'
+            SELECT
+                di.id AS distribution_item_id,
+                di.quantity AS expected_quantity,
+                p.id AS product_id,
+                p.name AS product_name,
+                pv.id AS variant_id,
+                pv.internal_code AS variant_code,
+                s.name AS size_name,
+
+                dc.id AS dispatch_central_id,
+                dc.quantity AS dispatch_central_quantity,
+                dt.id AS dispatch_transit_id,
+                dt.quantity AS dispatch_transit_quantity,
+                rt.id AS receive_transit_id,
+                rt.quantity AS receive_transit_quantity,
+                rp.id AS receive_p4_id,
+                rp.quantity AS receive_p4_quantity,
+
+                CAST(COALESCE(vsc.quantity_on_hand, 0) AS DECIMAL(14,3)) AS central_stock,
+                CAST(COALESCE(vst.quantity_on_hand, 0) AS DECIMAL(14,3)) AS transit_stock,
+                CAST(COALESCE(vsp.quantity_on_hand, 0) AS DECIMAL(14,3)) AS p4_stock
+            FROM distribution_items di
+            INNER JOIN distributions d ON d.id = di.distribution_id
+            INNER JOIN product_variants pv ON pv.id = di.product_variant_id
+            INNER JOIN products p ON p.id = pv.product_id
+            LEFT JOIN sizes s ON s.id = pv.size_id
+
+            LEFT JOIN inventory_movements dc
+                ON dc.source_key = CONCAT('distribution:', di.distribution_id, ':dispatch:central:', di.id)
+            LEFT JOIN inventory_movements dt
+                ON dt.source_key = CONCAT('distribution:', di.distribution_id, ':dispatch:transit:', di.id)
+            LEFT JOIN inventory_movements rt
+                ON rt.source_key = CONCAT('distribution:', di.distribution_id, ':receive:transit:', di.id)
+            LEFT JOIN inventory_movements rp
+                ON rp.source_key = CONCAT('distribution:', di.distribution_id, ':receive:p4:', di.id)
+
+            LEFT JOIN v_inventory_stock vsc
+                ON vsc.warehouse_id = d.source_warehouse_id
+               AND vsc.product_variant_id = di.product_variant_id
+            LEFT JOIN v_inventory_stock vst
+                ON vst.warehouse_id = d.transit_warehouse_id
+               AND vst.product_variant_id = di.product_variant_id
+            LEFT JOIN v_inventory_stock vsp
+                ON vsp.warehouse_id = d.destination_warehouse_id
+               AND vsp.product_variant_id = di.product_variant_id
+
+            WHERE di.distribution_id = :distribution_id
+            ORDER BY di.id
+        SQL);
+        $statement->execute(['distribution_id' => $distributionId]);
+        $rows = $statement->fetchAll();
+
+        $verified = 0;
+        foreach ($rows as &$row) {
+            $expected = (float) ($row['expected_quantity'] ?? 0);
+
+            $dispatchBalanced =
+                !empty($row['dispatch_central_id'])
+                && !empty($row['dispatch_transit_id'])
+                && abs((float) ($row['dispatch_central_quantity'] ?? 0) - $expected) < 0.0005
+                && abs((float) ($row['dispatch_transit_quantity'] ?? 0) - $expected) < 0.0005;
+
+            $receiveBalanced =
+                !empty($row['receive_transit_id'])
+                && !empty($row['receive_p4_id'])
+                && abs((float) ($row['receive_transit_quantity'] ?? 0) - $expected) < 0.0005
+                && abs((float) ($row['receive_p4_quantity'] ?? 0) - $expected) < 0.0005;
+
+            if ($distribution['status'] === 'dispatched') {
+                $row['verified'] = $dispatchBalanced;
+                $row['verification_label'] = $dispatchBalanced
+                    ? 'En tránsito verificado'
+                    : 'Revisar';
+            } elseif ($distribution['status'] === 'received') {
+                $row['verified'] = $dispatchBalanced && $receiveBalanced;
+                $row['verification_label'] = $row['verified']
+                    ? 'P4 verificado'
+                    : 'Revisar';
+            } else {
+                $row['verified'] = false;
+                $row['verification_label'] = 'Pendiente de movimiento';
+            }
+
+            if ($row['verified']) {
+                $verified++;
+            }
+        }
+        unset($row);
+
+        $isMovementStage = in_array(
+            $distribution['status'],
+            ['dispatched', 'received'],
+            true
+        );
+
+        return [
+            'rows' => $rows,
+            'expected' => count($rows),
+            'verified' => $verified,
+            'all_verified' => $isMovementStage
+                && $rows !== []
+                && $verified === count($rows),
+        ];
     }
 
     public function authorize(
