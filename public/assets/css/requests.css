@@ -11,3 +11,15 @@
 .request-empty{display:grid;place-items:center;align-content:center;min-height:220px;margin-top:16px;padding:25px;border:1px dashed rgba(53,178,255,.25);border-radius:18px;text-align:center}.request-empty.compact{min-height:100px}.request-empty.standalone{min-height:420px}.request-empty p{max-width:660px;color:var(--muted)}.request-empty-mark{width:58px;height:58px;display:grid;place-items:center;border:1px solid var(--line);border-radius:16px;color:#7bdcff;font-weight:900}
 @media(max-width:1150px){.request-stats{grid-template-columns:repeat(3,1fr)}.request-item-form{grid-template-columns:1fr 140px}.request-variant-field,.request-beneficiary{grid-column:1/-1}.request-detail-grid{grid-template-columns:1fr}}
 @media(max-width:720px){.request-hero,.request-detail-hero{display:grid}.request-stats{grid-template-columns:1fr 1fr}.request-form-grid{grid-template-columns:1fr}.request-item-form{grid-template-columns:1fr}.request-variant-field,.request-beneficiary{grid-column:auto}.request-dl{grid-template-columns:1fr}.request-review-lines{grid-template-columns:1fr}.request-detail-status{text-align:left}.request-section-head{display:grid}}
+
+.request-verification-panel{border-color:rgba(53,178,255,.28)}
+.request-verification-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:14px}
+.request-verification-summary span{padding:12px;border:1px solid rgba(53,178,255,.16);border-radius:12px;background:rgba(3,19,37,.4);text-align:center}
+.request-verification-summary strong,.request-verification-summary small{display:block}
+.request-verification-summary strong{font-size:1.15rem;color:#d8f3ff}
+.request-verification-summary small{margin-top:3px;color:var(--muted);font-size:.7rem}
+.request-verification-badge{display:inline-flex;padding:6px 10px;border-radius:999px;font-size:.72rem;font-weight:800}
+.request-verification-badge.ok{border:1px solid rgba(61,211,142,.32);background:rgba(61,211,142,.1);color:#9bf1c7}
+.request-verification-badge.warn{border:1px solid rgba(255,190,92,.35);background:rgba(255,190,92,.1);color:#ffd491}
+.request-verification-copy{margin:12px 0 0;color:var(--muted);line-height:1.55}
+@media(max-width:720px){.request-verification-summary{grid-template-columns:repeat(2,minmax(0,1fr))}}
