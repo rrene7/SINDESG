@@ -31,6 +31,8 @@ foreach ([
     'historical_exits_2024_2026',
     'Cantidad almacenada como texto en el archivo fuente',
     'Totales de salidas no coinciden con SALIDAS',
+    'historical_batch_reprocessed',
+    'resetStaging',
 ] as $fragment) {
     if (!str_contains($service, $fragment)) {
         fwrite(STDERR, "[ERROR] Lógica de staging incompleta: {$fragment}" . PHP_EOL);
@@ -46,6 +48,7 @@ foreach ([
     'rowsForProfile',
     'movementTotalsByCode',
     'markRowForReview',
+    'resetStaging',
     "IN ('inventory_normalized_2026', 'inventory_control_2026')",
 ] as $fragment) {
     if (!str_contains($repository, $fragment)) {
@@ -61,6 +64,11 @@ if (str_contains($repository, 'INSERT INTO inventory_movements') || str_contains
 
 if (!str_contains($router, 'new HistoricalImportController')) {
     fwrite(STDERR, "[ERROR] El centro de históricos no está conectado al router." . PHP_EOL);
+    exit(1);
+}
+
+if (!str_contains($controller, "$action === 'reprocess'")) {
+    fwrite(STDERR, "[ERROR] El lote histórico existente no puede reprocesarse de forma segura." . PHP_EOL);
     exit(1);
 }
 
