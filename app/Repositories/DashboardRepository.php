@@ -248,6 +248,80 @@ final class DashboardRepository
         ];
     }
 
+    public function operationalSummary(): array
+    {
+        $row = $this->pdo->query(<<<'SQL'
+            SELECT
+                (
+                    SELECT COUNT(*)
+                    FROM service_requests
+                    WHERE status IN ('submitted', 'in_review')
+                ) AS requests_pending_review,
+                (
+                    SELECT COUNT(*)
+                    FROM service_requests r
+                    WHERE r.status IN ('approved', 'partially_approved')
+                      AND EXISTS (
+                          SELECT 1
+                          FROM service_request_items i
+                          WHERE i.request_id = r.id
+                            AND i.quantity_approved > i.quantity_dispatched
+                      )
+                ) AS requests_ready_distribution,
+                (
+                    SELECT COUNT(*)
+                    FROM distributions
+                    WHERE status = 'dispatched'
+                ) AS distributions_in_transit,
+                (
+                    SELECT COUNT(*)
+                    FROM warehouses
+                    WHERE warehouse_type = 'P4'
+                      AND is_active = 1
+                ) AS active_p4
+        SQL)->fetch() ?: [];
+
+        return [
+            'requests_pending_review' => (int) ($row['requests_pending_review'] ?? 0),
+            'requests_ready_distribution' => (int) ($row['requests_ready_distribution'] ?? 0),
+            'distributions_in_transit' => (int) ($row['distributions_in_transit'] ?? 0),
+            'active_p4' => (int) ($row['active_p4'] ?? 0),
+        ];
+    }
+
+    public function recentRequests(int $limit = 5): array
+    {
+        $limit = max(1, min($limit, 10));
+
+        return $this->pdo->query('
+            SELECT
+                r.id,
+                r.request_code,
+                r.requested_at,
+                r.status,
+                r.requested_by_label_snapshot,
+                w.code AS p4_code,
+                COALESCE(w.organization_unit_name_snapshot, w.name) AS p4_name,
+                COUNT(i.id) AS item_count,
+                CAST(COALESCE(SUM(i.quantity_requested), 0) AS DECIMAL(14,3)) AS quantity_requested,
+                CAST(COALESCE(SUM(i.quantity_approved), 0) AS DECIMAL(14,3)) AS quantity_approved,
+                CAST(COALESCE(SUM(i.quantity_dispatched), 0) AS DECIMAL(14,3)) AS quantity_dispatched
+            FROM service_requests r
+            INNER JOIN warehouses w ON w.id = r.p4_warehouse_id
+            LEFT JOIN service_request_items i ON i.request_id = r.id
+            WHERE r.status <> "draft"
+            GROUP BY r.id
+            ORDER BY
+                CASE
+                    WHEN r.status IN ("submitted", "in_review") THEN 0
+                    WHEN r.status IN ("approved", "partially_approved") THEN 1
+                    ELSE 2
+                END,
+                r.requested_at DESC,
+                r.id DESC
+            LIMIT ' . $limit)->fetchAll();
+    }
+
     public function recentReceipts(int $limit = 4): array
     {
         $limit = max(1, min($limit, 10));

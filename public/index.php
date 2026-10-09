@@ -202,6 +202,13 @@ if ($currentModule === 'dashboard') {
     $featuredSizes = [];
     $featuredStockBreakdown = ['central' => 0.0, 'p4' => 0.0, 'transit' => 0.0];
     $recentDashboardReceipts = [];
+    $recentDashboardRequests = [];
+    $dashboardOperationalSummary = [
+        'requests_pending_review' => 0,
+        'requests_ready_distribution' => 0,
+        'distributions_in_transit' => 0,
+        'active_p4' => 0,
+    ];
 
     if ($health['sindesg']['ok']) {
         try {
@@ -215,12 +222,21 @@ if ($currentModule === 'dashboard') {
                 ? $dashboardRepository->stockBreakdownForProduct((int) $featuredProduct['id'])
                 : ['central' => 0.0, 'p4' => 0.0, 'transit' => 0.0];
             $recentDashboardReceipts = $dashboardRepository->recentReceipts(4);
+            $recentDashboardRequests = $dashboardRepository->recentRequests(5);
+            $dashboardOperationalSummary = $dashboardRepository->operationalSummary();
         } catch (\Throwable $exception) {
             $dashboardCategories = [];
             $featuredProduct = null;
             $featuredSizes = [];
             $featuredStockBreakdown = ['central' => 0.0, 'p4' => 0.0, 'transit' => 0.0];
             $recentDashboardReceipts = [];
+            $recentDashboardRequests = [];
+            $dashboardOperationalSummary = [
+                'requests_pending_review' => 0,
+                'requests_ready_distribution' => 0,
+                'distributions_in_transit' => 0,
+                'active_p4' => 0,
+            ];
         }
     }
 

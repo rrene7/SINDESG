@@ -12,6 +12,16 @@ $featuredDescription = (string) ($featuredProduct['description'] ?? 'Cuando exis
 $featuredUrl = $featuredProduct
     ? sindesg_url('?module=inventory&action=product&id=' . (int) $featuredProduct['id'])
     : sindesg_url('?module=inventory');
+
+$requestStatusLabels = [
+    'submitted' => 'Enviada',
+    'in_review' => 'En revisión',
+    'approved' => 'Aprobada',
+    'partially_approved' => 'Aprobada parcial',
+    'rejected' => 'Rechazada',
+    'fulfilled' => 'Atendida',
+    'closed' => 'Cerrada',
+];
 ?>
 <section class="hero">
     <div>
@@ -190,16 +200,53 @@ $featuredUrl = $featuredProduct
             <div>
                 <span class="panel-icon">SO</span>
                 <div>
-                    <span class="eyebrow">GESTIÓN</span>
-                    <h2>Solicitudes pendientes</h2>
+                    <span class="eyebrow">GESTIÓN OPERATIVA</span>
+                    <h2>Solicitudes y distribución</h2>
                 </div>
             </div>
-            <a href="<?= e(sindesg_url('?module=requests')) ?>">Ver módulo →</a>
+            <a href="<?= e(sindesg_url('?module=requests')) ?>">Ver solicitudes →</a>
         </div>
-        <div class="empty-state">
-            <strong>Sin solicitudes registradas</strong>
-            <span>La Fase 7 habilitará el flujo P4 → Servicios Generales.</span>
+
+        <div class="dashboard-ops-summary">
+            <span><strong><?= e($dashboardOperationalSummary['requests_pending_review']) ?></strong><small>por revisar</small></span>
+            <span><strong><?= e($dashboardOperationalSummary['requests_ready_distribution']) ?></strong><small>listas para distribuir</small></span>
+            <span><strong><?= e($dashboardOperationalSummary['distributions_in_transit']) ?></strong><small>en tránsito</small></span>
+            <span><strong><?= e($dashboardOperationalSummary['active_p4']) ?></strong><small>P4 activos</small></span>
         </div>
+
+        <?php if ($recentDashboardRequests === []): ?>
+            <div class="empty-state compact-empty">
+                <strong>No hay solicitudes operativas registradas</strong>
+                <span>Las solicitudes enviadas, revisadas y aprobadas aparecerán aquí automáticamente.</span>
+            </div>
+        <?php else: ?>
+            <div class="dashboard-mini-list">
+                <?php foreach ($recentDashboardRequests as $row): ?>
+                    <?php
+                    $approvedPending = max(
+                        0.0,
+                        (float) ($row['quantity_approved'] ?? 0) - (float) ($row['quantity_dispatched'] ?? 0)
+                    );
+                    ?>
+                    <a href="<?= e(sindesg_url('?module=requests&action=show&id=' . (int) $row['id'])) ?>">
+                        <span>
+                            <strong><?= e($row['request_code']) ?></strong>
+                            <small><?= e($row['p4_code']) ?> · <?= e($row['p4_name']) ?></small>
+                        </span>
+                        <span>
+                            <strong><?= e($requestStatusLabels[$row['status']] ?? $row['status']) ?></strong>
+                            <small>
+                                <?= e((int) ($row['item_count'] ?? 0)) ?> renglones
+                                · <?= e(number_format((float) ($row['quantity_requested'] ?? 0), 0, '.', ',')) ?> solicitadas
+                                <?php if ($approvedPending > 0): ?>
+                                    · <?= e(number_format($approvedPending, 0, '.', ',')) ?> por distribuir
+                                <?php endif; ?>
+                            </small>
+                        </span>
+                    </a>
+                <?php endforeach; ?>
+            </div>
+        <?php endif; ?>
     </article>
 </section>
 
