@@ -45,6 +45,9 @@ jobs:
       - name: Receipts logic test
         run: php tests/receipts_logic_test.php
 
+      - name: Receipt inventory flow test
+        run: php tests/receipt_inventory_flow_test.php
+
       - name: CLI bootstrap session test
         run: php tests/cli_bootstrap_test.php
 
