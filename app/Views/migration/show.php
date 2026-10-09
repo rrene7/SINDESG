@@ -36,7 +36,7 @@ $decodeIssues = static function (?string $json): array {
 ?>
 <section class="migration-hero compact">
     <div>
-        <span class="eyebrow"><?= e($historicalBatch['batch_code']) ?> · FASE 13A</span>
+        <span class="eyebrow"><?= e($historicalBatch['batch_code']) ?> · FASE 13A / 13B</span>
         <h1><?= e($historicalBatch['source_filename']) ?></h1>
         <p>Cargado por <?= e($historicalBatch['uploaded_by_label_snapshot']) ?> · SHA-256 <?= e(substr((string) $historicalBatch['file_sha256'], 0, 18)) ?>…</p>
     </div>
@@ -93,10 +93,29 @@ $decodeIssues = static function (?string $json): array {
 <section class="migration-panel">
     <div class="migration-section-head">
         <div>
-            <span class="eyebrow">DIAGNÓSTICO DE CATÁLOGO</span>
+            <span class="eyebrow">DIAGNÓSTICO DE CATÁLOGO · FASE 13B</span>
             <h2>Mapeo del Control de inventario</h2>
-            <p>Este diagnóstico solo compara los 182 registros del control con el catálogo actual. No crea productos, variantes, entradas ni salidas.</p>
+            <p>Este diagnóstico compara los 182 registros del control con el catálogo maestro. Preparar 13B crea únicamente datos maestros; no crea existencias, entradas, salidas ni movimientos.</p>
+            <?php if (!($historicalCatalogStatus['schema_ready'] ?? false)): ?>
+                <p class="migration-muted">Fase 13B pendiente de esquema: aplique <code>017_historical_catalog_preparation.sql</code>.</p>
+            <?php elseif ((int) ($historicalCatalogStatus['variants'] ?? 0) === 182): ?>
+                <p class="migration-good">Catálogo 13B preparado: <?= e($historicalCatalogStatus['categories']) ?> categorías · <?= e($historicalCatalogStatus['subcategories']) ?> subcategorías preservadas · <?= e($historicalCatalogStatus['products']) ?> productos · <?= e($historicalCatalogStatus['sizes']) ?> tallas · <?= e($historicalCatalogStatus['variants']) ?> variantes.</p>
+            <?php endif; ?>
         </div>
+        <?php if (
+            ($historicalCatalogStatus['schema_ready'] ?? false)
+            && $historicalBatch['status'] === 'staged'
+            && (int) $historicalBatch['imported_count'] === 0
+            && (int) ($historicalCatalogStatus['variants'] ?? 0) < 182
+        ): ?>
+            <form method="post"
+                  action="<?= e(sindesg_url('?module=migration&action=prepare-catalog')) ?>"
+                  data-confirm-message="Se crearán o actualizarán únicamente datos maestros del catálogo normalizado 2026 (5 categorías, 24 productos, 41 tallas y 182 variantes) y luego se reprocesará este lote. NO se modificará stock ni kardex. ¿Continuar?">
+                <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
+                <input type="hidden" name="batch_id" value="<?= e($historicalBatch['id']) ?>">
+                <button class="primary-button" type="submit">Preparar catálogo 13B</button>
+            </form>
+        <?php endif; ?>
     </div>
 
     <section class="migration-stats">

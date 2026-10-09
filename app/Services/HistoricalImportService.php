@@ -146,6 +146,53 @@ final class HistoricalImportService
         ];
     }
 
+    public function prepareCatalog(int $batchId, array $actor): array
+    {
+        $batch = $this->repository->batch($batchId);
+        if ($batch === null) {
+            throw new InvalidArgumentException('El lote histórico no existe.');
+        }
+
+        if ((string) ($batch['status'] ?? '') !== 'staged') {
+            throw new RuntimeException(
+                'El catálogo solo puede prepararse mientras el lote permanezca en staging.'
+            );
+        }
+
+        if ((int) ($batch['imported_count'] ?? 0) > 0) {
+            throw new RuntimeException(
+                'El lote ya archivó filas históricas y no puede preparar el catálogo automáticamente.'
+            );
+        }
+
+        [$dataset, $seedSha256] = $this->normalizedCatalogDataset();
+        $result = $this->repository->prepareHistoricalCatalog($dataset);
+
+        $this->audit->log([
+            'user_id' => $actor['id'],
+            'user_label_snapshot' => $actor['display_name'],
+            'module_code' => 'migration',
+            'action_code' => 'historical_catalog_prepared',
+            'record_type' => 'historical_catalog',
+            'record_id' => (string) $batchId,
+            'details' => $result + [
+                'source' => $dataset['source'],
+                'seed_sha256' => $seedSha256,
+                'live_inventory_changed' => false,
+                'kardex_changed' => false,
+            ],
+            'ip_address' => $_SERVER['REMOTE_ADDR'] ?? null,
+            'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? null,
+        ]);
+
+        $this->reprocess($batchId, $actor);
+
+        return $result + [
+            'batch_id' => $batchId,
+            'diagnostics' => $this->repository->mappingDiagnostics($batchId),
+        ];
+    }
+
     public function archiveReady(int $batchId, array $actor): array
     {
         $result = $this->repository->archiveReadySnapshots($batchId);
@@ -829,6 +876,96 @@ final class HistoricalImportService
                 'Perfil de hoja no reconocido. No se importará automáticamente.',
             ],
         ];
+    }
+
+    private function normalizedCatalogDataset(): array
+    {
+        $path = SINDESG_ROOT . '/database/seeds/historical_uniform_catalog_2026.json';
+        if (!is_file($path)) {
+            throw new RuntimeException(
+                'No se encontró la fuente normalizada del catálogo histórico 2026.'
+            );
+        }
+
+        $contents = file_get_contents($path);
+        if (!is_string($contents) || $contents === '') {
+            throw new RuntimeException(
+                'La fuente normalizada del catálogo histórico está vacía.'
+            );
+        }
+
+        $dataset = json_decode($contents, true);
+        if (!is_array($dataset)) {
+            throw new RuntimeException(
+                'La fuente normalizada del catálogo histórico no contiene JSON válido.'
+            );
+        }
+
+        $expected = [
+            'categories' => 5,
+            'subcategories' => 16,
+            'products' => 24,
+            'sizes' => 41,
+            'variants' => 182,
+        ];
+
+        foreach ($expected as $key => $count) {
+            if (!isset($dataset[$key]) || !is_array($dataset[$key])) {
+                throw new RuntimeException(
+                    'La fuente normalizada no contiene la sección ' . $key . '.'
+                );
+            }
+
+            if (count($dataset[$key]) !== $count) {
+                throw new RuntimeException(
+                    sprintf(
+                        'La fuente normalizada contiene %d %s; se esperaban %d.',
+                        count($dataset[$key]),
+                        $key,
+                        $count
+                    )
+                );
+            }
+        }
+
+        $variantIds = [];
+        $officialCodes = [];
+
+        foreach ($dataset['variants'] as $variant) {
+            $id = trim((string) ($variant['id'] ?? ''));
+            $code = trim((string) ($variant['code'] ?? ''));
+            $search = mb_strtoupper(str_replace(' ', '', $code), 'UTF-8');
+
+            if ($id === '' || $code === '' || $search === '') {
+                throw new RuntimeException(
+                    'La fuente normalizada contiene una variante sin ID o código ISTMO.'
+                );
+            }
+
+            if (isset($variantIds[$id])) {
+                throw new RuntimeException(
+                    'La fuente normalizada repite la variante ' . $id . '.'
+                );
+            }
+
+            if (isset($officialCodes[$search])) {
+                throw new RuntimeException(
+                    'La fuente normalizada repite el código ISTMO ' . $code . '.'
+                );
+            }
+
+            $variantIds[$id] = true;
+            $officialCodes[$search] = true;
+        }
+
+        $sha256 = hash_file('sha256', $path);
+        if (!is_string($sha256) || strlen($sha256) !== 64) {
+            throw new RuntimeException(
+                'No se pudo calcular la huella de la fuente normalizada.'
+            );
+        }
+
+        return [$dataset, $sha256];
     }
 
     private function validateUpload(array $file): array
