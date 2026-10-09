@@ -235,12 +235,19 @@ final class HistoricalImportRepository
 
     public function sheets(int $batchId): array
     {
-        $statement = $this->pdo->prepare(
-            'SELECT *
-             FROM historical_import_sheets
-             WHERE batch_id = :batch_id
-             ORDER BY id'
-        );
+        $statement = $this->pdo->prepare(<<<'SQL'
+            SELECT
+                s.*,
+                (
+                    SELECT COUNT(*)
+                    FROM historical_import_rows r
+                    WHERE r.sheet_id = s.id
+                      AND r.row_status = 'skipped'
+                ) AS skipped_rows
+            FROM historical_import_sheets s
+            WHERE s.batch_id = :batch_id
+            ORDER BY s.id
+        SQL);
         $statement->execute(['batch_id' => $batchId]);
 
         return $statement->fetchAll();
