@@ -57,6 +57,8 @@ final class HistoricalImportService
                 $this->stageSheet($batchId, $sheet);
             }
 
+            $this->validateWorkbookConsistency($batchId);
+
             $this->audit->log([
                 'user_id' => $actor['id'],
                 'user_label_snapshot' => $actor['display_name'],
@@ -152,7 +154,24 @@ final class HistoricalImportService
                     $row,
                     $headers
                 ),
+                'inventory_control_2026' => $this->normalizeControlInventoryRow(
+                    $row,
+                    $headers
+                ),
+                'historical_entries_2024_2026' => $this->normalizeHistoricalMovementRow(
+                    $row,
+                    $headers,
+                    'entry'
+                ),
+                'historical_exits_2024_2026' => $this->normalizeHistoricalMovementRow(
+                    $row,
+                    $headers,
+                    'exit'
+                ),
                 'source_issues' => $this->normalizeIssueRow($row),
+                'reference_report',
+                'rendition_report',
+                'legacy_inventory_summary' => $this->normalizeReferenceRow($row, $profile),
                 default => $this->normalizeUnknownRow($row),
             };
 
@@ -201,15 +220,9 @@ final class HistoricalImportService
             $max = min(count($rows), 20);
 
             for ($index = 0; $index < $max; $index++) {
-                $row = is_array($rows[$index] ?? null) ? $rows[$index] : [];
-                $headers = [];
-
-                foreach ($row as $column => $value) {
-                    $normalized = $this->normalizeHeader((string) $value);
-                    if ($normalized !== '') {
-                        $headers[$normalized] = (int) $column;
-                    }
-                }
+                $headers = $this->headersFromRow(
+                    is_array($rows[$index] ?? null) ? $rows[$index] : []
+                );
 
                 if (isset($headers['FILA ORIGEN']) && isset($headers['INCIDENCIA'])) {
                     return ['source_issues', $index, $headers];
@@ -219,18 +232,11 @@ final class HistoricalImportService
             return ['source_issues', $this->findFirstContentRow($rows), []];
         }
 
-        $max = min(count($rows), 20);
+        $max = min(count($rows), 25);
 
         for ($index = 0; $index < $max; $index++) {
             $row = is_array($rows[$index] ?? null) ? $rows[$index] : [];
-            $headers = [];
-
-            foreach ($row as $column => $value) {
-                $normalized = $this->normalizeHeader((string) $value);
-                if ($normalized !== '') {
-                    $headers[$normalized] = (int) $column;
-                }
-            }
+            $headers = $this->headersFromRow($row);
 
             if (
                 isset($headers['CODIGO ISTMO'])
@@ -242,9 +248,78 @@ final class HistoricalImportService
             ) {
                 return ['inventory_normalized_2026', $index, $headers];
             }
+
+            if (
+                isset($headers['CODIGO ISTMO'])
+                && isset($headers['NOMBRE'])
+                && isset($headers['TIPO'])
+                && isset($headers['INVENTARIO INICIAL'])
+                && isset($headers['ENTRADAS'])
+                && isset($headers['SALIDAS'])
+                && isset($headers['INVENTARIO'])
+            ) {
+                return ['inventory_control_2026', $index, $headers];
+            }
+
+            if (
+                isset($headers['FECHA'])
+                && isset($headers['CODIGO ISTMO'])
+                && isset($headers['PRODUCTO'])
+                && isset($headers['CANTIDAD'])
+            ) {
+                if (str_contains($normalizedSheet, 'ENTRADA')) {
+                    return ['historical_entries_2024_2026', $index, $headers];
+                }
+
+                if (str_contains($normalizedSheet, 'SALIDA')) {
+                    return ['historical_exits_2024_2026', $index, $headers];
+                }
+            }
+        }
+
+        if (str_contains($normalizedSheet, 'RENDICION')) {
+            return ['rendition_report', null, []];
+        }
+
+        if (in_array(
+            $normalizedSheet,
+            ['ACUMUALDOS', 'ACUMULADOS', 'DETALLE', 'ENT X FECHA', 'SAL X DEPEND'],
+            true
+        )) {
+            return ['reference_report', null, []];
+        }
+
+        $previewRows = array_slice($rows, 0, 12);
+        foreach ($previewRows as $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+
+            foreach ($row as $value) {
+                if (str_contains(
+                    $this->normalizeHeader((string) $value),
+                    'INVENTARIO DE UNIFORMES'
+                )) {
+                    return ['legacy_inventory_summary', null, []];
+                }
+            }
         }
 
         return ['unclassified', null, []];
+    }
+
+    private function headersFromRow(array $row): array
+    {
+        $headers = [];
+
+        foreach ($row as $column => $value) {
+            $normalized = $this->normalizeHeader((string) $value);
+            if ($normalized !== '') {
+                $headers[$normalized] = (int) $column;
+            }
+        }
+
+        return $headers;
     }
 
     private function normalizeInventoryRow(array $row, array $headers): ?array
@@ -328,6 +403,313 @@ final class HistoricalImportService
             'row_status' => $issues === [] ? 'ready' : 'review',
             'issues' => $issues,
         ];
+    }
+
+    private function normalizeControlInventoryRow(array $row, array $headers): ?array
+    {
+        $value = function (array $names) use ($row, $headers): string {
+            foreach ($names as $name) {
+                $key = $this->normalizeHeader($name);
+                if (isset($headers[$key])) {
+                    return trim((string) ($row[$headers[$key]] ?? ''));
+                }
+            }
+            return '';
+        };
+
+        $code = $value(['CÓDIGO ISTMO']);
+        $description = $value(['NOMBRE']);
+        $category = $value(['TIPO']);
+
+        if ($code === '' && $description === '' && $category === '') {
+            return null;
+        }
+
+        $issues = [];
+        if ($code === '') {
+            $issues[] = 'Código ISTMO faltante.';
+        }
+        if ($description === '') {
+            $issues[] = 'Nombre del artículo faltante.';
+        }
+
+        $initialRaw = $value(['INVENTARIO INICIAL']);
+        $entriesRaw = $value(['ENTRADAS']);
+        $exitsRaw = $value(['SALIDAS']);
+        $inventoryRaw = $value(['INVENTARIO']);
+
+        $initial = $this->numericOrNull($initialRaw);
+        $entries = $this->numericOrNull($entriesRaw);
+        $exits = $this->numericOrNull($exitsRaw);
+        $inventory = $this->numericOrNull($inventoryRaw);
+
+        if ($entries === null) {
+            $issues[] = 'Entradas acumuladas no numéricas.';
+        }
+        if ($exits === null) {
+            $issues[] = 'Salidas acumuladas no numéricas.';
+        }
+        if ($inventory === null) {
+            $issues[] = 'Inventario calculado no numérico.';
+        }
+
+        if ($entries !== null && $exits !== null && $inventory !== null) {
+            $expected = ($initial ?? 0.0) + $entries - $exits;
+            if (abs($expected - $inventory) > 0.0005) {
+                $issues[] = sprintf(
+                    'La aritmética del inventario no coincide: %.3f + %.3f - %.3f = %.3f, archivo %.3f.',
+                    $initial ?? 0.0,
+                    $entries,
+                    $exits,
+                    $expected,
+                    $inventory
+                );
+            }
+        }
+
+        [$mappingVariantId, $mappedSize, $mappingIssues] = $this->mapVariant($code);
+        array_push($issues, ...$mappingIssues);
+
+        return [
+            'normalized_code' => $code !== '' ? $code : null,
+            'normalized_description' => $description !== '' ? $description : null,
+            'normalized_product' => $description !== '' ? $description : null,
+            'normalized_category' => $category !== '' ? $category : null,
+            'normalized_size' => $mappedSize,
+            'normalized_sex' => null,
+            'normalized_initial_quantity' => $initial,
+            'normalized_entries_quantity' => $entries,
+            'normalized_exits_quantity' => $exits,
+            'normalized_quantity' => $inventory,
+            'mapping_variant_id' => $mappingVariantId,
+            'row_status' => $issues === [] ? 'ready' : 'review',
+            'issues' => $issues,
+        ];
+    }
+
+    private function normalizeHistoricalMovementRow(
+        array $row,
+        array $headers,
+        string $direction
+    ): ?array {
+        $value = function (array $names) use ($row, $headers): string {
+            foreach ($names as $name) {
+                $key = $this->normalizeHeader($name);
+                if (isset($headers[$key])) {
+                    return trim((string) ($row[$headers[$key]] ?? ''));
+                }
+            }
+            return '';
+        };
+
+        $date = $value(['FECHA']);
+        $code = $value(['CÓDIGO ISTMO']);
+        $product = $value(['PRODUCTO']);
+        $quantityKey = $this->normalizeHeader('CANTIDAD');
+        $quantityRaw = isset($headers[$quantityKey])
+            ? ($row[$headers[$quantityKey]] ?? null)
+            : null;
+        $quantityText = trim((string) ($quantityRaw ?? ''));
+
+        if (
+            $code === ''
+            && $date === ''
+            && ($product === '' || $product === '0')
+            && $quantityText === ''
+        ) {
+            return null;
+        }
+
+        $issues = [];
+
+        if ($date === '') {
+            $issues[] = 'Fecha del movimiento faltante.';
+        }
+        if ($code === '') {
+            $issues[] = 'Código ISTMO faltante.';
+        }
+        if ($product === '' || $product === '0') {
+            $issues[] = 'Producto del movimiento faltante.';
+        }
+
+        $quantity = $this->numericOrNull($quantityText);
+        if ($quantity === null) {
+            $issues[] = 'Cantidad del movimiento no numérica o faltante.';
+        } elseif (is_string($quantityRaw)) {
+            $issues[] = 'Cantidad almacenada como texto en el archivo fuente.';
+        }
+
+        [$mappingVariantId, $mappedSize, $mappingIssues] = $this->mapVariant($code);
+        array_push($issues, ...$mappingIssues);
+
+        $issues[] = $direction === 'entry'
+            ? 'Entrada histórica conservada como referencia; Fase 13A no crea movimientos en el kardex.'
+            : 'Salida histórica conservada como referencia; Fase 13A no crea movimientos en el kardex.';
+
+        return [
+            'normalized_code' => $code !== '' ? $code : null,
+            'normalized_description' => $product !== '' && $product !== '0' ? $product : null,
+            'normalized_product' => $product !== '' && $product !== '0' ? $product : null,
+            'normalized_category' => null,
+            'normalized_size' => $mappedSize,
+            'normalized_sex' => null,
+            'normalized_initial_quantity' => null,
+            'normalized_entries_quantity' => $direction === 'entry' ? $quantity : null,
+            'normalized_exits_quantity' => $direction === 'exit' ? $quantity : null,
+            'normalized_quantity' => $quantity,
+            'mapping_variant_id' => $mappingVariantId,
+            'row_status' => 'review',
+            'issues' => $issues,
+        ];
+    }
+
+    private function normalizeReferenceRow(array $row, string $profile): ?array
+    {
+        $nonEmpty = array_values(array_filter(
+            array_map(
+                static fn ($value): string => trim((string) $value),
+                $row
+            ),
+            static fn (string $value): bool => $value !== ''
+        ));
+
+        if ($nonEmpty === []) {
+            return null;
+        }
+
+        $label = match ($profile) {
+            'rendition_report' => 'Rendición histórica',
+            'legacy_inventory_summary' => 'Resumen histórico de inventario',
+            default => 'Reporte histórico de referencia',
+        };
+
+        return [
+            'normalized_code' => null,
+            'normalized_description' => mb_substr($nonEmpty[0], 0, 255),
+            'normalized_product' => null,
+            'normalized_category' => null,
+            'normalized_size' => null,
+            'normalized_sex' => null,
+            'normalized_initial_quantity' => null,
+            'normalized_entries_quantity' => null,
+            'normalized_exits_quantity' => null,
+            'normalized_quantity' => null,
+            'mapping_variant_id' => null,
+            'row_status' => 'review',
+            'issues' => [
+                $label . '; se conserva para consulta y no se archiva como stock ni como kardex.',
+            ],
+        ];
+    }
+
+    private function mapVariant(string $code): array
+    {
+        if ($code === '') {
+            return [null, null, []];
+        }
+
+        $matches = $this->repository->matchVariantsByOfficialCode($code);
+
+        if (count($matches) === 1) {
+            return [
+                (int) $matches[0]['id'],
+                trim((string) ($matches[0]['size_name'] ?? '')) ?: null,
+                [],
+            ];
+        }
+
+        if ($matches === []) {
+            return [null, null, ['Código no encontrado en el catálogo actual.']];
+        }
+
+        return [null, null, ['Código ambiguo: coincide con varias variantes.']];
+    }
+
+    private function validateWorkbookConsistency(int $batchId): void
+    {
+        $controlRows = $this->repository->rowsForProfile(
+            $batchId,
+            'inventory_control_2026'
+        );
+
+        if ($controlRows === []) {
+            return;
+        }
+
+        $entryTotals = $this->repository->movementTotalsByCode(
+            $batchId,
+            'historical_entries_2024_2026'
+        );
+        $exitTotals = $this->repository->movementTotalsByCode(
+            $batchId,
+            'historical_exits_2024_2026'
+        );
+
+        if ($entryTotals === [] && $exitTotals === []) {
+            return;
+        }
+
+        $sheetIds = [];
+
+        foreach ($controlRows as $row) {
+            $code = $this->normalizeCode((string) ($row['normalized_code'] ?? ''));
+            if ($code === '') {
+                continue;
+            }
+
+            $issues = json_decode((string) ($row['issues_json'] ?? ''), true);
+            $issues = is_array($issues) ? array_values($issues) : [];
+
+            $expectedEntries = $this->nullableFloat($row['normalized_entries_quantity'] ?? null);
+            $expectedExits = $this->nullableFloat($row['normalized_exits_quantity'] ?? null);
+            $actualEntries = $entryTotals[$code] ?? 0.0;
+            $actualExits = $exitTotals[$code] ?? 0.0;
+
+            if (
+                $expectedEntries !== null
+                && abs($expectedEntries - $actualEntries) > 0.0005
+            ) {
+                $issues[] = sprintf(
+                    'Totales de entradas no coinciden con ENTRADAS: control %.3f vs detalle %.3f.',
+                    $expectedEntries,
+                    $actualEntries
+                );
+            }
+
+            if (
+                $expectedExits !== null
+                && abs($expectedExits - $actualExits) > 0.0005
+            ) {
+                $issues[] = sprintf(
+                    'Totales de salidas no coinciden con SALIDAS: control %.3f vs detalle %.3f.',
+                    $expectedExits,
+                    $actualExits
+                );
+            }
+
+            if (count($issues) !== count(json_decode((string) ($row['issues_json'] ?? ''), true) ?: [])) {
+                $this->repository->markRowForReview((int) $row['id'], $issues);
+                $sheetIds[(int) $row['sheet_id']] = true;
+            }
+        }
+
+        foreach (array_keys($sheetIds) as $sheetId) {
+            $this->repository->refreshSheetCounters((int) $sheetId);
+        }
+    }
+
+    private function normalizeCode(string $code): string
+    {
+        return mb_strtoupper(str_replace(' ', '', trim($code)));
+    }
+
+    private function nullableFloat(mixed $value): ?float
+    {
+        if ($value === null || trim((string) $value) === '') {
+            return null;
+        }
+
+        return is_numeric((string) $value) ? (float) $value : null;
     }
 
     private function normalizeIssueRow(array $row): ?array
