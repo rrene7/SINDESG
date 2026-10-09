@@ -161,6 +161,8 @@ $required = [
     'scripts/restore.php',
     'scripts/lib/BackupSupport.php',
     'docs/RESPALDO_RECUPERACION.md',
+    'docs/MANUAL_TECNICO.md',
+    'docs/MANUAL_USUARIO.md',
     'storage/backups/.gitkeep',
     'tests/catalog_schema_test.php',
     'tests/inventory_core_schema_test.php',
@@ -210,6 +212,7 @@ $required = [
     'tests/historical_closure_logic_test.php',
     'tests/readiness_logic_test.php',
     'tests/backup_recovery_logic_test.php',
+    'tests/manuals_logic_test.php',
 ];
 
 $errors = [];
