@@ -21,7 +21,7 @@ foreach ([
     "'storage/uploads'",
     "'storage/logs'",
     "'storage/cache'",
-    "'config/database.php'",
+    "'/config/database.php'",
     "'schema_migrations'",
     "'0.13.0-c'",
     "SHOW GRANTS",
