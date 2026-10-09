@@ -28,3 +28,9 @@
 .delivery-override-reason{margin-top:12px}.delivery-override-reason small{color:var(--muted)}
 .delivery-scope-audit{margin-top:13px;padding:13px;border:1px solid rgba(255,190,69,.35);border-radius:12px;background:rgba(255,190,69,.08)}
 .delivery-scope-audit strong{color:#ffd47b}.delivery-scope-audit p{margin:6px 0 0;color:#e9cf9c}
+
+.delivery-verification-panel{border-color:rgba(53,178,255,.3)}
+.delivery-verification-copy{margin:10px 0 16px;color:var(--muted);line-height:1.55}
+.delivery-verification-badge,.delivery-verification-status{display:inline-flex;align-items:center;justify-content:center;padding:6px 10px;border-radius:999px;font-size:.72rem;font-weight:800}
+.delivery-verification-badge.ok,.delivery-verification-status.ok{border:1px solid rgba(61,211,142,.32);background:rgba(61,211,142,.1);color:#9bf1c7}
+.delivery-verification-badge.warn,.delivery-verification-status.warn{border:1px solid rgba(255,190,92,.35);background:rgba(255,190,92,.1);color:#ffd491}

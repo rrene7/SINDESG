@@ -123,6 +123,9 @@ jobs:
       - name: Individual deliveries accounting test
         run: php tests/deliveries_accounting_test.php
 
+      - name: Delivery person history verification test
+        run: php tests/delivery_person_history_verification_test.php
+
       - name: Delivery scope override test
         run: php tests/delivery_scope_override_test.php
 

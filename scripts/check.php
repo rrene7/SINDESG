@@ -199,6 +199,7 @@ $required = [
     'tests/deliveries_schema_test.php',
     'tests/deliveries_logic_test.php',
     'tests/deliveries_accounting_test.php',
+    'tests/delivery_person_history_verification_test.php',
     'tests/delivery_scope_override_test.php',
     'tests/asset_cache_busting_test.php',
     'tests/adjustments_schema_test.php',

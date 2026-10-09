@@ -137,6 +137,14 @@ final class DeliveryController
                 'data' => [
                     'delivery' => $delivery,
                     'deliveryItems' => $this->repository->items($deliveryId),
+                    'deliveryVerification' => $delivery['status'] === 'confirmed'
+                        ? $this->repository->confirmationEvidence($deliveryId)
+                        : [
+                            'rows' => [],
+                            'expected' => 0,
+                            'verified' => 0,
+                            'all_verified' => false,
+                        ],
                     'p4StockOptions' => $delivery['status'] === 'draft'
                         ? $this->repository->stockOptionsForP4(
                             (int) $delivery['p4_warehouse_id']
