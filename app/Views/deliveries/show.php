@@ -83,6 +83,91 @@ $totalQuantity = array_sum(array_map(
     </aside>
 </section>
 
+<?php if ($delivery['status'] === 'confirmed'): ?>
+<section class="delivery-panel delivery-verification-panel">
+    <div class="delivery-section-head">
+        <div>
+            <span class="eyebrow">VERIFICACIÓN DE INVENTARIO</span>
+            <h2>P4 → funcionario</h2>
+        </div>
+        <span class="delivery-verification-badge <?= !empty($deliveryVerification['all_verified']) ? 'ok' : 'warn' ?>">
+            <?= e((int) ($deliveryVerification['verified'] ?? 0)) ?>/<?= e((int) ($deliveryVerification['expected'] ?? 0)) ?> renglones verificados
+        </span>
+    </div>
+
+    <?php if (!empty($deliveryVerification['all_verified'])): ?>
+        <p class="delivery-verification-copy">
+            Cada renglón tiene un movimiento OUT único en el P4 y la entrega ya forma parte del historial del funcionario.
+        </p>
+    <?php else: ?>
+        <div class="delivery-warning">
+            El despacho figura confirmado, pero uno o más renglones no coinciden con el movimiento esperado.
+            No registre otro despacho para compensar: revise esta trazabilidad.
+        </div>
+    <?php endif; ?>
+
+    <div class="responsive-table">
+        <table>
+            <thead>
+            <tr>
+                <th>Artículo</th>
+                <th>Entregado</th>
+                <th>P4 OUT</th>
+                <th>Stock P4 actual</th>
+                <th>Solicitud</th>
+                <th>Recibido / entregado</th>
+                <th>Estado</th>
+                <th>Kardex</th>
+            </tr>
+            </thead>
+            <tbody>
+            <?php foreach (($deliveryVerification['rows'] ?? []) as $row): ?>
+                <tr>
+                    <td>
+                        <strong><?= e($row['product_name']) ?></strong>
+                        <small class="delivery-cell-sub">
+                            <?= e($row['variant_code']) ?><?= !empty($row['size_name']) ? ' · Talla ' . e($row['size_name']) : '' ?>
+                        </small>
+                    </td>
+                    <td class="delivery-qty"><?= e(number_format((float) $row['expected_quantity'], 3, '.', ',')) ?></td>
+                    <td>
+                        <?php if (!empty($row['movement_id'])): ?>
+                            <?= e(number_format((float) $row['movement_quantity'], 3, '.', ',')) ?>
+                            <small class="delivery-cell-sub">#<?= e($row['movement_id']) ?></small>
+                        <?php else: ?>
+                            —
+                        <?php endif; ?>
+                    </td>
+                    <td><?= e(number_format((float) $row['p4_stock'], 3, '.', ',')) ?></td>
+                    <td><?= e($row['request_code'] ?: 'Stock libre P4') ?></td>
+                    <td>
+                        <?php if ($row['request_item_id'] !== null): ?>
+                            <?= e(number_format((float) $row['request_received'], 3, '.', ',')) ?>
+                            /
+                            <?= e(number_format((float) $row['request_delivered'], 3, '.', ',')) ?>
+                        <?php else: ?>
+                            —
+                        <?php endif; ?>
+                    </td>
+                    <td>
+                        <span class="delivery-verification-status <?= !empty($row['verified']) ? 'ok' : 'warn' ?>">
+                            <?= !empty($row['verified']) ? 'Verificado' : 'Revisar' ?>
+                        </span>
+                    </td>
+                    <td>
+                        <a class="delivery-link"
+                           href="<?= e(sindesg_url('?module=inventory&action=product&id=' . (int) $row['product_id'])) ?>">
+                            Ver artículo →
+                        </a>
+                    </td>
+                </tr>
+            <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
+</section>
+<?php endif; ?>
+
 <?php if ($delivery['status'] === 'draft'): ?>
 <section class="delivery-panel no-print">
     <div class="delivery-section-head">
