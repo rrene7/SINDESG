@@ -49,6 +49,8 @@ foreach ([
     'movementTotalsByCode',
     'markRowForReview',
     'resetStaging',
+    'mappingDiagnostics',
+    'unmappedControlExamples',
     "IN ('inventory_normalized_2026', 'inventory_control_2026')",
 ] as $fragment) {
     if (!str_contains($repository, $fragment)) {
@@ -70,6 +72,13 @@ if (!str_contains($router, 'new HistoricalImportController')) {
 if (!str_contains($controller, "$action === 'reprocess'")) {
     fwrite(STDERR, "[ERROR] El lote histórico existente no puede reprocesarse de forma segura." . PHP_EOL);
     exit(1);
+}
+
+foreach (['mappingDiagnostics', 'unmappedControlExamples'] as $fragment) {
+    if (!str_contains($controller, $fragment)) {
+        fwrite(STDERR, "[ERROR] Falta diagnóstico de mapeo histórico: {$fragment}" . PHP_EOL);
+        exit(1);
+    }
 }
 
 foreach (["'migration' => 'migration.view'", "'migration' => 'migration.manage'"] as $fragment) {
