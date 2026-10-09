@@ -889,14 +889,42 @@ final class HistoricalImportService
 
     private function normalizeHeader(string $value): string
     {
-        $value = trim($value);
+        $value = mb_strtoupper(trim($value), 'UTF-8');
+
+        // No dependemos de la transliteración de iconv porque cambia entre
+        // Linux y algunas instalaciones de PHP/XAMPP en Windows.
+        $value = strtr($value, [
+            'Á' => 'A',
+            'À' => 'A',
+            'Ä' => 'A',
+            'Â' => 'A',
+            'Ã' => 'A',
+            'É' => 'E',
+            'È' => 'E',
+            'Ë' => 'E',
+            'Ê' => 'E',
+            'Í' => 'I',
+            'Ì' => 'I',
+            'Ï' => 'I',
+            'Î' => 'I',
+            'Ó' => 'O',
+            'Ò' => 'O',
+            'Ö' => 'O',
+            'Ô' => 'O',
+            'Õ' => 'O',
+            'Ú' => 'U',
+            'Ù' => 'U',
+            'Ü' => 'U',
+            'Û' => 'U',
+            'Ñ' => 'N',
+            'Ç' => 'C',
+        ]);
 
         $ascii = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $value);
         if (is_string($ascii)) {
             $value = $ascii;
         }
 
-        $value = mb_strtoupper($value);
         $value = preg_replace('/[^A-Z0-9]+/', ' ', $value) ?? '';
         return trim(preg_replace('/\s+/', ' ', $value) ?? $value);
     }
