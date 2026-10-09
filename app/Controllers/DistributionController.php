@@ -114,6 +114,7 @@ final class DistributionController
                 'data' => [
                     'distribution' => $distribution,
                     'distributionItems' => $this->repository->items($distributionId),
+                    'distributionVerification' => $this->repository->movementEvidence($distributionId),
                     'employeeSearchUrl' => sindesg_url('public/api/employees.php'),
                 ],
             ];

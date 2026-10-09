@@ -88,6 +88,31 @@ $remainingToDistribute = max(0.0, $totalApproved - $totalDispatched);
     </aside>
 </section>
 
+<?php if (in_array($serviceRequest['status'], ['approved', 'partially_approved', 'fulfilled'], true)): ?>
+<section class="request-panel request-verification-panel">
+    <div class="request-section-head">
+        <div>
+            <span class="eyebrow">CONTROL DE COMPROMISO</span>
+            <h2>Solicitud → reserva lógica → distribución</h2>
+        </div>
+        <span class="request-verification-badge <?= ((int) ($requestCommitmentEvidence['direct_movements'] ?? 0)) === 0 ? 'ok' : 'warn' ?>">
+            <?= ((int) ($requestCommitmentEvidence['direct_movements'] ?? 0)) === 0 ? '0 movimientos directos' : 'Revisar movimientos directos' ?>
+        </span>
+    </div>
+
+    <div class="request-verification-summary">
+        <span><strong><?= e(number_format((float) ($requestCommitmentEvidence['approved'] ?? 0), 0, '.', ',')) ?></strong><small>Aprobado</small></span>
+        <span><strong><?= e(number_format((float) ($requestCommitmentEvidence['committed'] ?? 0), 0, '.', ',')) ?></strong><small>Comprometido</small></span>
+        <span><strong><?= e(number_format((float) ($requestCommitmentEvidence['dispatched'] ?? 0), 0, '.', ',')) ?></strong><small>Despachado</small></span>
+        <span><strong><?= e(number_format((float) ($requestCommitmentEvidence['received'] ?? 0), 0, '.', ',')) ?></strong><small>Recibido P4</small></span>
+    </div>
+
+    <p class="request-verification-copy">
+        Aprobar una solicitud no mueve inventario. La cantidad aprobada queda comprometida hasta que una distribución genera los movimientos reales Central → Tránsito → P4.
+    </p>
+</section>
+<?php endif; ?>
+
 <?php if ($serviceRequest['status'] === 'draft'): ?>
 <section class="request-panel">
     <div class="request-section-head">

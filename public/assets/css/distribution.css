@@ -12,3 +12,10 @@
 .distribution-empty{display:grid;place-items:center;align-content:center;min-height:200px;margin-top:14px;padding:22px;border:1px dashed rgba(53,178,255,.24);border-radius:16px;text-align:center;color:var(--muted)}.distribution-empty.compact{min-height:100px}.distribution-empty.standalone{min-height:420px}.distribution-empty-mark{width:58px;height:58px;display:grid;place-items:center;border:1px solid var(--line);border-radius:16px;color:#7bdcff;font-weight:900}
 @media(max-width:1000px){.distribution-ready-grid{grid-template-columns:1fr}.distribution-detail-grid{grid-template-columns:1fr}.distribution-timeline{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:720px){.distribution-hero,.distribution-detail-hero{display:grid}.distribution-stats{grid-template-columns:repeat(2,1fr)}.distribution-form-grid{grid-template-columns:1fr}.distribution-dl{grid-template-columns:1fr}.distribution-timeline{grid-template-columns:1fr}.distribution-detail-status{text-align:left}.distribution-section-head{display:grid}}
+
+.distribution-verification-panel{border-color:rgba(53,178,255,.28)}
+.distribution-verification-badge,.distribution-verification-status{display:inline-flex;padding:6px 10px;border-radius:999px;font-size:.72rem;font-weight:800}
+.distribution-verification-badge.ok,.distribution-verification-status.ok{border:1px solid rgba(61,211,142,.32);background:rgba(61,211,142,.1);color:#9bf1c7}
+.distribution-verification-badge.warn,.distribution-verification-status.warn{border:1px solid rgba(255,190,92,.35);background:rgba(255,190,92,.1);color:#ffd491}
+.distribution-kardex-link{color:#69d3ff;font-weight:750;font-size:.78rem}
+.distribution-kardex-link:hover{text-decoration:underline;color:#d4f5ff}

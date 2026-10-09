@@ -193,6 +193,7 @@ $required = [
     'tests/distribution_schema_test.php',
     'tests/distribution_logic_test.php',
     'tests/distribution_accounting_test.php',
+    'tests/request_distribution_verification_test.php',
     'tests/post_phase8_display_test.php',
     'tests/inventory_availability_test.php',
     'tests/deliveries_schema_test.php',

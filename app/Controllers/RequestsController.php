@@ -87,6 +87,7 @@ final class RequestsController
                 'data' => [
                     'serviceRequest' => $request,
                     'requestItems' => $this->repository->items($requestId),
+                    'requestCommitmentEvidence' => $this->repository->commitmentEvidence($requestId),
                     'variantOptions' => $this->repository->variantOptions(),
                     'employeeSearchUrl' => sindesg_url('public/api/employees.php'),
                 ],
