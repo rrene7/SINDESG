@@ -161,3 +161,6 @@ jobs:
 
       - name: Historical catalog preparation test
         run: php tests/historical_catalog_logic_test.php
+
+      - name: Historical reconciliation test
+        run: php tests/historical_reconciliation_logic_test.php
