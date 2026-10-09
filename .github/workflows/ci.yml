@@ -173,3 +173,12 @@ jobs:
 
       - name: Deployment readiness without databases
         run: php scripts/readiness.php --no-database
+
+      - name: Backup recovery logic test
+        run: php tests/backup_recovery_logic_test.php
+
+      - name: Backup command validation
+        run: php scripts/backup.php --validate-only
+
+      - name: Restore command validation
+        run: php scripts/restore.php --validate-only
