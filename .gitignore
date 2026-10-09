@@ -10,6 +10,10 @@ storage/logs/*
 !storage/logs/.gitkeep
 storage/cache/*
 !storage/cache/.gitkeep
+storage/backups/*
+!storage/backups/.gitkeep
+storage/uploads_restore_*
+storage/uploads_before_restore_*
 *.log
 
 # User uploads
