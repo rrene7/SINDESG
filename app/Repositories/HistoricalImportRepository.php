@@ -323,6 +323,225 @@ final class HistoricalImportRepository
         return $statement->fetchAll();
     }
 
+    public function historicalResolutionSchemaReady(): bool
+    {
+        $exists = $this->pdo->query(
+            "SELECT COUNT(*)
+             FROM information_schema.tables
+             WHERE table_schema = DATABASE()
+               AND table_name = 'historical_import_resolutions'"
+        )->fetchColumn();
+
+        return (int) $exists === 1;
+    }
+
+    public function controlDiscrepancyRows(int $batchId): array
+    {
+        $statement = $this->pdo->prepare(<<<'SQL'
+            SELECT
+                r.*,
+                s.sheet_name,
+                pv.internal_code AS mapped_internal_code,
+                pv.institutional_code AS mapped_institutional_code,
+                p.name AS mapped_product_name,
+                sz.name AS mapped_size_name
+            FROM historical_import_rows r
+            INNER JOIN historical_import_sheets s ON s.id = r.sheet_id
+            LEFT JOIN product_variants pv ON pv.id = r.mapping_variant_id
+            LEFT JOIN products p ON p.id = pv.product_id
+            LEFT JOIN sizes sz ON sz.id = pv.size_id
+            WHERE r.batch_id = :batch_id
+              AND r.row_profile = 'inventory_control_2026'
+              AND r.row_status = 'review'
+              AND r.mapping_variant_id IS NOT NULL
+              AND (
+                    r.issues_json LIKE '%Totales de entradas no coinciden con ENTRADAS:%'
+                 OR r.issues_json LIKE '%Totales de salidas no coinciden con SALIDAS:%'
+                 OR r.issues_json LIKE '%La aritmética del inventario no coincide:%'
+              )
+            ORDER BY r.source_row_number
+        SQL);
+        $statement->execute(['batch_id' => $batchId]);
+
+        return $statement->fetchAll();
+    }
+
+    public function resolveControlRow(
+        int $batchId,
+        int $rowId,
+        array $resolution,
+        array $actor
+    ): array {
+        if (!$this->historicalResolutionSchemaReady()) {
+            throw new RuntimeException(
+                'Falta aplicar database/schema/018_historical_reconciliation.sql.'
+            );
+        }
+
+        $this->pdo->beginTransaction();
+
+        try {
+            $batch = $this->lockBatch($batchId);
+            if (!in_array($batch['status'], ['staged', 'partially_imported'], true)) {
+                throw new RuntimeException(
+                    'El lote ya no admite conciliaciones históricas.'
+                );
+            }
+
+            $statement = $this->pdo->prepare(
+                'SELECT *
+                 FROM historical_import_rows
+                 WHERE id = :id
+                   AND batch_id = :batch_id
+                 FOR UPDATE'
+            );
+            $statement->execute([
+                'id' => $rowId,
+                'batch_id' => $batchId,
+            ]);
+            $row = $statement->fetch();
+
+            if (!$row) {
+                throw new RuntimeException('La fila histórica no existe.');
+            }
+
+            if (
+                (string) $row['row_profile'] !== 'inventory_control_2026'
+                || (string) $row['row_status'] !== 'review'
+                || empty($row['mapping_variant_id'])
+            ) {
+                throw new RuntimeException(
+                    'La fila no está disponible para conciliación controlada.'
+                );
+            }
+
+            $existing = $this->pdo->prepare(
+                'SELECT id
+                 FROM historical_import_resolutions
+                 WHERE import_row_id = :row_id
+                 LIMIT 1'
+            );
+            $existing->execute(['row_id' => $rowId]);
+
+            if ($existing->fetchColumn() !== false) {
+                throw new RuntimeException('Esta fila histórica ya fue conciliada.');
+            }
+
+            $issues = json_decode((string) ($row['issues_json'] ?? ''), true);
+            $issues = is_array($issues) ? array_values($issues) : [];
+
+            $remainingIssues = array_values(array_filter(
+                $issues,
+                static fn ($issue): bool =>
+                    !str_starts_with(
+                        (string) $issue,
+                        'Totales de salidas no coinciden con SALIDAS:'
+                    )
+            ));
+
+            $insert = $this->pdo->prepare(<<<'SQL'
+                INSERT INTO historical_import_resolutions
+                    (
+                        batch_id,
+                        import_row_id,
+                        resolution_type,
+                        official_code_snapshot,
+                        original_initial_quantity,
+                        original_entries_quantity,
+                        original_exits_quantity,
+                        original_recalculated_quantity,
+                        resolved_initial_quantity,
+                        resolved_entries_quantity,
+                        resolved_exits_quantity,
+                        resolved_recalculated_quantity,
+                        source_reference,
+                        reason,
+                        resolved_by_user_id,
+                        resolved_by_label_snapshot
+                    )
+                VALUES
+                    (
+                        :batch_id,
+                        :import_row_id,
+                        'normalized_source',
+                        :official_code_snapshot,
+                        :original_initial_quantity,
+                        :original_entries_quantity,
+                        :original_exits_quantity,
+                        :original_recalculated_quantity,
+                        :resolved_initial_quantity,
+                        :resolved_entries_quantity,
+                        :resolved_exits_quantity,
+                        :resolved_recalculated_quantity,
+                        :source_reference,
+                        :reason,
+                        :resolved_by_user_id,
+                        :resolved_by_label_snapshot
+                    )
+            SQL);
+            $insert->execute([
+                'batch_id' => $batchId,
+                'import_row_id' => $rowId,
+                'official_code_snapshot' => (string) ($row['normalized_code'] ?? ''),
+                'original_initial_quantity' => $row['normalized_initial_quantity'],
+                'original_entries_quantity' => $row['normalized_entries_quantity'],
+                'original_exits_quantity' => $row['normalized_exits_quantity'],
+                'original_recalculated_quantity' => $row['normalized_quantity'],
+                'resolved_initial_quantity' => $resolution['initial_quantity'],
+                'resolved_entries_quantity' => $resolution['entries_quantity'],
+                'resolved_exits_quantity' => $resolution['exits_quantity'],
+                'resolved_recalculated_quantity' => $resolution['recalculated_quantity'],
+                'source_reference' => $resolution['source_reference'],
+                'reason' => $resolution['reason'],
+                'resolved_by_user_id' => $actor['id'],
+                'resolved_by_label_snapshot' => $actor['display_name'],
+            ]);
+
+            $update = $this->pdo->prepare(
+                'UPDATE historical_import_rows
+                 SET normalized_initial_quantity = :initial_quantity,
+                     normalized_entries_quantity = :entries_quantity,
+                     normalized_exits_quantity = :exits_quantity,
+                     normalized_quantity = :recalculated_quantity,
+                     row_status = :row_status,
+                     issues_json = :issues_json
+                 WHERE id = :id'
+            );
+            $update->execute([
+                'initial_quantity' => $resolution['initial_quantity'],
+                'entries_quantity' => $resolution['entries_quantity'],
+                'exits_quantity' => $resolution['exits_quantity'],
+                'recalculated_quantity' => $resolution['recalculated_quantity'],
+                'row_status' => $remainingIssues === [] ? 'ready' : 'review',
+                'issues_json' => $remainingIssues === []
+                    ? null
+                    : (json_encode(
+                        $remainingIssues,
+                        JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
+                    ) ?: '[]'),
+                'id' => $rowId,
+            ]);
+
+            $this->refreshSheetCounters((int) $row['sheet_id']);
+
+            $this->pdo->commit();
+
+            return [
+                'row_id' => $rowId,
+                'code' => (string) ($row['normalized_code'] ?? ''),
+                'original_exits' => $row['normalized_exits_quantity'],
+                'resolved_exits' => $resolution['exits_quantity'],
+                'resolved_quantity' => $resolution['recalculated_quantity'],
+                'row_status' => $remainingIssues === [] ? 'ready' : 'review',
+            ];
+        } catch (\Throwable $exception) {
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+            throw $exception;
+        }
+    }
+
     public function mappingDiagnostics(int $batchId): array
     {
         $statement = $this->pdo->prepare(<<<'SQL'
