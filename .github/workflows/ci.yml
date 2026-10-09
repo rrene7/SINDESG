@@ -164,3 +164,6 @@ jobs:
 
       - name: Historical reconciliation test
         run: php tests/historical_reconciliation_logic_test.php
+
+      - name: Historical closure test
+        run: php tests/historical_closure_logic_test.php
