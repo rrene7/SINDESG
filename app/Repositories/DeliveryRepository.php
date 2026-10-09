@@ -375,6 +375,7 @@ final class DeliveryRepository
                 di.*,
                 pv.internal_code AS variant_code,
                 pv.institutional_code,
+                p.id AS product_id,
                 p.name AS product_name,
                 c.name AS category_name,
                 s.name AS size_name,
@@ -403,6 +404,102 @@ final class DeliveryRepository
         $statement->execute(['delivery_id' => $deliveryId]);
 
         return $statement->fetchAll();
+    }
+
+    public function confirmationEvidence(int $deliveryId): array
+    {
+        $delivery = $this->find($deliveryId);
+        if ($delivery === null) {
+            return [
+                'rows' => [],
+                'expected' => 0,
+                'verified' => 0,
+                'all_verified' => false,
+            ];
+        }
+
+        $statement = $this->pdo->prepare(<<<'SQL'
+            SELECT
+                di.id AS delivery_item_id,
+                di.quantity AS expected_quantity,
+                di.request_item_id,
+                p.id AS product_id,
+                p.name AS product_name,
+                pv.id AS variant_id,
+                pv.internal_code AS variant_code,
+                s.name AS size_name,
+                sr.request_code,
+
+                im.id AS movement_id,
+                im.quantity AS movement_quantity,
+                im.occurred_at AS movement_at,
+
+                CAST(COALESCE(vs.quantity_on_hand, 0) AS DECIMAL(14,3)) AS p4_stock,
+                CAST(COALESCE(sri.quantity_received, 0) AS DECIMAL(14,3)) AS request_received,
+                CAST(COALESCE(sri.quantity_delivered, 0) AS DECIMAL(14,3)) AS request_delivered
+            FROM individual_delivery_items di
+            INNER JOIN individual_deliveries d ON d.id = di.delivery_id
+            INNER JOIN product_variants pv ON pv.id = di.product_variant_id
+            INNER JOIN products p ON p.id = pv.product_id
+            LEFT JOIN sizes s ON s.id = pv.size_id
+            LEFT JOIN service_request_items sri ON sri.id = di.request_item_id
+            LEFT JOIN service_requests sr ON sr.id = sri.request_id
+            LEFT JOIN inventory_movements im
+                ON im.source_key = CONCAT(
+                    'individual-delivery:',
+                    di.delivery_id,
+                    ':item:',
+                    di.id
+                )
+               AND im.reference_type = 'individual_delivery'
+               AND im.reference_id = di.delivery_id
+               AND im.movement_kind = 'individual_delivery'
+               AND im.direction = 'OUT'
+               AND im.warehouse_id = d.p4_warehouse_id
+               AND im.product_variant_id = di.product_variant_id
+            LEFT JOIN v_inventory_stock vs
+                ON vs.warehouse_id = d.p4_warehouse_id
+               AND vs.product_variant_id = di.product_variant_id
+            WHERE di.delivery_id = :delivery_id
+            ORDER BY di.id
+        SQL);
+        $statement->execute(['delivery_id' => $deliveryId]);
+        $rows = $statement->fetchAll();
+
+        $verified = 0;
+        foreach ($rows as &$row) {
+            $movementMatches =
+                !empty($row['movement_id'])
+                && abs(
+                    (float) ($row['movement_quantity'] ?? 0)
+                    - (float) ($row['expected_quantity'] ?? 0)
+                ) < 0.0005;
+
+            $requestMatches = true;
+            if ($row['request_item_id'] !== null) {
+                $requestMatches =
+                    (float) ($row['request_delivered'] ?? 0)
+                    <= (float) ($row['request_received'] ?? 0) + 0.0005;
+            }
+
+            $row['verified'] = $delivery['status'] === 'confirmed'
+                && $movementMatches
+                && $requestMatches;
+
+            if ($row['verified']) {
+                $verified++;
+            }
+        }
+        unset($row);
+
+        return [
+            'rows' => $rows,
+            'expected' => count($rows),
+            'verified' => $verified,
+            'all_verified' => $delivery['status'] === 'confirmed'
+                && $rows !== []
+                && $verified === count($rows),
+        ];
     }
 
     public function stockOptionsForP4(int $warehouseId): array
