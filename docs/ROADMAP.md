@@ -348,6 +348,7 @@ Estado actual del desarrollo por bloques:
 - Fase 14A: validación integral y preparación de despliegue implementada.
 - Fase 14B: respaldo y recuperación verificable implementado y validado en XAMPP real.
 - Fase 14C: manual técnico y manual de usuario implementados y versionados.
-- Pendiente dentro de Fase 14: **14D despliegue institucional**.
+- Fase 14D: release candidate, despliegue Windows seguro y procedimiento institucional implementados.
+- Pendiente final: **validar el release candidate en el servidor institucional real y aprobar la puesta en servicio**.
 
 No se iniciará un bloque posterior hasta verificar el anterior en GitHub y en el entorno local.
