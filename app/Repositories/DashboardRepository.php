@@ -76,6 +76,115 @@ final class DashboardRepository
         SQL)->fetchAll();
     }
 
+    public function categoryFocusData(array $categories): array
+    {
+        $result = [];
+
+        foreach ($categories as $category) {
+            $categoryId = (int) ($category['id'] ?? 0);
+            if ($categoryId <= 0) {
+                continue;
+            }
+
+            $product = $this->featuredProductForCategory($categoryId);
+            $stock = $product
+                ? $this->stockBreakdownForProduct((int) $product['id'])
+                : [
+                    'central' => (float) ($category['stock_available'] ?? 0),
+                    'committed' => 0.0,
+                    'available' => (float) ($category['stock_available'] ?? 0),
+                    'p4' => 0.0,
+                    'transit' => 0.0,
+                ];
+
+            if ($product !== null) {
+                $product['stock_available'] = $stock['available'];
+            }
+
+            $result[$categoryId] = [
+                'category' => [
+                    'id' => $categoryId,
+                    'name' => (string) ($category['name'] ?? 'Categoría'),
+                    'slug' => (string) ($category['slug'] ?? ''),
+                    'image_path' => (string) ($category['image_path'] ?? ''),
+                    'product_count' => (int) ($category['product_count'] ?? 0),
+                    'stock_total' => (float) ($category['stock_total'] ?? 0),
+                    'stock_available' => (float) ($category['stock_available'] ?? 0),
+                ],
+                'product' => $product,
+                'stock' => $stock,
+                'sizes' => $product
+                    ? $this->sizesForProduct((int) $product['id'])
+                    : [],
+            ];
+        }
+
+        return $result;
+    }
+
+    public function featuredProductForCategory(int $categoryId): ?array
+    {
+        $statement = $this->pdo->prepare(<<<'SQL'
+            SELECT
+                p.id,
+                p.internal_code,
+                p.name,
+                p.description,
+                p.sex,
+                p.color,
+                c.id AS category_id,
+                c.name AS category_name,
+                pi.path AS primary_image,
+                CAST(COALESCE(ips.quantity_on_hand, 0) AS DECIMAL(14,3)) AS stock_total,
+                CAST(COALESCE((
+                    SELECT SUM(vs2.quantity_on_hand)
+                    FROM product_variants pv2
+                    INNER JOIN v_inventory_stock vs2 ON vs2.product_variant_id = pv2.id
+                    INNER JOIN warehouses w2 ON w2.id = vs2.warehouse_id
+                    WHERE pv2.product_id = p.id
+                      AND pv2.status = 'active'
+                      AND w2.code = 'CENTRAL-SG'
+                ), 0) AS DECIMAL(14,3)) AS central_stock,
+                CAST(COALESCE((
+                    SELECT SUM(GREATEST(sri.quantity_approved - sri.quantity_dispatched, 0))
+                    FROM service_request_items sri
+                    INNER JOIN service_requests sr
+                        ON sr.id = sri.request_id
+                       AND sr.status IN ('approved', 'partially_approved')
+                    INNER JOIN product_variants pvr ON pvr.id = sri.product_variant_id
+                    WHERE pvr.product_id = p.id
+                ), 0) AS DECIMAL(14,3)) AS committed_stock
+            FROM products p
+            INNER JOIN categories c ON c.id = p.category_id
+            LEFT JOIN v_inventory_product_stock ips ON ips.product_id = p.id
+            LEFT JOIN product_images pi
+                ON pi.product_id = p.id
+               AND pi.is_primary = 1
+            WHERE p.status = 'active'
+              AND p.category_id = :category_id
+            ORDER BY
+                CASE WHEN COALESCE(ips.quantity_on_hand, 0) > 0 THEN 0 ELSE 1 END,
+                COALESCE(ips.quantity_on_hand, 0) DESC,
+                CASE WHEN pi.id IS NULL THEN 1 ELSE 0 END,
+                p.created_at DESC,
+                p.id DESC
+            LIMIT 1
+        SQL);
+        $statement->execute(['category_id' => $categoryId]);
+        $row = $statement->fetch();
+
+        if (!$row) {
+            return null;
+        }
+
+        $row['stock_available'] = max(
+            0.0,
+            (float) ($row['central_stock'] ?? 0) - (float) ($row['committed_stock'] ?? 0)
+        );
+
+        return $row;
+    }
+
     public function featuredProduct(): ?array
     {
         $row = $this->pdo->query(<<<'SQL'
