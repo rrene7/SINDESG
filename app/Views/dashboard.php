@@ -22,6 +22,77 @@ $requestStatusLabels = [
     'fulfilled' => 'Atendida',
     'closed' => 'Cerrada',
 ];
+
+$categoryInitials = static function (array $category): string {
+    $slug = (string) ($category['slug'] ?? 'categoria');
+    $parts = array_values(array_filter(explode('-', $slug)));
+
+    if (count($parts) > 1) {
+        return strtoupper(substr($parts[0], 0, 1) . substr($parts[1], 0, 1));
+    }
+
+    return strtoupper(substr($parts[0] ?? 'CA', 0, 2));
+};
+
+$featuredCategoryId = (int) ($featuredProduct['category_id'] ?? 0);
+if ($featuredCategoryId <= 0 && $cards !== []) {
+    $featuredCategoryId = (int) ($cards[0]['id'] ?? 0);
+}
+
+$categoryFocusPayload = [];
+foreach ($cards as $category) {
+    $categoryId = (int) ($category['id'] ?? 0);
+    if ($categoryId <= 0) {
+        continue;
+    }
+
+    $focus = $dashboardCategoryFocus[$categoryId] ?? [];
+    $focusProduct = is_array($focus['product'] ?? null) ? $focus['product'] : null;
+    $focusStock = is_array($focus['stock'] ?? null) ? $focus['stock'] : [];
+    $focusSizes = is_array($focus['sizes'] ?? null) ? $focus['sizes'] : [];
+    $categoryUrl = sindesg_url('?module=inventory&category_id=' . $categoryId);
+
+    $categoryFocusPayload[(string) $categoryId] = [
+        'category' => [
+            'id' => $categoryId,
+            'name' => (string) ($category['name'] ?? 'Categoría'),
+            'initials' => $categoryInitials($category),
+            'url' => $categoryUrl,
+        ],
+        'product' => $focusProduct === null ? null : [
+            'id' => (int) ($focusProduct['id'] ?? 0),
+            'name' => (string) ($focusProduct['name'] ?? 'Artículo'),
+            'internal_code' => (string) ($focusProduct['internal_code'] ?? ''),
+            'description' => (string) (
+                $focusProduct['description']
+                ?? 'Artículo seleccionado automáticamente por disponibilidad dentro de esta categoría.'
+            ),
+            'color' => (string) ($focusProduct['color'] ?? 'Artículo disponible'),
+            'sex' => (string) ($focusProduct['sex'] ?? 'no aplica'),
+            'url' => sindesg_url('?module=inventory&action=product&id=' . (int) ($focusProduct['id'] ?? 0)),
+            'image_url' => !empty($focusProduct['primary_image'])
+                ? sindesg_upload_url((string) $focusProduct['primary_image'])
+                : '',
+        ],
+        'stock' => [
+            'available' => (float) ($focusStock['available'] ?? $category['stock_available'] ?? 0),
+            'central' => (float) ($focusStock['central'] ?? 0),
+            'committed' => (float) ($focusStock['committed'] ?? 0),
+            'p4' => (float) ($focusStock['p4'] ?? 0),
+            'transit' => (float) ($focusStock['transit'] ?? 0),
+            'institutional' => $focusProduct !== null
+                ? (float) ($focusProduct['stock_total'] ?? 0)
+                : (float) ($category['stock_total'] ?? 0),
+        ],
+        'sizes' => array_map(
+            static fn (array $size): array => [
+                'name' => (string) ($size['size_name'] ?? 'S/T'),
+                'quantity' => (float) ($size['quantity_on_hand'] ?? 0),
+            ],
+            $focusSizes
+        ),
+    ];
+}
 ?>
 <section class="hero">
     <div>
@@ -54,23 +125,25 @@ $requestStatusLabels = [
         <?php foreach ($cards as $index => $category): ?>
             <?php
             $categoryId = (int) ($category['id'] ?? 0);
-            $slug = (string) ($category['slug'] ?? 'categoria');
-            $parts = array_values(array_filter(explode('-', $slug)));
-            if (count($parts) > 1) {
-                $initials = strtoupper(substr($parts[0], 0, 1) . substr($parts[1], 0, 1));
-            } else {
-                $initials = strtoupper(substr($parts[0] ?? 'CA', 0, 2));
-            }
+            $initials = $categoryInitials($category);
             $categoryHref = $categoryId > 0
                 ? sindesg_url('?module=inventory&category_id=' . $categoryId)
                 : sindesg_url('?module=inventory');
-            $categoryImage = (string) ($category['image_path'] ?? '');
+            $focus = $dashboardCategoryFocus[$categoryId] ?? [];
+            $focusProduct = is_array($focus['product'] ?? null) ? $focus['product'] : null;
+            $categoryImage = $focusProduct !== null
+                ? (string) ($focusProduct['primary_image'] ?? '')
+                : '';
             $categoryInstitutionalStock = (float) ($category['stock_total'] ?? 0);
             $categoryAvailableStock = (float) ($category['stock_available'] ?? $categoryInstitutionalStock);
+            $isSelectedCategory = $categoryId > 0 && $categoryId === $featuredCategoryId;
             ?>
-            <a class="category-card <?= $categoryAvailableStock > 0 ? 'featured' : '' ?>"
-               href="<?= e($categoryHref) ?>"
-               data-searchable="<?= e($category['name']) ?>">
+            <article class="category-card <?= $isSelectedCategory ? 'featured is-selected' : '' ?>"
+                     data-dashboard-category-id="<?= e($categoryId) ?>"
+                     data-searchable="<?= e($category['name']) ?>"
+                     role="button"
+                     tabindex="0"
+                     aria-pressed="<?= $isSelectedCategory ? 'true' : 'false' ?>">
                 <div class="category-photo-placeholder">
                     <?php if ($categoryImage !== ''): ?>
                         <img src="<?= e(sindesg_upload_url($categoryImage)) ?>" alt="<?= e($category['name']) ?>">
@@ -82,31 +155,44 @@ $requestStatusLabels = [
                 <div class="category-card-copy">
                     <strong><?= e($category['name']) ?></strong>
                     <span class="stock-placeholder"><?= e(number_format($categoryAvailableStock, 0, '.', ',')) ?> disponibles</span>
-                    <small><?= e((int) ($category['product_count'] ?? 0)) ?> artículos · <?= e(number_format($categoryInstitutionalStock, 0, '.', ',')) ?> institucionales · Entrar</small>
+                    <small><?= e((int) ($category['product_count'] ?? 0)) ?> artículos · <?= e(number_format($categoryInstitutionalStock, 0, '.', ',')) ?> institucionales</small>
+                    <a class="category-enter-link" href="<?= e($categoryHref) ?>">Entrar a categoría →</a>
                 </div>
-            </a>
+            </article>
         <?php endforeach; ?>
     </div>
 </section>
 
-<section class="dashboard-grid">
+<script type="application/json" data-dashboard-category-focus>
+<?= json_encode(
+    $categoryFocusPayload,
+    JSON_UNESCAPED_UNICODE
+    | JSON_UNESCAPED_SLASHES
+    | JSON_HEX_TAG
+    | JSON_HEX_AMP
+    | JSON_HEX_APOS
+    | JSON_HEX_QUOT
+) ?>
+</script>
+
+<section class="dashboard-grid" data-dashboard-focus-panel>
     <article class="feature-panel">
         <div class="panel-heading">
             <div>
-                <span class="panel-icon">PR</span>
+                <span class="panel-icon" data-feature-icon>PR</span>
                 <div>
-                    <span class="eyebrow"><?= e($featuredCategory) ?></span>
-                    <h2><?= e($featuredName) ?></h2>
+                    <span class="eyebrow" data-feature-category><?= e($featuredCategory) ?></span>
+                    <h2 data-feature-name><?= e($featuredName) ?></h2>
                 </div>
             </div>
-            <a href="<?= e($featuredUrl) ?>">Abrir artículo →</a>
+            <a href="<?= e($featuredUrl) ?>" data-feature-link>Abrir artículo →</a>
         </div>
 
         <div class="product-focus">
             <div class="product-copy">
-                <h3><?= e($featuredProduct['color'] ?? 'Artículo disponible') ?></h3>
-                <p><?= e($featuredDescription) ?></p>
-                <div class="feature-tags">
+                <h3 data-feature-color><?= e($featuredProduct['color'] ?? 'Artículo disponible') ?></h3>
+                <p data-feature-description><?= e($featuredDescription) ?></p>
+                <div class="feature-tags" data-feature-tags>
                     <?php if ($featuredProduct): ?>
                         <span><?= e($featuredProduct['internal_code']) ?></span>
                         <span><?= e(number_format($featuredAvailableStock, 0, '.', ',')) ?> disponibles</span>
@@ -117,7 +203,7 @@ $requestStatusLabels = [
                     <?php endif; ?>
                 </div>
             </div>
-            <div class="product-image-placeholder dashboard-product-image">
+            <div class="product-image-placeholder dashboard-product-image" data-feature-image>
                 <?php if (!empty($featuredProduct['primary_image'])): ?>
                     <img src="<?= e(sindesg_upload_url((string) $featuredProduct['primary_image'])) ?>" alt="<?= e($featuredName) ?>">
                 <?php else: ?>
@@ -136,10 +222,10 @@ $requestStatusLabels = [
                 <span>STOCK DISPONIBLE</span>
             </div>
             <div class="metric-main">
-                <strong><?= e(number_format($featuredAvailableStock, 0, '.', ',')) ?></strong>
+                <strong data-feature-available><?= e(number_format($featuredAvailableStock, 0, '.', ',')) ?></strong>
                 <span>unidades libres para nuevas entregas</span>
             </div>
-            <div class="metric-note">
+            <div class="metric-note" data-feature-breakdown>
                 Central físico <?= e(number_format($featuredCentralStock, 0, '.', ',')) ?>
                 · Comprometido <?= e(number_format($featuredCommittedStock, 0, '.', ',')) ?>
                 · P4 <?= e(number_format((float) ($featuredStockBreakdown['p4'] ?? 0), 0, '.', ',')) ?>
@@ -153,7 +239,7 @@ $requestStatusLabels = [
                 <span class="panel-icon">TA</span>
                 <span>TALLAS DISPONIBLES</span>
             </div>
-            <div class="size-row">
+            <div class="size-row" data-feature-sizes>
                 <?php if ($featuredSizes === []): ?>
                     <span>—<small>Sin tallas con stock</small></span>
                 <?php else: ?>

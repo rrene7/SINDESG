@@ -16,6 +16,185 @@
         next.addEventListener('click', () => move(1));
     }
 
+    const focusPayload = qs('[data-dashboard-category-focus]');
+    const focusPanel = qs('[data-dashboard-focus-panel]');
+    const focusCards = Array.from(document.querySelectorAll('[data-dashboard-category-id]'));
+
+    if (focusPayload && focusPanel && focusCards.length) {
+        let categoryFocus = {};
+
+        try {
+            categoryFocus = JSON.parse(focusPayload.textContent || '{}');
+        } catch (error) {
+            categoryFocus = {};
+        }
+
+        const fields = {
+            category: qs('[data-feature-category]', focusPanel),
+            name: qs('[data-feature-name]', focusPanel),
+            color: qs('[data-feature-color]', focusPanel),
+            description: qs('[data-feature-description]', focusPanel),
+            link: qs('[data-feature-link]', focusPanel),
+            icon: qs('[data-feature-icon]', focusPanel),
+            tags: qs('[data-feature-tags]', focusPanel),
+            image: qs('[data-feature-image]', focusPanel),
+            available: qs('[data-feature-available]', focusPanel),
+            breakdown: qs('[data-feature-breakdown]', focusPanel),
+            sizes: qs('[data-feature-sizes]', focusPanel),
+        };
+
+        const number = new Intl.NumberFormat('es-PA', {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 3,
+        });
+
+        const value = (input) => number.format(Number(input || 0));
+
+        const replaceChildrenWithText = (element, values) => {
+            if (!element) return;
+            element.replaceChildren();
+
+            values.forEach((text) => {
+                const span = document.createElement('span');
+                span.textContent = text;
+                element.appendChild(span);
+            });
+        };
+
+        const renderImage = (entry) => {
+            if (!fields.image) return;
+
+            fields.image.replaceChildren();
+            const product = entry.product || null;
+
+            if (product?.image_url) {
+                const image = document.createElement('img');
+                image.src = product.image_url;
+                image.alt = product.name || entry.category?.name || 'Artículo';
+                fields.image.appendChild(image);
+                return;
+            }
+
+            const ring = document.createElement('div');
+            ring.className = 'scan-ring';
+
+            const monogram = document.createElement('div');
+            monogram.className = 'product-monogram';
+            monogram.textContent = entry.category?.initials || 'SG';
+
+            const label = document.createElement('span');
+            label.textContent = product ? 'Imagen pendiente' : 'Sin artículo destacado';
+
+            fields.image.append(ring, monogram, label);
+        };
+
+        const renderSizes = (sizes) => {
+            if (!fields.sizes) return;
+
+            fields.sizes.replaceChildren();
+
+            if (!Array.isArray(sizes) || sizes.length === 0) {
+                const item = document.createElement('span');
+                item.textContent = '—';
+
+                const small = document.createElement('small');
+                small.textContent = 'Sin tallas con stock';
+                item.appendChild(small);
+
+                fields.sizes.appendChild(item);
+                return;
+            }
+
+            sizes.forEach((size) => {
+                const item = document.createElement('span');
+                item.textContent = size.name || 'S/T';
+
+                const small = document.createElement('small');
+                small.textContent = value(size.quantity);
+                item.appendChild(small);
+
+                fields.sizes.appendChild(item);
+            });
+        };
+
+        const activateCategory = (card) => {
+            const categoryId = String(card.dataset.dashboardCategoryId || '');
+            const entry = categoryFocus[categoryId];
+            if (!entry) return;
+
+            focusCards.forEach((candidate) => {
+                const active = candidate === card;
+                candidate.classList.toggle('featured', active);
+                candidate.classList.toggle('is-selected', active);
+                candidate.setAttribute('aria-pressed', active ? 'true' : 'false');
+            });
+
+            const product = entry.product || null;
+            const stock = entry.stock || {};
+            const category = entry.category || {};
+
+            if (fields.category) fields.category.textContent = category.name || 'Categoría';
+            if (fields.name) fields.name.textContent = product?.name || category.name || 'Sin artículo destacado';
+            if (fields.color) fields.color.textContent = product?.color || (product ? 'Artículo disponible' : 'Categoría sin artículos');
+            if (fields.description) {
+                fields.description.textContent = product?.description
+                    || 'Esta categoría todavía no tiene artículos activos registrados en el catálogo.';
+            }
+            if (fields.icon) fields.icon.textContent = category.initials || 'SG';
+
+            if (fields.link) {
+                fields.link.href = product?.url || category.url || '#';
+                fields.link.textContent = product ? 'Abrir artículo →' : 'Abrir categoría →';
+            }
+
+            const institutional = value(stock.institutional);
+            const available = value(stock.available);
+
+            if (product) {
+                replaceChildrenWithText(fields.tags, [
+                    product.internal_code || 'Sin código',
+                    available + ' disponibles',
+                    institutional + ' unidades institucionales',
+                    product.sex || 'no aplica',
+                ]);
+            } else {
+                replaceChildrenWithText(fields.tags, [
+                    'Sin artículos activos',
+                    institutional + ' unidades institucionales',
+                ]);
+            }
+
+            renderImage(entry);
+
+            if (fields.available) fields.available.textContent = available;
+            if (fields.breakdown) {
+                fields.breakdown.textContent =
+                    'Central físico ' + value(stock.central)
+                    + ' · Comprometido ' + value(stock.committed)
+                    + ' · P4 ' + value(stock.p4)
+                    + ' · Tránsito ' + value(stock.transit)
+                    + ' · Institucional ' + institutional;
+            }
+
+            renderSizes(entry.sizes);
+        };
+
+        focusCards.forEach((card) => {
+            card.addEventListener('click', (event) => {
+                if (event.target.closest('a')) return;
+                activateCategory(card);
+            });
+
+            card.addEventListener('keydown', (event) => {
+                if (event.key !== 'Enter' && event.key !== ' ') return;
+                if (event.target.closest('a')) return;
+
+                event.preventDefault();
+                activateCategory(card);
+            });
+        });
+    }
+
     const moreToggle = qs('[data-more-toggle]');
     const moreMenu = qs('[data-more-menu]');
     if (moreToggle && moreMenu) {

@@ -5,8 +5,9 @@ $root = dirname(__DIR__);
 $repository = file_get_contents($root . '/app/Repositories/DashboardRepository.php');
 $view = file_get_contents($root . '/app/Views/dashboard.php');
 $index = file_get_contents($root . '/public/index.php');
+$javascript = file_get_contents($root . '/public/assets/js/app.js');
 
-if ($repository === false || $view === false || $index === false) {
+if ($repository === false || $view === false || $index === false || $javascript === false) {
     fwrite(STDERR, "[ERROR] No se pudo leer dashboard dinámico." . PHP_EOL);
     exit(1);
 }
@@ -17,6 +18,8 @@ foreach ([
     'product_images',
     'recentReceipts',
     'stockBreakdownForProduct',
+    'categoryFocusData',
+    'featuredProductForCategory',
     'recentRequests',
     'operationalSummary',
     'requests_pending_review',
@@ -37,6 +40,14 @@ foreach ([
     'recentDashboardReceipts',
     'recentDashboardRequests',
     'dashboardOperationalSummary',
+    'dashboardCategoryFocus',
+    'data-dashboard-category-id',
+    'data-dashboard-category-focus',
+    'data-dashboard-focus-panel',
+    'data-feature-category',
+    'data-feature-available',
+    'data-feature-sizes',
+    'Entrar a categoría',
     'sindesg_upload_url',
     'STOCK DISPONIBLE',
     'unidades libres para nuevas entregas',
@@ -64,6 +75,7 @@ if (
 
 foreach ([
     '$dashboardRepository->recentRequests(5)',
+    '$dashboardRepository->categoryFocusData($dashboardCategories)',
     '$dashboardRepository->operationalSummary()',
 ] as $fragment) {
     if (!str_contains($index, $fragment)) {
@@ -72,4 +84,18 @@ foreach ([
     }
 }
 
-echo "[OK] Dashboard dinámico y operativo validado." . PHP_EOL;
+foreach ([
+    "querySelectorAll('[data-dashboard-category-id]')",
+    "JSON.parse(focusPayload.textContent || '{}')",
+    'activateCategory',
+    "candidate.classList.toggle('is-selected', active)",
+    "fields.link.textContent = product ? 'Abrir artículo →' : 'Abrir categoría →'",
+    'renderSizes(entry.sizes)',
+] as $fragment) {
+    if (!str_contains($javascript, $fragment)) {
+        fwrite(STDERR, "[ERROR] Interacción de categorías incompleta: {$fragment}" . PHP_EOL);
+        exit(1);
+    }
+}
+
+echo "[OK] Dashboard dinámico, operativo y selector de categorías validados." . PHP_EOL;
