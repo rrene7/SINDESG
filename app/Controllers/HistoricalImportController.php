@@ -98,6 +98,8 @@ final class HistoricalImportController
                     'selectedSheetId' => $sheetId,
                     'selectedRowStatus' => $status,
                     'snapshotCount' => $this->repository->countSnapshotsForBatch($batchId),
+                    'mappingDiagnostics' => $this->repository->mappingDiagnostics($batchId),
+                    'unmappedControlExamples' => $this->repository->unmappedControlExamples($batchId, 8),
                 ],
             ];
         }

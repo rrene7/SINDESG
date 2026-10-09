@@ -89,6 +89,51 @@ $decodeIssues = static function (?string $json): array {
     </div>
 </section>
 
+<?php if (($mappingDiagnostics['total'] ?? 0) > 0): ?>
+<section class="migration-panel">
+    <div class="migration-section-head">
+        <div>
+            <span class="eyebrow">DIAGNÓSTICO DE CATÁLOGO</span>
+            <h2>Mapeo del Control de inventario</h2>
+            <p>Este diagnóstico solo compara los 182 registros del control con el catálogo actual. No crea productos, variantes, entradas ni salidas.</p>
+        </div>
+    </div>
+
+    <section class="migration-stats">
+        <article><span>Registros control</span><strong><?= e($mappingDiagnostics['total']) ?></strong><small>Base histórica detectada</small></article>
+        <article><span>Mapeados</span><strong><?= e($mappingDiagnostics['mapped']) ?></strong><small>Código vinculado a variante actual</small></article>
+        <article><span>Sin coincidencia</span><strong><?= e($mappingDiagnostics['missing_catalog']) ?></strong><small>No existe código equivalente en catálogo</small></article>
+        <article><span>Ambiguos</span><strong><?= e($mappingDiagnostics['ambiguous']) ?></strong><small>Más de una variante coincide</small></article>
+        <article><span>Diferencias entradas</span><strong><?= e($mappingDiagnostics['entry_mismatch']) ?></strong><small>Control ≠ detalle de ENTRADAS</small></article>
+        <article><span>Diferencias salidas</span><strong><?= e($mappingDiagnostics['exit_mismatch']) ?></strong><small>Control ≠ detalle de SALIDAS</small></article>
+        <article><span>Diferencia aritmética</span><strong><?= e($mappingDiagnostics['arithmetic_mismatch']) ?></strong><small>Inicial + entradas - salidas ≠ inventario</small></article>
+        <article><span>Listas</span><strong><?= e($mappingDiagnostics['ready']) ?></strong><small>Sin incidencias pendientes</small></article>
+    </section>
+
+    <?php if ($unmappedControlExamples !== []): ?>
+        <div class="migration-table-wrap">
+            <table class="migration-table">
+                <thead>
+                <tr><th colspan="4">Ejemplos sin mapeo al catálogo actual</th></tr>
+                <tr><th>Código ISTMO</th><th>Descripción</th><th>Tipo</th><th>Motivo</th></tr>
+                </thead>
+                <tbody>
+                <?php foreach ($unmappedControlExamples as $example): ?>
+                    <?php $exampleIssues = $decodeIssues($example['issues_json'] ?? null); ?>
+                    <tr>
+                        <td><code><?= e($example['normalized_code'] ?: '—') ?></code></td>
+                        <td><?= e($example['normalized_description'] ?: '—') ?></td>
+                        <td><?= e($example['normalized_category'] ?: '—') ?></td>
+                        <td><?= e($exampleIssues[0] ?? 'Sin coincidencia de variante') ?></td>
+                    </tr>
+                <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+    <?php endif; ?>
+</section>
+<?php endif; ?>
+
 <section class="migration-panel">
     <div class="migration-section-head">
         <div><span class="eyebrow">HOJAS</span><h2>Clasificación detectada</h2></div>
