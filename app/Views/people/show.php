@@ -50,6 +50,43 @@ $fullName = trim((string) $person['first_name'] . ' ' . (string) $person['last_n
     </article>
 </section>
 
+<section class="people-panel person-delivery-history">
+    <div class="people-section-head">
+        <div>
+            <span class="eyebrow">HISTORIAL SINDESG</span>
+            <h2>Dotaciones entregadas</h2>
+        </div>
+        <a class="secondary-button"
+           href="<?= e(sindesg_url('?module=deliveries&action=history&employee_id=' . (int) $person['employee_id'])) ?>">
+            Historial completo
+        </a>
+    </div>
+
+    <?php if (($deliveryHistory ?? []) === []): ?>
+        <div class="people-empty compact">
+            <p>Este funcionario no tiene entregas confirmadas registradas en SINDESG.</p>
+        </div>
+    <?php else: ?>
+        <div class="person-delivery-grid">
+            <?php foreach ($deliveryHistory as $row): ?>
+                <a href="<?= e(sindesg_url('?module=deliveries&action=show&id=' . (int) $row['delivery_id'])) ?>">
+                    <span>
+                        <strong><?= e($row['product_name']) ?></strong>
+                        <small>
+                            <?= e($row['variant_code']) ?>
+                            <?= !empty($row['size_name']) ? ' · Talla ' . e($row['size_name']) : '' ?>
+                        </small>
+                    </span>
+                    <span>
+                        <strong><?= e(number_format((float) $row['quantity'], 3, '.', ',')) ?></strong>
+                        <small><?= e(date('d/m/Y', strtotime((string) $row['delivered_at']))) ?> · <?= e($row['p4_code']) ?></small>
+                    </span>
+                </a>
+            <?php endforeach; ?>
+        </div>
+    <?php endif; ?>
+</section>
+
 <section class="people-source-note">
     <strong>Fuente maestra RRHH2029</strong>
     <span>Esta ficha se consulta en tiempo real. SINDESG no edita estos datos.</span>
