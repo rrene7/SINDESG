@@ -1,0 +1,16 @@
+{
+  "source": "estructura_sistema_inventario_uniformes_2026.xlsx",
+  "source_version": "2026-normalized-v1",
+  "reconciliations": [
+    {
+      "source_variant_id": "VAR-0052",
+      "official_code": "999015TL38",
+      "description": "UNIFORME REGULAR FLARE TACTICAL TL38 F",
+      "initial_quantity": 493,
+      "entries_quantity": 3,
+      "exits_quantity": 255,
+      "recalculated_quantity": 241,
+      "reason": "La estructura normalizada usa el detalle histórico de SALIDAS para corregir una diferencia de una unidad frente al control original."
+    }
+  ]
+}
