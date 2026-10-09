@@ -345,7 +345,8 @@ Estado actual del desarrollo por bloques:
 
 - Fases 0–12: implementadas por bloques.
 - Fase 13: cerrada mediante 13A staging seguro, 13B catálogo histórico, 13C conciliación y 13D cierre controlado.
-- Fase 14A: validación integral y preparación de despliegue en curso.
-- Pendientes dentro de Fase 14: **14B respaldo/recuperación, 14C manuales y 14D despliegue institucional**.
+- Fase 14A: validación integral y preparación de despliegue implementada.
+- Fase 14B: respaldo y recuperación verificable implementado; pendiente prueba real en XAMPP.
+- Pendientes dentro de Fase 14: **14C manuales y 14D despliegue institucional**.
 
 No se iniciará un bloque posterior hasta verificar el anterior en GitHub y en el entorno local.
