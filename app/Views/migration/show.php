@@ -70,6 +70,14 @@ $decodeIssues = static function (?string $json): array {
 
             <?php if ($historicalBatch['status'] === 'staged' && (int) $historicalBatch['imported_count'] === 0): ?>
                 <form method="post"
+                      action="<?= e(sindesg_url('?module=migration&action=reprocess')) ?>"
+                      data-confirm-message="Se volverá a leer el archivo original y se reemplazará únicamente el staging de este lote. El inventario y el kardex NO cambiarán. ¿Continuar?">
+                    <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
+                    <input type="hidden" name="batch_id" value="<?= e($historicalBatch['id']) ?>">
+                    <button class="secondary-button" type="submit">Reprocesar lote</button>
+                </form>
+
+                <form method="post"
                       action="<?= e(sindesg_url('?module=migration&action=cancel')) ?>"
                       data-confirm-message="El lote quedará cancelado. No se eliminará la trazabilidad. ¿Continuar?">
                     <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">

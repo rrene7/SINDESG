@@ -522,6 +522,43 @@ final class HistoricalImportRepository
         )->execute(['id' => $batchId]);
     }
 
+    public function resetStaging(int $batchId): void
+    {
+        $this->pdo->beginTransaction();
+
+        try {
+            $batch = $this->lockBatch($batchId);
+
+            if ($batch['status'] !== 'staged') {
+                throw new RuntimeException(
+                    'Solo se puede reprocesar un lote que permanezca en staging.'
+                );
+            }
+
+            $snapshotStatement = $this->pdo->prepare(
+                'SELECT COUNT(*) FROM historical_stock_snapshots WHERE batch_id = :id'
+            );
+            $snapshotStatement->execute(['id' => $batchId]);
+
+            if ((int) $snapshotStatement->fetchColumn() > 0) {
+                throw new RuntimeException(
+                    'El lote ya contiene snapshots archivados y no puede reprocesarse.'
+                );
+            }
+
+            $this->pdo->prepare(
+                'DELETE FROM historical_import_sheets WHERE batch_id = :id'
+            )->execute(['id' => $batchId]);
+
+            $this->pdo->commit();
+        } catch (\Throwable $exception) {
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+            throw $exception;
+        }
+    }
+
     public function cancelBatch(int $batchId): void
     {
         $this->pdo->beginTransaction();

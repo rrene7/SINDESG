@@ -85,6 +85,67 @@ final class HistoricalImportService
         }
     }
 
+    public function reprocess(int $batchId, array $actor): array
+    {
+        $batch = $this->repository->batch($batchId);
+        if ($batch === null) {
+            throw new InvalidArgumentException('El lote histórico no existe.');
+        }
+
+        if ((string) ($batch['status'] ?? '') !== 'staged') {
+            throw new RuntimeException(
+                'Solo se puede reprocesar un lote que permanezca en staging.'
+            );
+        }
+
+        if ((int) ($batch['imported_count'] ?? 0) > 0) {
+            throw new RuntimeException(
+                'El lote ya contiene filas archivadas y no puede reprocesarse.'
+            );
+        }
+
+        $relativePath = ltrim((string) ($batch['stored_path'] ?? ''), '/\\');
+        $absolutePath = SINDESG_ROOT . '/storage/uploads/' . $relativePath;
+
+        if ($relativePath === '' || !is_file($absolutePath)) {
+            throw new RuntimeException(
+                'No se encontró el archivo fuente conservado para reprocesar este lote.'
+            );
+        }
+
+        $extension = strtolower(trim((string) ($batch['file_extension'] ?? '')));
+        $sheets = $this->reader->read($absolutePath, $extension);
+
+        $this->repository->resetStaging($batchId);
+
+        foreach ($sheets as $sheet) {
+            $this->stageSheet($batchId, $sheet);
+        }
+
+        $this->validateWorkbookConsistency($batchId);
+
+        $this->audit->log([
+            'user_id' => $actor['id'],
+            'user_label_snapshot' => $actor['display_name'],
+            'module_code' => 'migration',
+            'action_code' => 'historical_batch_reprocessed',
+            'record_type' => 'historical_import_batch',
+            'record_id' => (string) $batchId,
+            'details' => [
+                'source_filename' => $batch['source_filename'],
+                'sheet_count' => count($sheets),
+                'live_inventory_changed' => false,
+            ],
+            'ip_address' => $_SERVER['REMOTE_ADDR'] ?? null,
+            'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? null,
+        ]);
+
+        return [
+            'batch_id' => $batchId,
+            'sheet_count' => count($sheets),
+        ];
+    }
+
     public function archiveReady(int $batchId, array $actor): array
     {
         $result = $this->repository->archiveReadySnapshots($batchId);
