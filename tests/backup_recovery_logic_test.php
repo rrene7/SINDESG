@@ -50,7 +50,7 @@ foreach ([
 
 foreach ([
     '--confirm=RESTORE-SINDESG',
-    '--verify-only',
+    'verify-only',
     '--skip-safety-backup',
     '--label=pre_restore',
     '--one-database',
