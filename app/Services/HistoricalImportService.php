@@ -193,6 +193,133 @@ final class HistoricalImportService
         ];
     }
 
+    public function reconciliationPreview(int $batchId): array
+    {
+        $rows = $this->repository->controlDiscrepancyRows($batchId);
+        if ($rows === []) {
+            return [];
+        }
+
+        [$dataset] = $this->historicalReconciliationDataset();
+        $references = [];
+        foreach ($dataset['reconciliations'] as $item) {
+            $references[$this->normalizeCode((string) ($item['official_code'] ?? ''))] = $item;
+        }
+
+        $exitTotals = $this->repository->movementTotalsByCode(
+            $batchId,
+            'historical_exits_2024_2026'
+        );
+
+        $preview = [];
+        foreach ($rows as $row) {
+            $code = $this->normalizeCode((string) ($row['normalized_code'] ?? ''));
+            $reference = $references[$code] ?? null;
+            if (!is_array($reference)) {
+                continue;
+            }
+
+            $preview[] = [
+                'row_id' => (int) $row['id'],
+                'code' => (string) $row['normalized_code'],
+                'product' => (string) ($row['mapped_product_name'] ?? $row['normalized_description'] ?? ''),
+                'size' => (string) ($row['mapped_size_name'] ?? ''),
+                'control_initial' => $row['normalized_initial_quantity'],
+                'control_entries' => $row['normalized_entries_quantity'],
+                'control_exits' => $row['normalized_exits_quantity'],
+                'control_quantity' => $row['normalized_quantity'],
+                'detail_exits' => $exitTotals[$code] ?? null,
+                'reference' => $reference,
+            ];
+        }
+
+        return $preview;
+    }
+
+    public function reconcileControlRow(
+        int $batchId,
+        int $rowId,
+        array $actor
+    ): array {
+        [$dataset, $seedSha256] = $this->historicalReconciliationDataset();
+        $row = null;
+
+        foreach ($this->reconciliationPreview($batchId) as $candidate) {
+            if ((int) $candidate['row_id'] === $rowId) {
+                $row = $candidate;
+                break;
+            }
+        }
+
+        if ($row === null) {
+            throw new RuntimeException(
+                'La incidencia seleccionada no tiene una conciliación normalizada autorizada.'
+            );
+        }
+
+        $reference = $row['reference'];
+        $detailExits = $this->nullableFloat($row['detail_exits']);
+
+        if (
+            $detailExits === null
+            || abs($detailExits - (float) $reference['exits_quantity']) > 0.0005
+        ) {
+            throw new RuntimeException(
+                'El detalle de SALIDAS ya no coincide con la referencia normalizada. No se aplicó la conciliación.'
+            );
+        }
+
+        foreach ([
+            'initial_quantity' => 'control_initial',
+            'entries_quantity' => 'control_entries',
+        ] as $referenceKey => $rowKey) {
+            $current = $this->nullableFloat($row[$rowKey]);
+            if (
+                $current === null
+                || abs($current - (float) $reference[$referenceKey]) > 0.0005
+            ) {
+                throw new RuntimeException(
+                    'Los valores base del control cambiaron. No se aplicó la conciliación.'
+                );
+            }
+        }
+
+        $result = $this->repository->resolveControlRow(
+            $batchId,
+            $rowId,
+            [
+                'initial_quantity' => (float) $reference['initial_quantity'],
+                'entries_quantity' => (float) $reference['entries_quantity'],
+                'exits_quantity' => (float) $reference['exits_quantity'],
+                'recalculated_quantity' => (float) $reference['recalculated_quantity'],
+                'source_reference' => (string) $dataset['source']
+                    . ' · ' . (string) $reference['source_variant_id'],
+                'reason' => (string) $reference['reason'],
+            ],
+            $actor
+        );
+
+        $this->audit->log([
+            'user_id' => $actor['id'],
+            'user_label_snapshot' => $actor['display_name'],
+            'module_code' => 'migration',
+            'action_code' => 'historical_control_reconciled',
+            'record_type' => 'historical_import_row',
+            'record_id' => (string) $rowId,
+            'details' => $result + [
+                'batch_id' => $batchId,
+                'seed_sha256' => $seedSha256,
+                'source_variant_id' => $reference['source_variant_id'],
+                'live_inventory_changed' => false,
+                'kardex_changed' => false,
+            ],
+            'ip_address' => $_SERVER['REMOTE_ADDR'] ?? null,
+            'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? null,
+        ]);
+
+        return $result;
+    }
+
     public function archiveReady(int $batchId, array $actor): array
     {
         $result = $this->repository->archiveReadySnapshots($batchId);
@@ -876,6 +1003,38 @@ final class HistoricalImportService
                 'Perfil de hoja no reconocido. No se importará automáticamente.',
             ],
         ];
+    }
+
+    private function historicalReconciliationDataset(): array
+    {
+        $path = SINDESG_ROOT . '/database/seeds/historical_uniform_reconciliation_2026.json';
+        if (!is_file($path)) {
+            throw new RuntimeException(
+                'No se encontró la referencia de conciliación histórica 2026.'
+            );
+        }
+
+        $contents = file_get_contents($path);
+        $dataset = is_string($contents) ? json_decode($contents, true) : null;
+
+        if (
+            !is_array($dataset)
+            || !isset($dataset['reconciliations'])
+            || !is_array($dataset['reconciliations'])
+        ) {
+            throw new RuntimeException(
+                'La referencia de conciliación histórica no es válida.'
+            );
+        }
+
+        $sha256 = hash_file('sha256', $path);
+        if (!is_string($sha256) || strlen($sha256) !== 64) {
+            throw new RuntimeException(
+                'No se pudo calcular la huella de la referencia de conciliación.'
+            );
+        }
+
+        return [$dataset, $sha256];
     }
 
     private function normalizedCatalogDataset(): array
