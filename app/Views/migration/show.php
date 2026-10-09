@@ -35,6 +35,9 @@ $decodeIssues = static function (?string $json): array {
 };
 
 $isClosedHistoricalBatch = ($historicalBatch['status'] ?? '') === 'imported';
+if ($isClosedHistoricalBatch) {
+    $rowStatusLabels['skipped'] = 'Referencia';
+}
 $pendingHistoricalRows = (int) ($historicalBatch['ready_count'] ?? 0)
     + (int) ($historicalBatch['review_count'] ?? 0);
 ?>
@@ -358,7 +361,7 @@ $controlFullyArchived = (int) ($mappingDiagnostics['total'] ?? 0) > 0
         <div class="migration-table-wrap migration-rows-wrap">
             <table class="migration-table migration-rows-table">
                 <thead>
-                <tr><th>Origen</th><th>Código</th><th>Descripción</th><th>Talla</th><th>Inicial</th><th>Entradas</th><th>Salidas</th><th>Recalculado</th><th>Mapeo SINDESG</th><th>Estado</th><th>Incidencias</th></tr>
+                <tr><th>Origen</th><th>Código</th><th>Descripción</th><th>Talla</th><th>Inicial</th><th>Entradas</th><th>Salidas</th><th>Recalculado</th><th>Mapeo SINDESG</th><th>Estado</th><th><?= $isClosedHistoricalBatch ? 'Observación' : 'Incidencias' ?></th></tr>
                 </thead>
                 <tbody>
                 <?php foreach ($historicalRows as $row): ?>
@@ -385,7 +388,9 @@ $controlFullyArchived = (int) ($mappingDiagnostics['total'] ?? 0) > 0
                         </td>
                         <td><span class="migration-row-status <?= e($row['row_status']) ?>"><?= e($rowStatusLabels[$row['row_status']] ?? $row['row_status']) ?></span></td>
                         <td>
-                            <?php if ($issues === []): ?>
+                            <?php if ($isClosedHistoricalBatch && $row['row_status'] === 'skipped'): ?>
+                                <span class="migration-reference-note">Conservada como referencia histórica; no afecta stock ni kardex.</span>
+                            <?php elseif ($issues === []): ?>
                                 <span class="migration-good">Sin incidencias</span>
                             <?php else: ?>
                                 <ul class="migration-issue-list">
@@ -399,7 +404,7 @@ $controlFullyArchived = (int) ($mappingDiagnostics['total'] ?? 0) > 0
             </table>
         </div>
         <p class="migration-table-note"><?= $isClosedHistoricalBatch
-            ? 'La vista muestra hasta 500 filas del archivo histórico. Omitida significa conservada como referencia y excluida de stock y kardex.'
+            ? 'La vista muestra hasta 500 filas del archivo histórico. Referencia significa conservada para consulta y excluida de stock y kardex.'
             : 'La vista muestra hasta 500 filas. Las filas en revisión no se archivan automáticamente.' ?></p>
     <?php endif; ?>
 </section>
