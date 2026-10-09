@@ -22,6 +22,10 @@ foreach ([
     'security.session_idle_minutes',
     'sanitizePayload',
     'currentUser',
+    'securityRepository(): SecurityRepository',
+    'return $this->security();',
+    'auditRepository(): AuditRepository',
+    'return $this->audit();',
 ] as $fragment) {
     if (!str_contains($service, $fragment)) {
         fwrite(STDERR, "[ERROR] Autenticación incompleta: {$fragment}" . PHP_EOL);
