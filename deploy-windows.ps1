@@ -32,7 +32,7 @@ function Invoke-PHP([string[]]$Arguments, [string]$WorkingDirectory) {
     try {
         & $PhpExe @Arguments
         if ($LASTEXITCODE -ne 0) {
-            throw "PHP terminó con código $LASTEXITCODE: $($Arguments -join ' ')"
+            throw "PHP terminó con código $($LASTEXITCODE): $($Arguments -join ' ')"
         }
     }
     finally {
