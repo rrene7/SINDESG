@@ -341,6 +341,30 @@ final class HistoricalImportService
         return $result;
     }
 
+    public function finalizeReferences(int $batchId, array $actor): array
+    {
+        $summary = $this->repository->referenceReviewSummary($batchId);
+        $result = $this->repository->finalizeHistoricalReferences($batchId);
+
+        $this->audit->log([
+            'user_id' => $actor['id'],
+            'user_label_snapshot' => $actor['display_name'],
+            'module_code' => 'migration',
+            'action_code' => 'historical_batch_closed',
+            'record_type' => 'historical_import_batch',
+            'record_id' => (string) $batchId,
+            'details' => $result + [
+                'reference_profiles' => $summary,
+                'live_inventory_changed' => false,
+                'kardex_changed' => false,
+            ],
+            'ip_address' => $_SERVER['REMOTE_ADDR'] ?? null,
+            'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? null,
+        ]);
+
+        return $result;
+    }
+
     public function cancel(int $batchId, array $actor): void
     {
         $this->repository->cancelBatch($batchId);
