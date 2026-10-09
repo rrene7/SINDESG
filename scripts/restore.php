@@ -73,12 +73,42 @@ $uploadsEntry = $manifest['files']['uploads_archive'];
 $dumpPath = $source . '/' . basename((string) $dumpEntry['filename']);
 $uploadsZipPath = $source . '/' . basename((string) $uploadsEntry['filename']);
 
-$dumpPreview = file_get_contents($dumpPath, false, null, 0, min(1024 * 1024, (int) filesize($dumpPath)));
-if (!is_string($dumpPreview) || stripos($dumpPreview, 'sindesg') === false) {
+$dumpHandle = fopen($dumpPath, 'rb');
+if ($dumpHandle === false) {
+    throw new RuntimeException('No fue posible abrir el dump SQL para validación.');
+}
+
+$mentionsSindesg = false;
+$mentionsRrhh = false;
+$carry = '';
+
+try {
+    while (!feof($dumpHandle)) {
+        $chunk = fread($dumpHandle, 1024 * 1024);
+        if ($chunk === false) {
+            throw new RuntimeException('No fue posible validar el contenido del dump SQL.');
+        }
+
+        $haystack = $carry . $chunk;
+        if (stripos($haystack, 'sindesg') !== false) {
+            $mentionsSindesg = true;
+        }
+        if (stripos($haystack, 'rrhh2029') !== false) {
+            $mentionsRrhh = true;
+            break;
+        }
+
+        $carry = substr($haystack, -64);
+    }
+} finally {
+    fclose($dumpHandle);
+}
+
+if (!$mentionsSindesg) {
     throw new RuntimeException('El dump SQL no identifica la base sindesg.');
 }
 
-if (stripos($dumpPreview, 'rrhh2029') !== false) {
+if ($mentionsRrhh) {
     throw new RuntimeException(
         'Restauración bloqueada: el dump menciona rrhh2029.'
     );
