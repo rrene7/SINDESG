@@ -36,7 +36,7 @@ $decodeIssues = static function (?string $json): array {
 ?>
 <section class="migration-hero compact">
     <div>
-        <span class="eyebrow"><?= e($historicalBatch['batch_code']) ?> · FASE 13A / 13B / 13C</span>
+        <span class="eyebrow"><?= e($historicalBatch['batch_code']) ?> · FASE 13A / 13B / 13C / 13D</span>
         <h1><?= e($historicalBatch['source_filename']) ?></h1>
         <p>Cargado por <?= e($historicalBatch['uploaded_by_label_snapshot']) ?> · SHA-256 <?= e(substr((string) $historicalBatch['file_sha256'], 0, 18)) ?>…</p>
     </div>
@@ -219,6 +219,65 @@ $decodeIssues = static function (?string $json): array {
                 </table>
             </div>
         <?php endforeach; ?>
+    <?php endif; ?>
+</section>
+<?php endif; ?>
+
+<?php
+$referenceReviewTotal = 0;
+foreach (($referenceReviewSummary ?? []) as $referenceSummaryRow) {
+    $referenceReviewTotal += (int) ($referenceSummaryRow['total'] ?? 0);
+}
+$controlFullyArchived = (int) ($mappingDiagnostics['total'] ?? 0) > 0
+    && (int) $snapshotCount === (int) ($mappingDiagnostics['total'] ?? 0)
+    && (int) ($mappingDiagnostics['ready'] ?? 0) === 0
+    && (int) ($mappingDiagnostics['review'] ?? 0) === 0;
+?>
+<?php if ($historicalBatch['status'] !== 'cancelled'): ?>
+<section class="migration-panel">
+    <div class="migration-section-head">
+        <div>
+            <span class="eyebrow">CIERRE CONTROLADO · FASE 13D</span>
+            <h2>Cerrar referencias históricas</h2>
+            <p>Las hojas de ENTRADAS, SALIDAS, rendiciones, reportes y filas sin estructura se conservarán con su archivo, hoja, fila y contenido original, pero quedarán fuera del snapshot de stock. No se convierten en movimientos vivos.</p>
+        </div>
+        <?php if ($historicalBatch['status'] !== 'imported' && $controlFullyArchived && $referenceReviewTotal > 0): ?>
+            <form method="post"
+                  action="<?= e(sindesg_url('?module=migration&action=finalize-references')) ?>"
+                  data-confirm-message="Se marcarán <?= e($referenceReviewTotal) ?> filas no operativas como referencia histórica conservada. No se borrarán y NO se modificará stock ni kardex. El lote quedará cerrado. ¿Continuar?">
+                <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
+                <input type="hidden" name="batch_id" value="<?= e($historicalBatch['id']) ?>">
+                <button class="primary-button" type="submit">Cerrar lote histórico</button>
+            </form>
+        <?php endif; ?>
+    </div>
+
+    <?php if ($historicalBatch['status'] === 'imported'): ?>
+        <div class="migration-empty">
+            <p class="migration-good">Lote histórico cerrado: <?= e($snapshotCount) ?> snapshots de Control archivados y <?= e($historicalBatch['skipped_count'] ?? 0) ?> filas conservadas como referencia no operativa.</p>
+        </div>
+    <?php elseif (!$controlFullyArchived): ?>
+        <div class="migration-empty">
+            <p>Primero archive todas las filas listas del <strong>Control de inventario</strong>. El cierre 13D se habilitará cuando los <?= e($mappingDiagnostics['total'] ?? 0) ?> registros del control estén archivados y sin incidencias.</p>
+        </div>
+    <?php elseif ($referenceReviewTotal === 0): ?>
+        <div class="migration-empty"><p>No quedan referencias históricas pendientes de cierre.</p></div>
+    <?php else: ?>
+        <div class="migration-table-wrap">
+            <table class="migration-table">
+                <thead><tr><th>Tipo de referencia</th><th>Filas conservadas</th><th>Tratamiento</th></tr></thead>
+                <tbody>
+                <?php foreach ($referenceReviewSummary as $referenceSummaryRow): ?>
+                    <?php $referenceProfile = (string) ($referenceSummaryRow['row_profile'] ?? ''); ?>
+                    <tr>
+                        <td><?= e($profileLabels[$referenceProfile] ?? $referenceProfile) ?></td>
+                        <td><strong><?= e($referenceSummaryRow['total']) ?></strong></td>
+                        <td>Conservar trazabilidad; excluir de snapshot y kardex.</td>
+                    </tr>
+                <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
     <?php endif; ?>
 </section>
 <?php endif; ?>
