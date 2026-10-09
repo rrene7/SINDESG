@@ -22,7 +22,7 @@ foreach ([
     "'storage/logs'",
     "'storage/cache'",
     "'/config/database.php'",
-    "'schema_migrations'",
+    "schema_migrations",
     "'0.13.0-c'",
     "SHOW GRANTS",
     "read_only",
