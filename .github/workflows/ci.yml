@@ -182,3 +182,6 @@ jobs:
 
       - name: Restore command validation
         run: php scripts/restore.php --validate-only
+
+      - name: Manuals documentation test
+        run: php tests/manuals_logic_test.php

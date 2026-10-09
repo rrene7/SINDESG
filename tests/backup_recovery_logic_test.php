@@ -92,8 +92,8 @@ foreach ([
     }
 }
 
-if (($app['version'] ?? '') !== '0.14.0-b-dev') {
-    fwrite(STDERR, "[ERROR] La versión de aplicación no corresponde a Fase 14B." . PHP_EOL);
+if (!in_array(($app['version'] ?? ''), ['0.14.0-b-dev', '0.14.0-c-dev'], true)) {
+    fwrite(STDERR, "[ERROR] La versión de aplicación no corresponde a una versión compatible con Fase 14B." . PHP_EOL);
     exit(1);
 }
 

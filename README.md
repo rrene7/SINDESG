@@ -90,6 +90,8 @@ Las fotografías de los artículos serán fotografías reales cargadas por los u
 - [Integración con RRHH2029](docs/INTEGRACION_RRHH.md)
 - [Flujo de desarrollo y actualización local](docs/DESARROLLO.md)
 - [Respaldo y recuperación](docs/RESPALDO_RECUPERACION.md)
+- [Manual técnico](docs/MANUAL_TECNICO.md)
+- [Manual de usuario](docs/MANUAL_USUARIO.md)
 
 ## Estado
 
