@@ -52,7 +52,10 @@ foreach ([
     'Contenido del lote archivado',
     'Detalle histórico del lote',
     'Referencias conservadas',
-    'Omitida significa conservada como referencia',
+    'Referencia significa conservada para consulta',
+    "rowStatusLabels['skipped'] = 'Referencia'",
+    "Observación",
+    'Conservada como referencia histórica; no afecta stock ni kardex.',
 ] as $fragment) {
     if (!str_contains($view, $fragment)) {
         fwrite(STDERR, "[ERROR] Vista 13D incompleta: {$fragment}" . PHP_EOL);
