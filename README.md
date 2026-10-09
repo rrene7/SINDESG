@@ -89,10 +89,11 @@ Las fotografías de los artículos serán fotografías reales cargadas por los u
 - [Modelo funcional](docs/MODELO_FUNCIONAL.md)
 - [Integración con RRHH2029](docs/INTEGRACION_RRHH.md)
 - [Flujo de desarrollo y actualización local](docs/DESARROLLO.md)
+- [Respaldo y recuperación](docs/RESPALDO_RECUPERACION.md)
 
 ## Estado
 
-**Fase 0 — definición y preparación del proyecto.**
+**Fase 14 — estabilización y puesta en producción.**
 
 Antes de cada bloque de desarrollo:
 
