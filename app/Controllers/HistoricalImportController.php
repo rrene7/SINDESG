@@ -135,6 +135,20 @@ final class HistoricalImportController
             $this->redirect('?module=migration&action=show&id=' . $batchId);
         }
 
+        if ($action === 'reprocess') {
+            $batchId = (int) ($post['batch_id'] ?? 0);
+            $result = $this->service->reprocess($batchId, $actor);
+
+            flash(
+                'success',
+                sprintf(
+                    'Lote reprocesado desde el archivo original: %d hojas reclasificadas. El inventario operativo no fue modificado.',
+                    (int) $result['sheet_count']
+                )
+            );
+            $this->redirect('?module=migration&action=show&id=' . $batchId);
+        }
+
         if ($action === 'archive-ready') {
             $batchId = (int) ($post['batch_id'] ?? 0);
             $result = $this->service->archiveReady($batchId, $actor);
