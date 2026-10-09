@@ -68,6 +68,82 @@ $statusLabel = $receipt['status'] === 'confirmed' ? 'Confirmada' : ucfirst((stri
     </aside>
 </section>
 
+<?php if ($receipt['status'] === 'confirmed'): ?>
+<section class="receipt-verification-panel">
+    <div class="receipt-section-head">
+        <div>
+            <span class="eyebrow">VERIFICACIÓN DE INVENTARIO</span>
+            <h2>Recepción → kardex → existencia</h2>
+        </div>
+        <span class="receipt-verification-badge <?= !empty($receiptVerification['all_verified']) ? 'ok' : 'warn' ?>">
+            <?= e((int) ($receiptVerification['matched'] ?? 0)) ?>/<?= e((int) ($receiptVerification['expected'] ?? 0)) ?> movimientos verificados
+        </span>
+    </div>
+
+    <?php if (!empty($receiptVerification['all_verified'])): ?>
+        <p class="receipt-verification-copy">
+            Cada renglón de esta recepción tiene su movimiento de entrada único en el kardex.
+            El stock mostrado corresponde a la existencia actual de la variante en el Almacén Central.
+        </p>
+    <?php else: ?>
+        <div class="receipt-warning">
+            La recepción figura confirmada, pero uno o más renglones no coinciden con su movimiento esperado.
+            No registre otra recepción para compensar: revise esta trazabilidad antes de continuar.
+        </div>
+    <?php endif; ?>
+
+    <div class="responsive-table">
+        <table>
+            <thead>
+            <tr>
+                <th>Artículo</th>
+                <th>Variante</th>
+                <th>Esperado</th>
+                <th>Movimiento IN</th>
+                <th>Stock Central actual</th>
+                <th>Estado</th>
+                <th>Kardex</th>
+            </tr>
+            </thead>
+            <tbody>
+            <?php foreach (($receiptVerification['rows'] ?? []) as $row): ?>
+                <tr>
+                    <td><?= e($row['product_name']) ?></td>
+                    <td>
+                        <code><?= e($row['variant_code']) ?></code>
+                        <?php if (!empty($row['size_name'])): ?>
+                            <small class="table-subline">Talla <?= e($row['size_name']) ?></small>
+                        <?php endif; ?>
+                    </td>
+                    <td><?= e(number_format((float) $row['expected_quantity'], 3, '.', ',')) ?></td>
+                    <td>
+                        <?php if (!empty($row['movement_id'])): ?>
+                            <?= e(number_format((float) $row['movement_quantity'], 3, '.', ',')) ?>
+                            <small class="table-subline">#<?= e($row['movement_id']) ?></small>
+                        <?php else: ?>
+                            —
+                        <?php endif; ?>
+                    </td>
+                    <td class="receipt-qty"><?= e(number_format((float) $row['central_stock'], 3, '.', ',')) ?></td>
+                    <td>
+                        <span class="receipt-verification-status <?= !empty($row['verified']) ? 'ok' : 'warn' ?>">
+                            <?= !empty($row['verified']) ? 'Verificado' : 'Revisar' ?>
+                        </span>
+                    </td>
+                    <td>
+                        <a class="receipt-kardex-link"
+                           href="<?= e(sindesg_url('?module=inventory&action=product&id=' . (int) $row['product_id'])) ?>">
+                            Ver artículo →
+                        </a>
+                    </td>
+                </tr>
+            <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
+</section>
+<?php endif; ?>
+
 <section class="receipt-table-panel">
     <div class="receipt-section-head">
         <div>

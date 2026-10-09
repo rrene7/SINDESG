@@ -91,6 +91,14 @@ final class ReceiptsController
                 'data' => [
                     'receipt' => $receipt,
                     'receiptItems' => $this->repository->items($receiptId),
+                    'receiptVerification' => $receipt['status'] === 'confirmed'
+                        ? $this->repository->confirmationEvidence($receiptId)
+                        : [
+                            'rows' => [],
+                            'expected' => 0,
+                            'matched' => 0,
+                            'all_verified' => false,
+                        ],
                     'sourceTypes' => ReceiptService::sourceTypes(),
                 ],
             ];
