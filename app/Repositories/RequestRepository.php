@@ -132,6 +132,41 @@ final class RequestRepository
         return $rows;
     }
 
+    public function commitmentEvidence(int $requestId): array
+    {
+        $statement = $this->pdo->prepare(<<<'SQL'
+            SELECT
+                CAST(COALESCE(SUM(i.quantity_requested), 0) AS DECIMAL(14,3)) AS requested,
+                CAST(COALESCE(SUM(i.quantity_approved), 0) AS DECIMAL(14,3)) AS approved,
+                CAST(COALESCE(SUM(i.quantity_dispatched), 0) AS DECIMAL(14,3)) AS dispatched,
+                CAST(COALESCE(SUM(i.quantity_received), 0) AS DECIMAL(14,3)) AS received,
+                CAST(COALESCE(SUM(GREATEST(i.quantity_approved - i.quantity_dispatched, 0)), 0) AS DECIMAL(14,3)) AS committed,
+                (
+                    SELECT COUNT(*)
+                    FROM inventory_movements im
+                    WHERE im.reference_type = 'request'
+                      AND im.reference_id = :movement_request_id
+                ) AS direct_movements
+            FROM service_request_items i
+            WHERE i.request_id = :request_id
+        SQL);
+        $statement->execute([
+            'movement_request_id' => $requestId,
+            'request_id' => $requestId,
+        ]);
+
+        $row = $statement->fetch() ?: [];
+
+        return [
+            'requested' => (float) ($row['requested'] ?? 0),
+            'approved' => (float) ($row['approved'] ?? 0),
+            'dispatched' => (float) ($row['dispatched'] ?? 0),
+            'received' => (float) ($row['received'] ?? 0),
+            'committed' => (float) ($row['committed'] ?? 0),
+            'direct_movements' => (int) ($row['direct_movements'] ?? 0),
+        ];
+    }
+
     public function variantOptions(): array
     {
         return $this->pdo->query(<<<'SQL'
