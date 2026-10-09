@@ -182,7 +182,7 @@ foreach ($variants as $variantStockRow) {
     <?php if ($recentMovements === []): ?>
         <div class="catalog-empty compact">
             <h3>Sin movimientos registrados</h3>
-            <p>Las recepciones, producción, transferencias y despachos de las próximas fases generarán aquí sus movimientos automáticamente.</p>
+            <p>Las recepciones, producción, transferencias, despachos, devoluciones y ajustes generan aquí movimientos auditables automáticamente.</p>
         </div>
     <?php else: ?>
         <div class="responsive-table">
