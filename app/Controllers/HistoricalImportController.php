@@ -105,6 +105,7 @@ final class HistoricalImportController
                     ),
                     'reconciliationSchemaReady' => $this->repository->historicalResolutionSchemaReady(),
                     'reconciliationPreview' => $this->service->reconciliationPreview($batchId),
+                    'referenceReviewSummary' => $this->repository->referenceReviewSummary($batchId),
                 ],
             ];
         }
@@ -207,6 +208,21 @@ final class HistoricalImportController
                 sprintf(
                     'Se archivaron %d filas listas. No se generaron movimientos de inventario.',
                     (int) $result['imported']
+                )
+            );
+            $this->redirect('?module=migration&action=show&id=' . $batchId);
+        }
+
+        if ($action === 'finalize-references') {
+            $batchId = (int) ($post['batch_id'] ?? 0);
+            $result = $this->service->finalizeReferences($batchId, $actor);
+
+            flash(
+                'success',
+                sprintf(
+                    'Fase 13D completada: %d snapshots del Control archivados y %d filas históricas conservadas como referencia. El lote quedó cerrado sin modificar stock ni kardex.',
+                    (int) ($result['control_imported'] ?? 0),
+                    (int) ($result['references_skipped'] ?? 0)
                 )
             );
             $this->redirect('?module=migration&action=show&id=' . $batchId);
