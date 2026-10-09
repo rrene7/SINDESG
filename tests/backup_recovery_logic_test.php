@@ -65,7 +65,7 @@ foreach ([
     }
 }
 
-if (!str_contains($restore, "stripos($haystack, 'rrhh2029')")) {
+if (!str_contains($restore, "stripos(\$haystack, 'rrhh2029')")) {
     fwrite(STDERR, "[ERROR] La restauración no bloquea dumps que mencionen RRHH2029." . PHP_EOL);
     exit(1);
 }
