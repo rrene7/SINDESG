@@ -13,6 +13,17 @@ $rowStatusLabels = [
     'imported' => 'Archivada',
     'skipped' => 'Omitida',
 ];
+$profileLabels = [
+    'inventory_normalized_2026' => 'Inventario normalizado',
+    'inventory_control_2026' => 'Control de inventario',
+    'historical_entries_2024_2026' => 'Entradas históricas',
+    'historical_exits_2024_2026' => 'Salidas históricas',
+    'reference_report' => 'Reporte de referencia',
+    'rendition_report' => 'Rendición histórica',
+    'legacy_inventory_summary' => 'Resumen histórico',
+    'source_issues' => 'Incidencias de origen',
+    'unclassified' => 'Sin clasificar',
+];
 
 $decodeIssues = static function (?string $json): array {
     if ($json === null || trim($json) === '') {
@@ -80,7 +91,7 @@ $decodeIssues = static function (?string $json): array {
             <a class="<?= $selectedSheetId === (int) $sheet['id'] ? 'active' : '' ?>"
                href="<?= e(sindesg_url('?module=migration&action=show&id=' . (int) $historicalBatch['id'] . '&sheet_id=' . (int) $sheet['id'] . ($selectedRowStatus !== '' ? '&status=' . rawurlencode($selectedRowStatus) : ''))) ?>">
                 <strong><?= e($sheet['sheet_name']) ?></strong>
-                <span><?= e($sheet['profile']) ?></span>
+                <span><?= e($profileLabels[$sheet['profile']] ?? $sheet['profile']) ?></span>
                 <small><?= e($sheet['staged_rows']) ?> staged · <?= e($sheet['ready_rows']) ?> listas · <?= e($sheet['review_rows']) ?> revisión</small>
             </a>
         <?php endforeach; ?>
