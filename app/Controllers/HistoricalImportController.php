@@ -103,6 +103,8 @@ final class HistoricalImportController
                     'historicalCatalogStatus' => $this->repository->historicalCatalogStatus(
                         'estructura_sistema_inventario_uniformes_2026.xlsx'
                     ),
+                    'reconciliationSchemaReady' => $this->repository->historicalResolutionSchemaReady(),
+                    'reconciliationPreview' => $this->service->reconciliationPreview($batchId),
                 ],
             ];
         }
@@ -155,6 +157,28 @@ final class HistoricalImportController
                     (int) ($result['variants'] ?? 0),
                     (int) ($diagnostics['mapped'] ?? 0),
                     (int) ($diagnostics['review'] ?? 0)
+                )
+            );
+            $this->redirect('?module=migration&action=show&id=' . $batchId);
+        }
+
+        if ($action === 'reconcile-control') {
+            $batchId = (int) ($post['batch_id'] ?? 0);
+            $rowId = (int) ($post['row_id'] ?? 0);
+            $result = $this->service->reconcileControlRow(
+                $batchId,
+                $rowId,
+                $actor
+            );
+
+            flash(
+                'success',
+                sprintf(
+                    'Fase 13C conciliada para %s: salidas históricas %s → %s y saldo histórico conciliado %s. No se modificó stock ni kardex.',
+                    (string) ($result['code'] ?? ''),
+                    (string) ($result['original_exits'] ?? ''),
+                    (string) ($result['resolved_exits'] ?? ''),
+                    (string) ($result['resolved_quantity'] ?? '')
                 )
             );
             $this->redirect('?module=migration&action=show&id=' . $batchId);
