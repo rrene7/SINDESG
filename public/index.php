@@ -203,6 +203,7 @@ if ($currentModule === 'dashboard') {
     $featuredStockBreakdown = ['central' => 0.0, 'p4' => 0.0, 'transit' => 0.0];
     $recentDashboardReceipts = [];
     $recentDashboardRequests = [];
+    $dashboardCategoryFocus = [];
     $dashboardOperationalSummary = [
         'requests_pending_review' => 0,
         'requests_ready_distribution' => 0,
@@ -223,6 +224,7 @@ if ($currentModule === 'dashboard') {
                 : ['central' => 0.0, 'p4' => 0.0, 'transit' => 0.0];
             $recentDashboardReceipts = $dashboardRepository->recentReceipts(4);
             $recentDashboardRequests = $dashboardRepository->recentRequests(5);
+            $dashboardCategoryFocus = $dashboardRepository->categoryFocusData($dashboardCategories);
             $dashboardOperationalSummary = $dashboardRepository->operationalSummary();
         } catch (\Throwable $exception) {
             $dashboardCategories = [];
@@ -231,6 +233,7 @@ if ($currentModule === 'dashboard') {
             $featuredStockBreakdown = ['central' => 0.0, 'p4' => 0.0, 'transit' => 0.0];
             $recentDashboardReceipts = [];
             $recentDashboardRequests = [];
+            $dashboardCategoryFocus = [];
             $dashboardOperationalSummary = [
                 'requests_pending_review' => 0,
                 'requests_ready_distribution' => 0,
