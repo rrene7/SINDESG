@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace App\Controllers;
 
+use App\Repositories\DeliveryRepository;
 use App\Repositories\RrhhRepository;
 use App\Support\Database;
 use InvalidArgumentException;
@@ -11,10 +12,12 @@ use Throwable;
 final class PeopleController
 {
     private RrhhRepository $repository;
+    private DeliveryRepository $deliveries;
 
     public function __construct(Database $database)
     {
         $this->repository = new RrhhRepository($database);
+        $this->deliveries = new DeliveryRepository($database->connection('sindesg'));
     }
 
     public function handle(string $action, array $query): array
@@ -31,7 +34,13 @@ final class PeopleController
                 return [
                     'view' => SINDESG_ROOT . '/app/Views/people/show.php',
                     'title' => trim((string) $person['first_name'] . ' ' . (string) $person['last_name']),
-                    'data' => ['person' => $person],
+                    'data' => [
+                        'person' => $person,
+                        'deliveryHistory' => $this->deliveries->historySummaryForEmployee(
+                            $employeeId,
+                            12
+                        ),
+                    ],
                 ];
             }
 
