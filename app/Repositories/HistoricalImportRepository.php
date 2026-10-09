@@ -1173,6 +1173,128 @@ final class HistoricalImportRepository
         ]);
     }
 
+    public function referenceReviewSummary(int $batchId): array
+    {
+        $statement = $this->pdo->prepare(
+            'SELECT
+                row_profile,
+                COUNT(*) AS total
+             FROM historical_import_rows
+             WHERE batch_id = :batch_id
+               AND row_status = "review"
+               AND row_profile NOT IN ("inventory_normalized_2026", "inventory_control_2026")
+             GROUP BY row_profile
+             ORDER BY row_profile'
+        );
+        $statement->execute(['batch_id' => $batchId]);
+
+        return $statement->fetchAll();
+    }
+
+    public function finalizeHistoricalReferences(int $batchId): array
+    {
+        $this->pdo->beginTransaction();
+
+        try {
+            $batch = $this->lockBatch($batchId);
+
+            if ($batch['status'] === 'cancelled') {
+                throw new RuntimeException('El lote está cancelado.');
+            }
+
+            $control = $this->pdo->prepare(
+                'SELECT
+                    COUNT(*) AS total,
+                    COALESCE(SUM(row_status = "imported"), 0) AS imported,
+                    COALESCE(SUM(row_status = "ready"), 0) AS ready,
+                    COALESCE(SUM(row_status = "review"), 0) AS review
+                 FROM historical_import_rows
+                 WHERE batch_id = :batch_id
+                   AND row_profile IN ("inventory_normalized_2026", "inventory_control_2026")'
+            );
+            $control->execute(['batch_id' => $batchId]);
+            $controlStatus = $control->fetch() ?: [];
+
+            $controlTotal = (int) ($controlStatus['total'] ?? 0);
+            $controlImported = (int) ($controlStatus['imported'] ?? 0);
+            $controlReady = (int) ($controlStatus['ready'] ?? 0);
+            $controlReview = (int) ($controlStatus['review'] ?? 0);
+
+            if ($controlTotal === 0) {
+                throw new RuntimeException(
+                    'El lote no contiene un Control de inventario archivado.'
+                );
+            }
+
+            if (
+                $controlReady > 0
+                || $controlReview > 0
+                || $controlImported !== $controlTotal
+            ) {
+                throw new RuntimeException(
+                    'Primero archive todas las filas del Control de inventario antes de cerrar las referencias históricas.'
+                );
+            }
+
+            $sheetStatement = $this->pdo->prepare(
+                'SELECT DISTINCT sheet_id
+                 FROM historical_import_rows
+                 WHERE batch_id = :batch_id
+                   AND row_status = "review"
+                   AND row_profile NOT IN ("inventory_normalized_2026", "inventory_control_2026")'
+            );
+            $sheetStatement->execute(['batch_id' => $batchId]);
+            $sheetIds = array_map(
+                static fn (array $row): int => (int) $row['sheet_id'],
+                $sheetStatement->fetchAll()
+            );
+
+            $update = $this->pdo->prepare(
+                'UPDATE historical_import_rows
+                 SET row_status = "skipped"
+                 WHERE batch_id = :batch_id
+                   AND row_status = "review"
+                   AND row_profile NOT IN ("inventory_normalized_2026", "inventory_control_2026")'
+            );
+            $update->execute(['batch_id' => $batchId]);
+            $skipped = $update->rowCount();
+
+            foreach ($sheetIds as $sheetId) {
+                $this->refreshSheetCounters($sheetId);
+            }
+
+            $remainingReady = $this->countRowsByStatus($batchId, 'ready');
+            $remainingReview = $this->countRowsByStatus($batchId, 'review');
+
+            if ($remainingReady !== 0 || $remainingReview !== 0) {
+                throw new RuntimeException(
+                    'El lote aún contiene filas pendientes y no puede cerrarse.'
+                );
+            }
+
+            $this->pdo->prepare(
+                'UPDATE historical_import_batches
+                 SET status = "imported"
+                 WHERE id = :id'
+            )->execute(['id' => $batchId]);
+
+            $this->pdo->commit();
+
+            return [
+                'control_imported' => $controlImported,
+                'references_skipped' => $skipped,
+                'remaining_ready' => 0,
+                'remaining_review' => 0,
+                'batch_status' => 'imported',
+            ];
+        } catch (\Throwable $exception) {
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+            throw $exception;
+        }
+    }
+
     public function archiveReadySnapshots(int $batchId): array
     {
         $this->pdo->beginTransaction();
