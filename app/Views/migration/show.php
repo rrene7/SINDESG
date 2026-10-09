@@ -33,6 +33,10 @@ $decodeIssues = static function (?string $json): array {
     $decoded = json_decode($json, true);
     return is_array($decoded) ? $decoded : [];
 };
+
+$isClosedHistoricalBatch = ($historicalBatch['status'] ?? '') === 'imported';
+$pendingHistoricalRows = (int) ($historicalBatch['ready_count'] ?? 0)
+    + (int) ($historicalBatch['review_count'] ?? 0);
 ?>
 <section class="migration-hero compact">
     <div>
@@ -44,10 +48,17 @@ $decodeIssues = static function (?string $json): array {
 </section>
 
 <section class="migration-stats">
-    <article><span>Filas staged</span><strong><?= e($historicalBatch['row_count']) ?></strong><small><?= e($historicalBatch['sheet_count']) ?> hojas</small></article>
-    <article><span>Listas</span><strong><?= e($historicalBatch['ready_count']) ?></strong><small>Mapeo inequívoco</small></article>
-    <article><span>Revisión</span><strong><?= e($historicalBatch['review_count']) ?></strong><small>No se archivan automáticamente</small></article>
-    <article><span>Archivadas</span><strong><?= e($snapshotCount) ?></strong><small>Snapshot histórico, no stock vivo</small></article>
+    <?php if ($isClosedHistoricalBatch): ?>
+        <article><span>Filas históricas</span><strong><?= e($historicalBatch['row_count']) ?></strong><small><?= e($historicalBatch['sheet_count']) ?> hojas conservadas</small></article>
+        <article><span>Snapshots archivados</span><strong><?= e($snapshotCount) ?></strong><small>Control de inventario histórico</small></article>
+        <article><span>Referencias conservadas</span><strong><?= e($historicalBatch['skipped_count'] ?? 0) ?></strong><small>Fuera de stock y kardex</small></article>
+        <article><span>Pendientes</span><strong><?= e($pendingHistoricalRows) ?></strong><small>Lote cerrado sin incidencias</small></article>
+    <?php else: ?>
+        <article><span>Filas staged</span><strong><?= e($historicalBatch['row_count']) ?></strong><small><?= e($historicalBatch['sheet_count']) ?> hojas</small></article>
+        <article><span>Listas</span><strong><?= e($historicalBatch['ready_count']) ?></strong><small>Mapeo inequívoco</small></article>
+        <article><span>Revisión</span><strong><?= e($historicalBatch['review_count']) ?></strong><small>No se archivan automáticamente</small></article>
+        <article><span>Archivadas</span><strong><?= e($snapshotCount) ?></strong><small>Snapshot histórico, no stock vivo</small></article>
+    <?php endif; ?>
 </section>
 
 <section class="migration-panel">
@@ -55,7 +66,9 @@ $decodeIssues = static function (?string $json): array {
         <div>
             <span class="eyebrow">SEGURIDAD DEL LOTE</span>
             <h2><?= e($statusLabels[$historicalBatch['status']] ?? $historicalBatch['status']) ?></h2>
-            <p>Archivar filas listas crea registros históricos de referencia. No inserta entradas ni salidas en el kardex actual.</p>
+            <p><?= $isClosedHistoricalBatch
+                ? 'El lote quedó cerrado y preservado como histórico. No alteró existencias ni movimientos del kardex.'
+                : 'Archivar filas listas crea registros históricos de referencia. No inserta entradas ni salidas en el kardex actual.' ?></p>
         </div>
         <div class="migration-actions">
             <?php if (!in_array($historicalBatch['status'], ['cancelled', 'imported'], true) && (int) $historicalBatch['ready_count'] > 0): ?>
@@ -284,7 +297,10 @@ $controlFullyArchived = (int) ($mappingDiagnostics['total'] ?? 0) > 0
 
 <section class="migration-panel">
     <div class="migration-section-head">
-        <div><span class="eyebrow">HOJAS</span><h2>Clasificación detectada</h2></div>
+        <div>
+            <span class="eyebrow"><?= $isClosedHistoricalBatch ? 'CONTENIDO HISTÓRICO' : 'HOJAS' ?></span>
+            <h2><?= $isClosedHistoricalBatch ? 'Contenido del lote archivado' : 'Clasificación detectada' ?></h2>
+        </div>
     </div>
 
     <div class="migration-sheet-grid">
@@ -293,7 +309,15 @@ $controlFullyArchived = (int) ($mappingDiagnostics['total'] ?? 0) > 0
                href="<?= e(sindesg_url('?module=migration&action=show&id=' . (int) $historicalBatch['id'] . '&sheet_id=' . (int) $sheet['id'] . ($selectedRowStatus !== '' ? '&status=' . rawurlencode($selectedRowStatus) : ''))) ?>">
                 <strong><?= e($sheet['sheet_name']) ?></strong>
                 <span><?= e($profileLabels[$sheet['profile']] ?? $sheet['profile']) ?></span>
-                <small><?= e($sheet['staged_rows']) ?> staged · <?= e($sheet['ready_rows']) ?> listas · <?= e($sheet['review_rows']) ?> revisión</small>
+                <?php if ($isClosedHistoricalBatch): ?>
+                    <?php if (in_array($sheet['profile'], ['inventory_normalized_2026', 'inventory_control_2026'], true)): ?>
+                        <small><?= e($sheet['imported_rows']) ?> archivadas · <?= e($sheet['ready_rows'] + $sheet['review_rows']) ?> pendientes</small>
+                    <?php else: ?>
+                        <small><?= e($sheet['skipped_rows'] ?? 0) ?> referencias conservadas · <?= e($sheet['ready_rows'] + $sheet['review_rows']) ?> pendientes</small>
+                    <?php endif; ?>
+                <?php else: ?>
+                    <small><?= e($sheet['staged_rows']) ?> staged · <?= e($sheet['ready_rows']) ?> listas · <?= e($sheet['review_rows']) ?> revisión</small>
+                <?php endif; ?>
             </a>
         <?php endforeach; ?>
     </div>
@@ -301,7 +325,10 @@ $controlFullyArchived = (int) ($mappingDiagnostics['total'] ?? 0) > 0
 
 <section class="migration-panel">
     <div class="migration-section-head">
-        <div><span class="eyebrow">FILAS</span><h2>Revisión de staging</h2></div>
+        <div>
+            <span class="eyebrow"><?= $isClosedHistoricalBatch ? 'ARCHIVO HISTÓRICO' : 'FILAS' ?></span>
+            <h2><?= $isClosedHistoricalBatch ? 'Detalle histórico del lote' : 'Revisión de staging' ?></h2>
+        </div>
         <form class="migration-row-filters" method="get" action="<?= e(sindesg_url()) ?>">
             <input type="hidden" name="module" value="migration">
             <input type="hidden" name="action" value="show">
@@ -371,6 +398,8 @@ $controlFullyArchived = (int) ($mappingDiagnostics['total'] ?? 0) > 0
                 </tbody>
             </table>
         </div>
-        <p class="migration-table-note">La vista muestra hasta 500 filas. Las filas en revisión no se archivan automáticamente.</p>
+        <p class="migration-table-note"><?= $isClosedHistoricalBatch
+            ? 'La vista muestra hasta 500 filas del archivo histórico. Omitida significa conservada como referencia y excluida de stock y kardex.'
+            : 'La vista muestra hasta 500 filas. Las filas en revisión no se archivan automáticamente.' ?></p>
     <?php endif; ?>
 </section>
