@@ -40,7 +40,7 @@ foreach ([
     }
 }
 
-if (!str_contains($controller, "$action === 'finalize-references'")) {
+if (!str_contains($controller, '$action === \'finalize-references\'')) {
     fwrite(STDERR, "[ERROR] El controlador no expone cierre 13D." . PHP_EOL);
     exit(1);
 }
