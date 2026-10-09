@@ -347,3 +347,10 @@ button { color: inherit; }
 .dashboard-mini-list span{display:block}
 .dashboard-mini-list strong,.dashboard-mini-list small{display:block}
 .dashboard-mini-list small{margin-top:4px;color:var(--muted);font-size:.72rem}
+.dashboard-ops-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:14px}
+.dashboard-ops-summary span{padding:10px;border:1px solid rgba(53,178,255,.16);border-radius:11px;background:rgba(3,19,37,.4);text-align:center}
+.dashboard-ops-summary strong,.dashboard-ops-summary small{display:block}
+.dashboard-ops-summary strong{font-size:1.15rem;color:#d8f3ff}
+.dashboard-ops-summary small{margin-top:3px;color:var(--muted);font-size:.67rem;line-height:1.25}
+.compact-empty{min-height:105px}
+@media (max-width:760px){.dashboard-ops-summary{grid-template-columns:repeat(2,minmax(0,1fr))}}
