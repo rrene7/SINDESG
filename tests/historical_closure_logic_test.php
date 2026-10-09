@@ -20,6 +20,8 @@ foreach ([
     'SET row_status = "skipped"',
     'SET status = "imported"',
     'Primero archive todas las filas del Control de inventario',
+    "r.row_status = 'skipped'",
+    'AS skipped_rows',
 ] as $fragment) {
     if (!str_contains($repository, $fragment)) {
         fwrite(STDERR, "[ERROR] Repositorio 13D incompleto: {$fragment}" . PHP_EOL);
@@ -47,6 +49,10 @@ foreach ([
     'CIERRE CONTROLADO · FASE 13D',
     'Cerrar lote histórico',
     'Conservar trazabilidad; excluir de snapshot y kardex',
+    'Contenido del lote archivado',
+    'Detalle histórico del lote',
+    'Referencias conservadas',
+    'Omitida significa conservada como referencia',
 ] as $fragment) {
     if (!str_contains($view, $fragment)) {
         fwrite(STDERR, "[ERROR] Vista 13D incompleta: {$fragment}" . PHP_EOL);
