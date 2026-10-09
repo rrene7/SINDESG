@@ -100,6 +100,9 @@ final class HistoricalImportController
                     'snapshotCount' => $this->repository->countSnapshotsForBatch($batchId),
                     'mappingDiagnostics' => $this->repository->mappingDiagnostics($batchId),
                     'unmappedControlExamples' => $this->repository->unmappedControlExamples($batchId, 8),
+                    'historicalCatalogStatus' => $this->repository->historicalCatalogStatus(
+                        'estructura_sistema_inventario_uniformes_2026.xlsx'
+                    ),
                 ],
             ];
         }
@@ -133,6 +136,26 @@ final class HistoricalImportController
             flash(
                 'success',
                 'Archivo cargado a staging. El inventario operativo no fue modificado.'
+            );
+            $this->redirect('?module=migration&action=show&id=' . $batchId);
+        }
+
+        if ($action === 'prepare-catalog') {
+            $batchId = (int) ($post['batch_id'] ?? 0);
+            $result = $this->service->prepareCatalog($batchId, $actor);
+            $diagnostics = $result['diagnostics'] ?? [];
+
+            flash(
+                'success',
+                sprintf(
+                    'Fase 13B completada: %d categorías, %d productos, %d tallas y %d variantes preparadas. El lote fue reprocesado: %d códigos mapeados y %d pendientes de revisión. No se modificó el stock ni el kardex.',
+                    (int) ($result['categories'] ?? 0),
+                    (int) ($result['products'] ?? 0),
+                    (int) ($result['sizes'] ?? 0),
+                    (int) ($result['variants'] ?? 0),
+                    (int) ($diagnostics['mapped'] ?? 0),
+                    (int) ($diagnostics['review'] ?? 0)
+                )
             );
             $this->redirect('?module=migration&action=show&id=' . $batchId);
         }
