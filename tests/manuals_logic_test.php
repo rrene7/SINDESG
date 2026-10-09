@@ -73,8 +73,8 @@ if (!str_contains($roadmap, 'Fase 14C: manual técnico y manual de usuario imple
     exit(1);
 }
 
-if (($app['version'] ?? '') !== '0.14.0-c-dev') {
-    fwrite(STDERR, "[ERROR] La versión de aplicación no corresponde a Fase 14C." . PHP_EOL);
+if (!in_array(($app['version'] ?? ''), ['0.14.0-c-dev', '0.14.0-d-rc1'], true)) {
+    fwrite(STDERR, "[ERROR] La versión de aplicación no conserva compatibilidad con Fase 14C." . PHP_EOL);
     exit(1);
 }
 
