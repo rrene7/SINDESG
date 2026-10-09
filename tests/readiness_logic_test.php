@@ -21,7 +21,7 @@ foreach ([
     "'storage/uploads'",
     "'storage/logs'",
     "'storage/cache'",
-    "'config/local.php'",
+    "'/config/local.php'",
     "'session_secure'",
     "'/config/database.php'",
     "schema_migrations",
