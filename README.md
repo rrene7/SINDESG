@@ -92,6 +92,7 @@ Las fotografías de los artículos serán fotografías reales cargadas por los u
 - [Respaldo y recuperación](docs/RESPALDO_RECUPERACION.md)
 - [Manual técnico](docs/MANUAL_TECNICO.md)
 - [Manual de usuario](docs/MANUAL_USUARIO.md)
+- [Despliegue institucional](docs/DESPLIEGUE_INSTITUCIONAL.md)
 
 ## Estado
 
