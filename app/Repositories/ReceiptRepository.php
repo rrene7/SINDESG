@@ -113,6 +113,66 @@ final class ReceiptRepository
         return $statement->fetchAll();
     }
 
+    public function confirmationEvidence(int $receiptId): array
+    {
+        $statement = $this->pdo->prepare(<<<'SQL'
+            SELECT
+                ri.id AS receipt_item_id,
+                ri.quantity AS expected_quantity,
+                p.id AS product_id,
+                p.name AS product_name,
+                pv.id AS variant_id,
+                pv.internal_code AS variant_code,
+                s.name AS size_name,
+                im.id AS movement_id,
+                im.quantity AS movement_quantity,
+                im.occurred_at AS movement_at,
+                CAST(COALESCE(vs.quantity_on_hand, 0) AS DECIMAL(14,3)) AS central_stock
+            FROM receipt_items ri
+            INNER JOIN receipts r ON r.id = ri.receipt_id
+            INNER JOIN product_variants pv ON pv.id = ri.product_variant_id
+            INNER JOIN products p ON p.id = pv.product_id
+            LEFT JOIN sizes s ON s.id = pv.size_id
+            LEFT JOIN inventory_movements im
+                ON im.source_key = CONCAT('receipt:', ri.receipt_id, ':item:', ri.id)
+               AND im.movement_kind = 'receipt'
+               AND im.direction = 'IN'
+               AND im.warehouse_id = r.warehouse_id
+               AND im.product_variant_id = ri.product_variant_id
+            LEFT JOIN v_inventory_stock vs
+                ON vs.warehouse_id = r.warehouse_id
+               AND vs.product_variant_id = ri.product_variant_id
+            WHERE ri.receipt_id = :receipt_id
+            ORDER BY ri.id
+        SQL);
+        $statement->execute(['receipt_id' => $receiptId]);
+
+        $rows = $statement->fetchAll();
+        $matched = 0;
+
+        foreach ($rows as &$row) {
+            $movementExists = !empty($row['movement_id']);
+            $quantityMatches = $movementExists
+                && abs(
+                    (float) ($row['movement_quantity'] ?? 0)
+                    - (float) ($row['expected_quantity'] ?? 0)
+                ) < 0.0005;
+
+            $row['verified'] = $movementExists && $quantityMatches;
+            if ($row['verified']) {
+                $matched++;
+            }
+        }
+        unset($row);
+
+        return [
+            'rows' => $rows,
+            'expected' => count($rows),
+            'matched' => $matched,
+            'all_verified' => $rows !== [] && $matched === count($rows),
+        ];
+    }
+
     public function activeVariantIds(array $variantIds): array
     {
         $variantIds = array_values(array_unique(array_filter(
