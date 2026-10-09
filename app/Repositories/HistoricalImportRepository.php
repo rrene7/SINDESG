@@ -415,10 +415,12 @@ final class HistoricalImportRepository
 
         foreach ($statement->fetchAll() as $row) {
             $type = (string) ($row['entity_type'] ?? '');
-            if (array_key_exists($type . 's', $status)) {
-                $status[$type . 's'] = (int) ($row['total'] ?? 0);
-            } elseif ($type === 'category') {
+            if ($type === 'category') {
                 $status['categories'] = (int) ($row['total'] ?? 0);
+            } elseif ($type === 'subcategory') {
+                $status['subcategories'] = (int) ($row['total'] ?? 0);
+            } elseif (array_key_exists($type . 's', $status)) {
+                $status[$type . 's'] = (int) ($row['total'] ?? 0);
             }
         }
 
