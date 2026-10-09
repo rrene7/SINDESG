@@ -79,7 +79,7 @@ foreach ([
     }
 }
 
-if (!str_contains($controller, "$action === 'reconcile-control'")) {
+if (!str_contains($controller, '$action === \'reconcile-control\'')) {
     fwrite(STDERR, "[ERROR] El controlador no expone conciliación 13C." . PHP_EOL);
     exit(1);
 }
