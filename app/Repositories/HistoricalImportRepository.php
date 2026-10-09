@@ -323,6 +323,71 @@ final class HistoricalImportRepository
         return $statement->fetchAll();
     }
 
+    public function rowsForProfile(int $batchId, string $profile): array
+    {
+        $statement = $this->pdo->prepare(
+            'SELECT id, sheet_id, normalized_code, normalized_entries_quantity,
+                    normalized_exits_quantity, issues_json, row_status
+             FROM historical_import_rows
+             WHERE batch_id = :batch_id
+               AND row_profile = :profile
+             ORDER BY id'
+        );
+        $statement->execute([
+            'batch_id' => $batchId,
+            'profile' => $profile,
+        ]);
+
+        return $statement->fetchAll();
+    }
+
+    public function movementTotalsByCode(int $batchId, string $profile): array
+    {
+        $statement = $this->pdo->prepare(
+            'SELECT
+                UPPER(REPLACE(TRIM(normalized_code), " ", "")) AS normalized_search_code,
+                SUM(normalized_quantity) AS total_quantity
+             FROM historical_import_rows
+             WHERE batch_id = :batch_id
+               AND row_profile = :profile
+               AND normalized_code IS NOT NULL
+               AND normalized_code <> ""
+               AND normalized_quantity IS NOT NULL
+             GROUP BY UPPER(REPLACE(TRIM(normalized_code), " ", ""))'
+        );
+        $statement->execute([
+            'batch_id' => $batchId,
+            'profile' => $profile,
+        ]);
+
+        $totals = [];
+        foreach ($statement->fetchAll() as $row) {
+            $code = trim((string) ($row['normalized_search_code'] ?? ''));
+            if ($code !== '') {
+                $totals[$code] = (float) ($row['total_quantity'] ?? 0);
+            }
+        }
+
+        return $totals;
+    }
+
+    public function markRowForReview(int $rowId, array $issues): void
+    {
+        $statement = $this->pdo->prepare(
+            'UPDATE historical_import_rows
+             SET row_status = "review",
+                 issues_json = :issues_json
+             WHERE id = :id'
+        );
+        $statement->execute([
+            'id' => $rowId,
+            'issues_json' => json_encode(
+                array_values(array_unique($issues)),
+                JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
+            ) ?: '[]',
+        ]);
+    }
+
     public function archiveReadySnapshots(int $batchId): array
     {
         $this->pdo->beginTransaction();
@@ -343,7 +408,7 @@ final class HistoricalImportRepository
                 INNER JOIN historical_import_batches b ON b.id = r.batch_id
                 WHERE r.batch_id = :batch_id
                   AND r.row_status = 'ready'
-                  AND r.row_profile = 'inventory_normalized_2026'
+                  AND r.row_profile IN ('inventory_normalized_2026', 'inventory_control_2026')
                   AND r.mapping_variant_id IS NOT NULL
                 ORDER BY r.id
                 FOR UPDATE
