@@ -17,6 +17,8 @@ if (PHP_SAPI !== 'cli') {
 }
 
 $root = dirname(__DIR__);
+require_once $root . '/scripts/lib/BackupSupport.php';
+
 $strict = in_array('--strict', $argv, true);
 $skipDatabase = in_array('--no-database', $argv, true);
 
@@ -87,6 +89,7 @@ foreach ([
     'storage/uploads',
     'storage/logs',
     'storage/cache',
+    'storage/backups',
 ] as $relativeDirectory) {
     $directory = $root . '/' . $relativeDirectory;
 
@@ -111,6 +114,12 @@ if (
     $ok('Secretos locales', 'config/database.php está excluido de Git');
 } else {
     $error('Secretos locales', 'config/database.php debe estar excluido de Git');
+}
+
+if (function_exists('proc_open')) {
+    $ok('Procesos externos', 'proc_open disponible para respaldo/restauración');
+} else {
+    $error('Procesos externos', 'proc_open está deshabilitado');
 }
 
 $databaseConfigPath = $root . '/config/database.php';
@@ -148,6 +157,21 @@ if (count(array_intersect(range(1, 18), array_keys($schemaNumbers))) === 18) {
 }
 
 if (!$skipDatabase) {
+    $mysqldump = BackupSupport::findExecutable('mysqldump');
+    $mysqlClient = BackupSupport::findExecutable('mysql');
+
+    if ($mysqldump !== null) {
+        $ok('Herramienta mysqldump', $mysqldump);
+    } else {
+        $error('Herramienta mysqldump', 'No encontrada');
+    }
+
+    if ($mysqlClient !== null) {
+        $ok('Herramienta mysql', $mysqlClient);
+    } else {
+        $error('Herramienta mysql', 'No encontrada');
+    }
+
     try {
         require $root . '/app/bootstrap.php';
 
