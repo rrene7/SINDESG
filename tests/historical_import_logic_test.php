@@ -69,7 +69,7 @@ if (!str_contains($router, 'new HistoricalImportController')) {
     exit(1);
 }
 
-if (!str_contains($controller, "$action === 'reprocess'")) {
+if (!str_contains($controller, '$action === \'reprocess\'')) {
     fwrite(STDERR, "[ERROR] El lote histórico existente no puede reprocesarse de forma segura." . PHP_EOL);
     exit(1);
 }
