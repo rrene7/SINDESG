@@ -123,7 +123,7 @@ foreach ([
     }
 }
 
-if (!str_contains($controller, "$action === 'prepare-catalog'")) {
+if (!str_contains($controller, '$action === \'prepare-catalog\'')) {
     fwrite(STDERR, "[ERROR] El controlador no expone preparar catálogo 13B." . PHP_EOL);
     exit(1);
 }

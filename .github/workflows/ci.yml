@@ -167,3 +167,9 @@ jobs:
 
       - name: Historical closure test
         run: php tests/historical_closure_logic_test.php
+
+      - name: Readiness logic test
+        run: php tests/readiness_logic_test.php
+
+      - name: Deployment readiness without databases
+        run: php scripts/readiness.php --no-database

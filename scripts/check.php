@@ -152,6 +152,11 @@ $required = [
     'database/schema/014_inventory_adjustments.sql',
     'database/schema/015_security_audit.sql',
     'database/schema/016_historical_imports.sql',
+    'database/schema/017_historical_catalog_preparation.sql',
+    'database/schema/018_historical_reconciliation.sql',
+    'database/seeds/historical_uniform_catalog_2026.json',
+    'database/seeds/historical_uniform_reconciliation_2026.json',
+    'scripts/readiness.php',
     'tests/catalog_schema_test.php',
     'tests/inventory_core_schema_test.php',
     'tests/category_auto_code_test.php',
@@ -195,6 +200,10 @@ $required = [
     'tests/historical_import_schema_test.php',
     'tests/spreadsheet_reader_test.php',
     'tests/historical_import_logic_test.php',
+    'tests/historical_catalog_logic_test.php',
+    'tests/historical_reconciliation_logic_test.php',
+    'tests/historical_closure_logic_test.php',
+    'tests/readiness_logic_test.php',
 ];
 
 $errors = [];

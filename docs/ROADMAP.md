@@ -344,7 +344,8 @@ No importar directamente una hoja completa sin validación y conciliación previ
 Estado actual del desarrollo por bloques:
 
 - Fases 0–12: implementadas por bloques.
-- Fase 13A: staging seguro y archivo controlado de históricos implementado.
-- Siguiente bloque después de validar Fase 13A en XAMPP: **Fase 13B — perfiles específicos de dotaciones/cambios/devoluciones históricas**.
+- Fase 13: cerrada mediante 13A staging seguro, 13B catálogo histórico, 13C conciliación y 13D cierre controlado.
+- Fase 14A: validación integral y preparación de despliegue en curso.
+- Pendientes dentro de Fase 14: **14B respaldo/recuperación, 14C manuales y 14D despliegue institucional**.
 
-No se iniciará un módulo posterior hasta verificar el bloque anterior en GitHub y en el entorno local.
+No se iniciará un bloque posterior hasta verificar el anterior en GitHub y en el entorno local.
