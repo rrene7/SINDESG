@@ -323,6 +323,63 @@ final class HistoricalImportRepository
         return $statement->fetchAll();
     }
 
+    public function mappingDiagnostics(int $batchId): array
+    {
+        $statement = $this->pdo->prepare(<<<'SQL'
+            SELECT
+                COUNT(*) AS total,
+                COALESCE(SUM(mapping_variant_id IS NOT NULL), 0) AS mapped,
+                COALESCE(SUM(
+                    mapping_variant_id IS NULL
+                    AND normalized_code IS NOT NULL
+                    AND normalized_code <> ''
+                ), 0) AS unmapped,
+                COALESCE(SUM(row_status = 'ready'), 0) AS ready,
+                COALESCE(SUM(row_status = 'review'), 0) AS review,
+                COALESCE(SUM(issues_json LIKE '%Código no encontrado en el catálogo actual.%'), 0) AS missing_catalog,
+                COALESCE(SUM(issues_json LIKE '%Código ambiguo:%'), 0) AS ambiguous,
+                COALESCE(SUM(issues_json LIKE '%Totales de entradas no coinciden con ENTRADAS:%'), 0) AS entry_mismatch,
+                COALESCE(SUM(issues_json LIKE '%Totales de salidas no coinciden con SALIDAS:%'), 0) AS exit_mismatch,
+                COALESCE(SUM(issues_json LIKE '%La aritmética del inventario no coincide:%'), 0) AS arithmetic_mismatch
+            FROM historical_import_rows
+            WHERE batch_id = :batch_id
+              AND row_profile = 'inventory_control_2026'
+        SQL);
+        $statement->execute(['batch_id' => $batchId]);
+        $row = $statement->fetch() ?: [];
+
+        return [
+            'total' => (int) ($row['total'] ?? 0),
+            'mapped' => (int) ($row['mapped'] ?? 0),
+            'unmapped' => (int) ($row['unmapped'] ?? 0),
+            'ready' => (int) ($row['ready'] ?? 0),
+            'review' => (int) ($row['review'] ?? 0),
+            'missing_catalog' => (int) ($row['missing_catalog'] ?? 0),
+            'ambiguous' => (int) ($row['ambiguous'] ?? 0),
+            'entry_mismatch' => (int) ($row['entry_mismatch'] ?? 0),
+            'exit_mismatch' => (int) ($row['exit_mismatch'] ?? 0),
+            'arithmetic_mismatch' => (int) ($row['arithmetic_mismatch'] ?? 0),
+        ];
+    }
+
+    public function unmappedControlExamples(int $batchId, int $limit = 8): array
+    {
+        $limit = max(1, min($limit, 20));
+
+        $statement = $this->pdo->prepare(
+            'SELECT normalized_code, normalized_description, normalized_category, issues_json
+             FROM historical_import_rows
+             WHERE batch_id = :batch_id
+               AND row_profile = "inventory_control_2026"
+               AND mapping_variant_id IS NULL
+             ORDER BY source_row_number
+             LIMIT ' . $limit
+        );
+        $statement->execute(['batch_id' => $batchId]);
+
+        return $statement->fetchAll();
+    }
+
     public function rowsForProfile(int $batchId, string $profile): array
     {
         $statement = $this->pdo->prepare(
