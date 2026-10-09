@@ -78,7 +78,7 @@ foreach ([
 }
 
 foreach ([
-    "'config/local.php'",
+    "'/config/local.php'",
     "'session_secure'",
     "environment === 'production'",
 ] as $fragment) {
