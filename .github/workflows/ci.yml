@@ -158,3 +158,6 @@ jobs:
 
       - name: Historical import logic test
         run: php tests/historical_import_logic_test.php
+
+      - name: Historical catalog preparation test
+        run: php tests/historical_catalog_logic_test.php
