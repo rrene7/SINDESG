@@ -210,12 +210,12 @@ final class AuthService
 
     public function securityRepository(): SecurityRepository
     {
-        return $this->security;
+        return $this->security();
     }
 
     public function auditRepository(): AuditRepository
     {
-        return $this->audit;
+        return $this->audit();
     }
 
     public function registerRequestAudit(string $module, string $action, array $payload): void
