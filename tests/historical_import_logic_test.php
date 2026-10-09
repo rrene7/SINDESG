@@ -83,6 +83,18 @@ $reflection = new ReflectionClass(HistoricalImportService::class);
 $serviceObject = $reflection->newInstanceWithoutConstructor();
 $detectProfile = $reflection->getMethod('detectProfile');
 $detectProfile->setAccessible(true);
+$normalizeHeader = $reflection->getMethod('normalizeHeader');
+$normalizeHeader->setAccessible(true);
+
+if ($normalizeHeader->invoke($serviceObject, 'CÓDIGO ISTMO') !== 'CODIGO ISTMO') {
+    fwrite(STDERR, "[ERROR] La normalización de encabezados acentuados no es portable a Windows." . PHP_EOL);
+    exit(1);
+}
+
+if ($normalizeHeader->invoke($serviceObject, 'CATEGORÍA') !== 'CATEGORIA') {
+    fwrite(STDERR, "[ERROR] La normalización de categorías acentuadas no es estable." . PHP_EOL);
+    exit(1);
+}
 
 $controlRows = [
     ['REPUBLICA DE PANAMA'],
