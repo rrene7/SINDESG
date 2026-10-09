@@ -380,6 +380,513 @@ final class HistoricalImportRepository
         return $statement->fetchAll();
     }
 
+    public function historicalCatalogStatus(string $sourceName): array
+    {
+        $empty = [
+            'schema_ready' => false,
+            'categories' => 0,
+            'subcategories' => 0,
+            'products' => 0,
+            'sizes' => 0,
+            'variants' => 0,
+        ];
+
+        $exists = $this->pdo->query(
+            "SELECT COUNT(*)
+             FROM information_schema.tables
+             WHERE table_schema = DATABASE()
+               AND table_name = 'historical_catalog_mappings'"
+        )->fetchColumn();
+
+        if ((int) $exists !== 1) {
+            return $empty;
+        }
+
+        $statement = $this->pdo->prepare(
+            'SELECT entity_type, COUNT(*) AS total
+             FROM historical_catalog_mappings
+             WHERE source_name = :source_name
+             GROUP BY entity_type'
+        );
+        $statement->execute(['source_name' => $sourceName]);
+
+        $status = $empty;
+        $status['schema_ready'] = true;
+
+        foreach ($statement->fetchAll() as $row) {
+            $type = (string) ($row['entity_type'] ?? '');
+            if (array_key_exists($type . 's', $status)) {
+                $status[$type . 's'] = (int) ($row['total'] ?? 0);
+            } elseif ($type === 'category') {
+                $status['categories'] = (int) ($row['total'] ?? 0);
+            }
+        }
+
+        return $status;
+    }
+
+    public function prepareHistoricalCatalog(array $dataset): array
+    {
+        $sourceName = trim((string) ($dataset['source'] ?? ''));
+        if ($sourceName === '') {
+            throw new RuntimeException('La fuente normalizada del catálogo no está identificada.');
+        }
+
+        $status = $this->historicalCatalogStatus($sourceName);
+        if (!$status['schema_ready']) {
+            throw new RuntimeException(
+                'Falta aplicar database/schema/017_historical_catalog_preparation.sql.'
+            );
+        }
+
+        $this->pdo->beginTransaction();
+
+        try {
+            $categoryIds = [];
+            foreach (($dataset['categories'] ?? []) as $index => $category) {
+                $sourceKey = trim((string) ($category['id'] ?? ''));
+                $name = trim((string) ($category['name'] ?? ''));
+
+                if ($sourceKey === '' || $name === '') {
+                    throw new RuntimeException('Categoría histórica incompleta.');
+                }
+
+                $existing = $this->pdo->prepare(
+                    'SELECT id, name FROM categories WHERE code = :code LIMIT 1'
+                );
+                $existing->execute(['code' => $sourceKey]);
+                $row = $existing->fetch();
+
+                if ($row && $this->catalogText((string) $row['name']) !== $this->catalogText($name)) {
+                    throw new RuntimeException(
+                        'El código de categoría ' . $sourceKey . ' ya existe con otro nombre.'
+                    );
+                }
+
+                $slug = 'historico-' . strtolower($sourceKey);
+                $statement = $this->pdo->prepare(
+                    'INSERT INTO categories
+                        (code, slug, name, description, sort_order, is_active)
+                     VALUES
+                        (:code, :slug, :name, :description, :sort_order, 1)
+                     ON DUPLICATE KEY UPDATE
+                        name = VALUES(name),
+                        description = VALUES(description),
+                        sort_order = VALUES(sort_order),
+                        is_active = 1'
+                );
+                $statement->execute([
+                    'code' => $sourceKey,
+                    'slug' => $slug,
+                    'name' => $name,
+                    'description' => 'Catálogo histórico normalizado 2026 · ' . $sourceKey,
+                    'sort_order' => 600 + (($index + 1) * 10),
+                ]);
+
+                $select = $this->pdo->prepare(
+                    'SELECT id FROM categories WHERE code = :code LIMIT 1'
+                );
+                $select->execute(['code' => $sourceKey]);
+                $categoryId = (int) $select->fetchColumn();
+                $categoryIds[$sourceKey] = $categoryId;
+
+                $this->upsertHistoricalCatalogMapping(
+                    $sourceName,
+                    'category',
+                    $sourceKey,
+                    $categoryId,
+                    ['name' => $name]
+                );
+            }
+
+            foreach (($dataset['subcategories'] ?? []) as $subcategory) {
+                $sourceKey = trim((string) ($subcategory['id'] ?? ''));
+                if ($sourceKey === '') {
+                    continue;
+                }
+
+                $this->upsertHistoricalCatalogMapping(
+                    $sourceName,
+                    'subcategory',
+                    $sourceKey,
+                    null,
+                    [
+                        'category_id' => $subcategory['category_id'] ?? null,
+                        'name' => $subcategory['name'] ?? null,
+                        'note' => 'SINDESG aún no tiene tabla operativa de subcategorías; se conserva como metadata.',
+                    ]
+                );
+            }
+
+            $sizeIds = [];
+            foreach (($dataset['sizes'] ?? []) as $index => $size) {
+                $sourceKey = trim((string) ($size['id'] ?? ''));
+                $name = trim((string) ($size['name'] ?? ''));
+
+                if ($sourceKey === '' || $name === '') {
+                    throw new RuntimeException('Talla histórica incompleta.');
+                }
+
+                $existing = $this->pdo->prepare(
+                    'SELECT id, name FROM sizes WHERE code = :code LIMIT 1'
+                );
+                $existing->execute(['code' => $sourceKey]);
+                $row = $existing->fetch();
+
+                if ($row && $this->catalogText((string) $row['name']) !== $this->catalogText($name)) {
+                    throw new RuntimeException(
+                        'El código de talla ' . $sourceKey . ' ya existe con otro nombre.'
+                    );
+                }
+
+                $statement = $this->pdo->prepare(
+                    'INSERT INTO sizes (code, name, sort_order, is_active)
+                     VALUES (:code, :name, :sort_order, 1)
+                     ON DUPLICATE KEY UPDATE
+                        name = VALUES(name),
+                        sort_order = VALUES(sort_order),
+                        is_active = 1'
+                );
+                $statement->execute([
+                    'code' => $sourceKey,
+                    'name' => $name,
+                    'sort_order' => 1000 + (($index + 1) * 10),
+                ]);
+
+                $select = $this->pdo->prepare(
+                    'SELECT id FROM sizes WHERE code = :code LIMIT 1'
+                );
+                $select->execute(['code' => $sourceKey]);
+                $sizeId = (int) $select->fetchColumn();
+                $sizeIds[$sourceKey] = $sizeId;
+
+                $this->upsertHistoricalCatalogMapping(
+                    $sourceName,
+                    'size',
+                    $sourceKey,
+                    $sizeId,
+                    ['name' => $name]
+                );
+            }
+
+            $productIds = [];
+            foreach (($dataset['products'] ?? []) as $product) {
+                $sourceKey = trim((string) ($product['id'] ?? ''));
+                $categoryKey = trim((string) ($product['category'] ?? ''));
+                $name = trim((string) ($product['name'] ?? ''));
+
+                if (
+                    $sourceKey === ''
+                    || $name === ''
+                    || !isset($categoryIds[$categoryKey])
+                ) {
+                    throw new RuntimeException(
+                        'Producto histórico incompleto o sin categoría válida: ' . $sourceKey
+                    );
+                }
+
+                $existing = $this->pdo->prepare(
+                    'SELECT id, name FROM products WHERE internal_code = :code LIMIT 1'
+                );
+                $existing->execute(['code' => $sourceKey]);
+                $row = $existing->fetch();
+
+                if ($row && $this->catalogText((string) $row['name']) !== $this->catalogText($name)) {
+                    throw new RuntimeException(
+                        'El código de producto ' . $sourceKey . ' ya existe con otro nombre.'
+                    );
+                }
+
+                $subcategoryName = trim((string) ($product['subcategory_name'] ?? ''));
+                $brandModel = trim((string) ($product['brand'] ?? ''));
+                $description = 'Fuente histórica normalizada 2026';
+                if ($subcategoryName !== '') {
+                    $description .= ' · Subcategoría: ' . $subcategoryName;
+                }
+                if ($brandModel !== '' && $this->catalogText($brandModel) !== 'NO ESPECIFICADO') {
+                    $description .= ' · Marca/modelo: ' . $brandModel;
+                }
+
+                $statement = $this->pdo->prepare(
+                    'INSERT INTO products
+                        (category_id, internal_code, name, description, sex, color, status)
+                     VALUES
+                        (:category_id, :internal_code, :name, :description, :sex, :color, "active")
+                     ON DUPLICATE KEY UPDATE
+                        category_id = VALUES(category_id),
+                        name = VALUES(name),
+                        description = VALUES(description),
+                        sex = VALUES(sex),
+                        color = VALUES(color),
+                        status = "active"'
+                );
+                $statement->execute([
+                    'category_id' => $categoryIds[$categoryKey],
+                    'internal_code' => $sourceKey,
+                    'name' => $name,
+                    'description' => $description,
+                    'sex' => $this->historicalProductSex((string) ($product['sexes'] ?? '')),
+                    'color' => $this->nullableCatalogText($product['colors'] ?? null),
+                ]);
+
+                $select = $this->pdo->prepare(
+                    'SELECT id FROM products WHERE internal_code = :code LIMIT 1'
+                );
+                $select->execute(['code' => $sourceKey]);
+                $productId = (int) $select->fetchColumn();
+                $productIds[$sourceKey] = $productId;
+
+                $this->upsertHistoricalCatalogMapping(
+                    $sourceName,
+                    'product',
+                    $sourceKey,
+                    $productId,
+                    [
+                        'category' => $categoryKey,
+                        'subcategory' => $product['subcategory'] ?? null,
+                        'subcategory_name' => $subcategoryName !== '' ? $subcategoryName : null,
+                        'brand_model' => $brandModel !== '' ? $brandModel : null,
+                    ]
+                );
+            }
+
+            foreach (($dataset['variants'] ?? []) as $variant) {
+                $sourceKey = trim((string) ($variant['id'] ?? ''));
+                $productKey = trim((string) ($variant['product'] ?? ''));
+                $sizeKey = trim((string) ($variant['size'] ?? ''));
+                $officialCode = trim((string) ($variant['code'] ?? ''));
+
+                if (
+                    $sourceKey === ''
+                    || $officialCode === ''
+                    || !isset($productIds[$productKey])
+                    || !isset($sizeIds[$sizeKey])
+                ) {
+                    throw new RuntimeException(
+                        'Variante histórica incompleta: ' . ($sourceKey !== '' ? $sourceKey : 'sin ID')
+                    );
+                }
+
+                $normalizedCode = $this->normalizeCode($officialCode);
+                $conflict = $this->pdo->prepare(
+                    'SELECT id, internal_code, institutional_code
+                     FROM product_variants
+                     WHERE status = "active"
+                       AND UPPER(REPLACE(COALESCE(institutional_code, ""), " ", "")) = :code
+                       AND COALESCE(internal_code, "") <> :internal_code
+                     LIMIT 1'
+                );
+                $conflict->execute([
+                    'code' => $normalizedCode,
+                    'internal_code' => $sourceKey,
+                ]);
+                $conflictRow = $conflict->fetch();
+
+                if ($conflictRow) {
+                    throw new RuntimeException(
+                        'El código ISTMO ' . $officialCode
+                        . ' ya pertenece a otra variante activa ('
+                        . (string) ($conflictRow['internal_code'] ?? $conflictRow['id'])
+                        . ').'
+                    );
+                }
+
+                $brandId = $this->findOrCreateHistoricalBrand(
+                    (string) ($variant['brand'] ?? '')
+                );
+
+                $existing = $this->pdo->prepare(
+                    'SELECT id FROM product_variants WHERE internal_code = :code LIMIT 1'
+                );
+                $existing->execute(['code' => $sourceKey]);
+                $variantId = (int) ($existing->fetchColumn() ?: 0);
+
+                if ($variantId > 0) {
+                    $statement = $this->pdo->prepare(
+                        'UPDATE product_variants
+                         SET product_id = :product_id,
+                             size_id = :size_id,
+                             brand_id = :brand_id,
+                             institutional_code = :institutional_code,
+                             color = :color,
+                             status = "active"
+                         WHERE id = :id'
+                    );
+                    $statement->execute([
+                        'product_id' => $productIds[$productKey],
+                        'size_id' => $sizeIds[$sizeKey],
+                        'brand_id' => $brandId,
+                        'institutional_code' => $officialCode,
+                        'color' => $this->nullableCatalogText($variant['color'] ?? null),
+                        'id' => $variantId,
+                    ]);
+                } else {
+                    $statement = $this->pdo->prepare(
+                        'INSERT INTO product_variants
+                            (
+                                product_id,
+                                size_id,
+                                brand_id,
+                                internal_code,
+                                institutional_code,
+                                supplier_code,
+                                color,
+                                status
+                            )
+                         VALUES
+                            (
+                                :product_id,
+                                :size_id,
+                                :brand_id,
+                                :internal_code,
+                                :institutional_code,
+                                NULL,
+                                :color,
+                                "active"
+                            )'
+                    );
+                    $statement->execute([
+                        'product_id' => $productIds[$productKey],
+                        'size_id' => $sizeIds[$sizeKey],
+                        'brand_id' => $brandId,
+                        'internal_code' => $sourceKey,
+                        'institutional_code' => $officialCode,
+                        'color' => $this->nullableCatalogText($variant['color'] ?? null),
+                    ]);
+                    $variantId = (int) $this->pdo->lastInsertId();
+                }
+
+                $this->upsertHistoricalCatalogMapping(
+                    $sourceName,
+                    'variant',
+                    $sourceKey,
+                    $variantId,
+                    [
+                        'institutional_code' => $officialCode,
+                        'search_code' => $variant['search'] ?? null,
+                        'product' => $productKey,
+                        'size' => $sizeKey,
+                        'brand_model' => $variant['brand'] ?? null,
+                        'sex' => $variant['sex'] ?? null,
+                        'sleeve' => $variant['sleeve'] ?? null,
+                        'unit' => $variant['unit'] ?? null,
+                        'description' => $variant['description'] ?? null,
+                    ]
+                );
+            }
+
+            $this->pdo->commit();
+
+            return [
+                'categories' => count($dataset['categories'] ?? []),
+                'subcategories' => count($dataset['subcategories'] ?? []),
+                'products' => count($dataset['products'] ?? []),
+                'sizes' => count($dataset['sizes'] ?? []),
+                'variants' => count($dataset['variants'] ?? []),
+            ];
+        } catch (\Throwable $exception) {
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+            throw $exception;
+        }
+    }
+
+    private function upsertHistoricalCatalogMapping(
+        string $sourceName,
+        string $entityType,
+        string $sourceKey,
+        ?int $targetId,
+        array $metadata
+    ): void {
+        $statement = $this->pdo->prepare(
+            'INSERT INTO historical_catalog_mappings
+                (source_name, entity_type, source_key, target_id, metadata_json)
+             VALUES
+                (:source_name, :entity_type, :source_key, :target_id, :metadata_json)
+             ON DUPLICATE KEY UPDATE
+                target_id = VALUES(target_id),
+                metadata_json = VALUES(metadata_json)'
+        );
+        $statement->execute([
+            'source_name' => $sourceName,
+            'entity_type' => $entityType,
+            'source_key' => $sourceKey,
+            'target_id' => $targetId,
+            'metadata_json' => json_encode(
+                $metadata,
+                JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
+            ) ?: '{}',
+        ]);
+    }
+
+    private function findOrCreateHistoricalBrand(string $name): ?int
+    {
+        $name = trim($name);
+        if ($name === '' || $this->catalogText($name) === 'NO ESPECIFICADO') {
+            return null;
+        }
+
+        $statement = $this->pdo->prepare(
+            'SELECT id FROM brands WHERE name = :name LIMIT 1'
+        );
+        $statement->execute(['name' => $name]);
+        $id = $statement->fetchColumn();
+
+        if ($id !== false) {
+            return (int) $id;
+        }
+
+        $statement = $this->pdo->prepare(
+            'INSERT INTO brands (name, is_active) VALUES (:name, 1)'
+        );
+        $statement->execute(['name' => $name]);
+
+        return (int) $this->pdo->lastInsertId();
+    }
+
+    private function historicalProductSex(string $value): string
+    {
+        $normalized = $this->catalogText($value);
+
+        if ($normalized === 'FEMENINO') {
+            return 'femenino';
+        }
+        if ($normalized === 'MASCULINO') {
+            return 'masculino';
+        }
+        if ($normalized === 'UNISEX') {
+            return 'unisex';
+        }
+        if (str_contains($normalized, ',')) {
+            return 'mixto';
+        }
+
+        return 'no_aplica';
+    }
+
+    private function nullableCatalogText(mixed $value): ?string
+    {
+        $value = trim((string) ($value ?? ''));
+        return $value !== '' && $this->catalogText($value) !== 'NO ESPECIFICADO'
+            ? $value
+            : null;
+    }
+
+    private function catalogText(string $value): string
+    {
+        $value = mb_strtoupper(trim($value), 'UTF-8');
+        return strtr($value, [
+            'Á' => 'A',
+            'É' => 'E',
+            'Í' => 'I',
+            'Ó' => 'O',
+            'Ú' => 'U',
+            'Ü' => 'U',
+            'Ñ' => 'N',
+        ]);
+    }
+
     public function rowsForProfile(int $batchId, string $profile): array
     {
         $statement = $this->pdo->prepare(
