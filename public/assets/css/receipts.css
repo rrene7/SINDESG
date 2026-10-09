@@ -19,3 +19,21 @@
 .employee-result span{color:#8fb5ce;font-size:.73rem;line-height:1.35}
 .employee-selection{margin-top:7px;padding:10px 12px;border:1px solid rgba(38,214,138,.34);border-radius:11px;background:rgba(38,214,138,.08);color:#aeeed1;font-size:.76rem;line-height:1.4}
 .employee-search-status{padding:11px;color:#8fb5ce;font-size:.78rem}
+
+.receipt-verification-panel{
+    margin-top:18px;padding:20px;border:1px solid rgba(53,178,255,.2);border-radius:18px;
+    background:linear-gradient(145deg,rgba(7,32,60,.82),rgba(3,18,35,.9))
+}
+.receipt-verification-copy{margin:10px 0 16px;color:var(--muted);line-height:1.55}
+.receipt-verification-badge,.receipt-verification-status{
+    display:inline-flex;align-items:center;justify-content:center;padding:6px 10px;border-radius:999px;
+    font-size:.72rem;font-weight:800
+}
+.receipt-verification-badge.ok,.receipt-verification-status.ok{
+    border:1px solid rgba(61,211,142,.32);background:rgba(61,211,142,.1);color:#9bf1c7
+}
+.receipt-verification-badge.warn,.receipt-verification-status.warn{
+    border:1px solid rgba(255,190,92,.35);background:rgba(255,190,92,.1);color:#ffd491
+}
+.receipt-kardex-link{color:#69d3ff;font-weight:750;font-size:.78rem}
+.receipt-kardex-link:hover{text-decoration:underline;color:#d4f5ff}
