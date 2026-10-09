@@ -12,6 +12,8 @@ storage/cache/*
 !storage/cache/.gitkeep
 storage/backups/*
 !storage/backups/.gitkeep
+storage/deployments/*
+!storage/deployments/.gitkeep
 storage/uploads_restore_*
 storage/uploads_before_restore_*
 *.log

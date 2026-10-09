@@ -21,6 +21,8 @@ foreach ([
     "'storage/uploads'",
     "'storage/logs'",
     "'storage/cache'",
+    "'/config/local.php'",
+    "'session_secure'",
     "'/config/database.php'",
     "schema_migrations",
     "'0.13.0-c'",
@@ -48,8 +50,8 @@ foreach ([
     }
 }
 
-if (!in_array(($app['version'] ?? ''), ['0.14.0-a-dev', '0.14.0-b-dev', '0.14.0-c-dev'], true)) {
-    fwrite(STDERR, "[ERROR] La versión de aplicación no corresponde a una versión válida de estabilización 14A/14B/14C." . PHP_EOL);
+if (!in_array(($app['version'] ?? ''), ['0.14.0-a-dev', '0.14.0-b-dev', '0.14.0-c-dev', '0.14.0-d-rc1'], true)) {
+    fwrite(STDERR, "[ERROR] La versión de aplicación no corresponde a una versión válida de estabilización 14A/14B/14C/14D." . PHP_EOL);
     exit(1);
 }
 

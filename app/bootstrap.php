@@ -20,6 +20,8 @@ spl_autoload_register(static function (string $class): void {
     }
 });
 
+$app = require SINDESG_ROOT . '/config/app.php';
+
 /*
  | Las sesiones solo pertenecen al contexto web.
  | scripts/check.php y las pruebas se ejecutan por CLI y pueden haber escrito
@@ -29,13 +31,11 @@ spl_autoload_register(static function (string $class): void {
 if (PHP_SAPI !== 'cli' && session_status() !== PHP_SESSION_ACTIVE) {
     session_set_cookie_params([
         'httponly' => true,
-        'secure' => false,
+        'secure' => (bool) ($app['session_secure'] ?? false),
         'samesite' => 'Lax',
     ]);
     session_start();
 }
-
-$app = require SINDESG_ROOT . '/config/app.php';
 
 date_default_timezone_set((string) ($app['timezone'] ?? 'America/Panama'));
 

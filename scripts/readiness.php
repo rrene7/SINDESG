@@ -72,6 +72,31 @@ if (!is_array($app)) {
 $environment = strtolower(trim((string) ($app['environment'] ?? '')));
 if ($environment === 'production') {
     $ok('Entorno', 'production');
+
+    if (is_file($root . '/config/local.php')) {
+        $ok('Configuración local', 'config/local.php presente y fuera de Git');
+    } else {
+        $error(
+            'Configuración local',
+            'Producción requiere config/local.php para separar parámetros del código versionado'
+        );
+    }
+
+    $baseUrl = trim((string) ($app['base_url'] ?? ''));
+    if ($baseUrl !== '' && str_starts_with($baseUrl, '/')) {
+        $ok('Base URL', $baseUrl);
+    } else {
+        $error('Base URL', 'Debe definirse como ruta absoluta del sitio, por ejemplo /SINDESG');
+    }
+
+    if (($app['session_secure'] ?? false) === true) {
+        $ok('Cookie de sesión', 'secure habilitado');
+    } else {
+        $warn(
+            'Cookie de sesión',
+            'session_secure está deshabilitado; producción HTTPS debe habilitarlo'
+        );
+    }
 } elseif ($environment === 'local') {
     $warn('Entorno', 'local; antes del despliegue institucional debe cambiarse a production');
 } else {
