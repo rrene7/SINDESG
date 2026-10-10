@@ -15,6 +15,7 @@ if (!sindesg_api_authorized(false)) {
 header('Cache-Control: no-store');
 
 $query = trim((string) ($_GET['q'] ?? ''));
+$p4Only = (string) ($_GET['scope'] ?? '') === 'p4';
 
 if (mb_strlen($query) < 2) {
     http_response_code(422);
@@ -30,7 +31,7 @@ try {
     $repository = new RrhhRepository($database);
     echo json_encode([
         'ok' => true,
-        'items' => $repository->searchUnits($query, 30),
+        'items' => $repository->searchUnits($query, 30, $p4Only),
     ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 } catch (Throwable $exception) {
     http_response_code(503);
