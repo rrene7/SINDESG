@@ -177,6 +177,9 @@ jobs:
       - name: Historical closure test
         run: php tests/historical_closure_logic_test.php
 
+      - name: Read-only historical data audit contract test
+        run: php tests/historical_data_audit_test.php
+
       - name: Readiness logic test
         run: php tests/readiness_logic_test.php
 
