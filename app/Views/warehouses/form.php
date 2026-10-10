@@ -25,7 +25,7 @@ declare(strict_types=1);
             <div>
                 <span class="eyebrow">UNIDAD OFICIAL</span>
                 <h2>Dirección o Zona responsable del P4</h2>
-                <p>Que una unidad exista en RRHH no la convierte automáticamente en P4. Esta acción la habilita en SINDESG.</p>
+                <p>Seleccione la Dirección o Zona Policial oficial vigente. Las dependencias, zonas genéricas y sectores no se habilitan como P4 desde este formulario.</p>
             </div>
             <div class="warehouse-auto-code"><strong>Código automático</strong><span>P4-######</span></div>
         </div>
@@ -33,7 +33,7 @@ declare(strict_types=1);
         <div class="warehouse-picker" data-unit-picker data-search-url="<?= e($unitSearchUrl) ?>">
             <label>
                 <span>Buscar unidad *</span>
-                <input type="search" data-unit-search autocomplete="off" placeholder="Nombre, abreviatura o código..." required>
+                <input type="search" data-unit-search autocomplete="off" placeholder="Nombre o código de Dirección/Zona..." required>
                 <input type="hidden" name="organization_unit_id" data-unit-id>
             </label>
             <div class="warehouse-picker-results" data-unit-results hidden></div>
