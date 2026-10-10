@@ -180,6 +180,9 @@ jobs:
       - name: Read-only historical data audit contract test
         run: php tests/historical_data_audit_test.php
 
+      - name: Local demo reset protection test
+        run: php tests/local_demo_reset_test.php
+
       - name: Readiness logic test
         run: php tests/readiness_logic_test.php
 
