@@ -58,7 +58,7 @@ foreach ([
 }
 
 require_once $root . '/app/Repositories/RrhhRepository.php';
-$types = \\App\\Repositories\\RrhhRepository::P4_ELIGIBLE_UNIT_TYPES;
+$types = \App\Repositories\RrhhRepository::P4_ELIGIBLE_UNIT_TYPES;
 foreach (['direccion_nacional', 'direccion_general', 'direccion', 'zona_policial'] as $type) {
     if (!in_array($type, $types, true)) {
         fwrite(STDERR, "[ERROR] Falta tipo P4 autorizado: {$type}" . PHP_EOL);
