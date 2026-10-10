@@ -242,6 +242,37 @@ real continúa calculándose únicamente con `inventory_movements`.
 Si hay lotes en revisión, deben conciliarse en el módulo de Migración histórica.
 No vuelva a cargar un archivo por el solo hecho de que no genere stock vivo.
 
+### Reinicio excepcional de datos ficticios en XAMPP local
+
+El comando `scripts/reset_local_demo.php` sirve **solo antes de producción**
+para limpiar transacciones de prueba creadas durante las verificaciones del
+10/10/2026. No es un mecanismo habitual de corrección del inventario.
+
+En XAMPP local:
+
+```powershell
+& "C:\xampp\php\php.exe" .\scripts\reset_local_demo.php
+```
+
+Por defecto **solo muestra una vista previa** de tablas transaccionales y
+revisa el fingerprint conocido: 12 movimientos, 2 entregas, stock Central 18,
+P4 1 y Tránsito 0, además de 7,717 filas históricas y 182 snapshots. Para
+aplicar, se exige un respaldo reciente íntegro (`scripts/backup.php`),
+el argumento `--apply`, una confirmación explícita y la ruta al respaldo.
+Si cambió alguna cantidad esperada, el mantenimiento se bloquea.
+
+El reinicio elimina transacciones **ficticias**, incluidas sus relaciones,
+únicamente en la BD `sindesg` local. Conserva:
+- lotes y filas de migración histórica, snapshots y conciliaciones;
+- catálogo, artículos, variantes y tallas;
+- almacenes y P4 configurados;
+- usuarios, permisos y auditoría;
+- archivos subidos y respaldos.
+
+Esta acción excepcional se registra en `audit_logs`. No repetir después de
+iniciar operaciones reales; en producción las correcciones se hacen con
+movimientos compensatorios, nunca borrando el kardex.
+
 ## 15. Respaldo
 
 Crear respaldo:
