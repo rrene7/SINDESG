@@ -39,6 +39,16 @@ final class WarehouseService
             throw new InvalidArgumentException('La unidad seleccionada no está vigente en RRHH2029.');
         }
 
+        if (!in_array(
+            (string) ($unit['unit_type'] ?? ''),
+            RrhhRepository::P4_ELIGIBLE_UNIT_TYPES,
+            true
+        )) {
+            throw new InvalidArgumentException(
+                'Solo puede habilitar P4 para una Dirección o Zona Policial oficial. Seleccione el tipo de unidad correcto en RRHH2029.'
+            );
+        }
+
         if ($this->warehouses->existsForOrganizationUnit($organizationUnitId)) {
             throw new InvalidArgumentException(
                 'Esta unidad ya tiene un almacén/P4 configurado en SINDESG.'

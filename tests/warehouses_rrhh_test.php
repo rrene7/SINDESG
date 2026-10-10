@@ -34,4 +34,42 @@ if (stripos($rrhh, 'INSERT INTO organization_units') !== false
     exit(1);
 }
 
+$controller = file_get_contents($root . '/app/Controllers/WarehousesController.php');
+$service = file_get_contents($root . '/app/Services/WarehouseService.php');
+$picker = file_get_contents($root . '/public/assets/js/warehouses.js');
+
+if ($controller === false || $service === false || $picker === false) {
+    fwrite(STDERR, "[ERROR] No se pudieron leer dependencias del selector P4." . PHP_EOL);
+    exit(1);
+}
+
+foreach ([
+    [$controller, 'public/api/units.php?scope=p4'],
+    [$api, "['scope']"],
+    [$api, 'searchUnits($query, 30, $p4Only)'],
+    [$rrhh, 'AND ou.unit_type IN ('],
+    [$service, 'RrhhRepository::P4_ELIGIBLE_UNIT_TYPES'],
+    [$picker, "searchUrl.searchParams.set('q', query)"],
+] as [$content, $expected]) {
+    if (!str_contains($content, $expected)) {
+        fwrite(STDERR, "[ERROR] Falta filtro de seguridad P4: {$expected}" . PHP_EOL);
+        exit(1);
+    }
+}
+
+require_once $root . '/app/Repositories/RrhhRepository.php';
+$types = \App\Repositories\RrhhRepository::P4_ELIGIBLE_UNIT_TYPES;
+foreach (['direccion_nacional', 'direccion_general', 'direccion', 'zona_policial'] as $type) {
+    if (!in_array($type, $types, true)) {
+        fwrite(STDERR, "[ERROR] Falta tipo P4 autorizado: {$type}" . PHP_EOL);
+        exit(1);
+    }
+}
+foreach (['dependencia', 'zona', 'sector_policial'] as $type) {
+    if (in_array($type, $types, true)) {
+        fwrite(STDERR, "[ERROR] Tipo duplicado/no elegible permitido en P4: {$type}" . PHP_EOL);
+        exit(1);
+    }
+}
+
 echo "[OK] Integración RRHH de Almacenes/P4 validada." . PHP_EOL;
