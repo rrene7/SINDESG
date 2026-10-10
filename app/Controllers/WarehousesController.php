@@ -72,7 +72,7 @@ final class WarehousesController
                 'view' => SINDESG_ROOT . '/app/Views/warehouses/form.php',
                 'title' => 'Nuevo P4',
                 'data' => [
-                    'unitSearchUrl' => sindesg_url('public/api/units.php'),
+                    'unitSearchUrl' => sindesg_url('public/api/units.php?scope=p4'),
                     'employeeSearchUrl' => sindesg_url('public/api/employees.php'),
                     'rrhhAvailable' => $this->database->health('rrhh')['ok'],
                 ],
