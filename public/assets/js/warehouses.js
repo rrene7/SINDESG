@@ -55,7 +55,9 @@
             status('Buscando en RRHH2029...');
 
             try {
-                const response = await fetch(endpoint + '?q=' + encodeURIComponent(query), {
+                const searchUrl = new URL(endpoint, window.location.href);
+                searchUrl.searchParams.set('q', query);
+                const response = await fetch(searchUrl.toString(), {
                     headers: {'Accept': 'application/json'}
                 });
                 const payload = await response.json();
