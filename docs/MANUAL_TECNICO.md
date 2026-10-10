@@ -224,6 +224,24 @@ La Fase 13 quedó cerrada mediante:
 
 Los históricos cerrados no se convierten automáticamente en kardex vivo. El Control de inventario quedó archivado como snapshot y las hojas de ENTRADAS/SALIDAS/rendiciones se conservan como referencias.
 
+### Auditoría local de históricos (Fase 14E)
+
+Desde el directorio de SINDESG en XAMPP:
+
+```powershell
+& "C:\xampp\php\php.exe" .\scripts\audit_historical_data.php
+```
+
+El comando realiza **solo consultas SELECT a la base propia `sindesg`**.
+Presenta lotes cargados, estado de filas (`ready`, `review`, `imported`, `skipped`),
+snapshots archivados, perfiles del archivo, movimientos del kardex, entregas
+individuales y existencias por tipo de almacén/P4.
+
+Un snapshot histórico **no equivale a una existencia operativa**: la existencia
+real continúa calculándose únicamente con `inventory_movements`.
+Si hay lotes en revisión, deben conciliarse en el módulo de Migración histórica.
+No vuelva a cargar un archivo por el solo hecho de que no genere stock vivo.
+
 ## 15. Respaldo
 
 Crear respaldo:
