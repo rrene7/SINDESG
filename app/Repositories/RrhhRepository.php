@@ -7,6 +7,14 @@ use App\Support\Database;
 
 final class RrhhRepository
 {
+    /** Tipos canónicos de RRHH que pueden administrar un P4. */
+    public const P4_ELIGIBLE_UNIT_TYPES = [
+        'direccion_nacional',
+        'direccion_general',
+        'direccion',
+        'zona_policial',
+    ];
+
     public function __construct(private Database $database)
     {
     }
@@ -286,7 +294,7 @@ final class RrhhRepository
         SQL);
     }
 
-    public function searchUnits(string $query, int $limit = 30): array
+    public function searchUnits(string $query, int $limit = 30, bool $p4Only = false): array
     {
         $query = trim($query);
         if (mb_strlen($query) < 2) {
@@ -295,6 +303,14 @@ final class RrhhRepository
 
         $limit = max(1, min($limit, 50));
         $term = '%' . $query . '%';
+        $typeFilter = '';
+        if ($p4Only) {
+            $quotedTypes = array_map(
+                static fn (string $type): string => "'" . $type . "'",
+                self::P4_ELIGIBLE_UNIT_TYPES
+            );
+            $typeFilter = 'AND ou.unit_type IN (' . implode(', ', $quotedTypes) . ')';
+        }
 
         return $this->database->rrhhRead('
             SELECT
@@ -312,6 +328,7 @@ final class RrhhRepository
             FROM organization_units_current ou
             WHERE ou.is_active = 1
               AND COALESCE(ou.lifecycle_status, "vigente") = "vigente"
+              ' . $typeFilter . '
               AND (
                     ou.official_name LIKE :name_term
                  OR ou.system_code LIKE :system_term
