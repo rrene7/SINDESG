@@ -94,6 +94,10 @@ final class NominalBulkRequestService
         $issues = [];
         $batch = [];
         $skipped = 0;
+        $sourceHash = hash_file('sha256', $path);
+        if (!is_string($sourceHash)) {
+            throw new RuntimeException('No fue posible verificar la huella SHA del archivo.');
+        }
 
         foreach ($nominal as $row) {
             $position = (int) ($row['position'] ?? 0);
@@ -122,9 +126,8 @@ final class NominalBulkRequestService
                 )) {
                     $cause = 'nombre Excel no coincide suficientemente con RRHH';
                 } else {
-                    $hash = hash_file('sha256', $path);
-                    $notes = 'Requisición ' . $requisition . ' · XLSX fila ' . $excelRow
-                        . ' · SHA256 ' . substr((string) $hash, 0, 16);
+                    $notes = 'REQ ' . $requisition . ' · ' . basename($filename)
+                        . ' · Fila ' . $excelRow . ' · SHA256 ' . $sourceHash;
                     $batch[] = $this->nominalLine($person, (int) $variants[$size], $notes);
                 }
             }
