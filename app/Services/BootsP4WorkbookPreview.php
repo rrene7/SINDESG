@@ -219,6 +219,7 @@ final class BootsP4WorkbookPreview
             'summary_sizes' => $summarySizes,
             'summary_total' => $summaryTotal,
             'issues' => $issues,
+            'nominal' => $nominal,
             'preview' => array_slice($nominal, 0, 12),
             'signature_rows' => count(array_filter(
                 $nominal, static fn (array $r): bool => $r['signature_present']
