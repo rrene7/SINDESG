@@ -23,3 +23,14 @@
 .request-verification-badge.warn{border:1px solid rgba(255,190,92,.35);background:rgba(255,190,92,.1);color:#ffd491}
 .request-verification-copy{margin:12px 0 0;color:var(--muted);line-height:1.55}
 @media(max-width:720px){.request-verification-summary{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* Captura nominal P4: controles de búsqueda y selección múltiple */
+[data-bulk-nominal-picker],form[action*='import-nominal-file']{display:grid;gap:12px;margin-top:14px}
+[data-bulk-nominal-picker] label,form[action*='import-nominal-file'] label{display:grid;gap:7px}
+[data-bulk-nominal-picker] input[type='search'],[data-bulk-nominal-picker] select,form[action*='import-nominal-file'] select,form[action*='import-nominal-file'] input[type='file']{width:100%;padding:10px;border:1px solid var(--line);border-radius:10px;background:rgba(2,16,31,.78);color:#f0f9ff}
+[data-bulk-nominal-picker] [data-bulk-results]{max-height:300px;overflow:auto;border:1px solid var(--line);border-radius:12px;padding:8px}
+[data-bulk-nominal-picker] .request-picker-result{display:flex;align-items:center;gap:10px;padding:8px;cursor:pointer}
+[data-bulk-nominal-picker] [data-bulk-selection]{display:flex;flex-wrap:wrap;gap:8px;max-height:210px;overflow:auto;padding:7px 0}
+.request-selected-person{display:inline-flex;align-items:center;gap:8px;padding:5px 6px 5px 10px;border-radius:12px;border:1px solid rgba(53,178,255,.26);background:rgba(53,178,255,.07);font-size:.78rem}
+.request-selected-person .request-remove-button{width:27px;height:27px}
+form[action*='import-nominal-file'] label:has(input[type='checkbox']){display:flex;flex-direction:row;align-items:start;gap:9px}
