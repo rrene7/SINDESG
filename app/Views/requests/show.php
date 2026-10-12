@@ -225,6 +225,99 @@ $remainingToDistribute = max(0.0, $totalApproved - $totalDispatched);
     <?php endif; ?>
 </section>
 
+<?php if ($serviceRequest['status'] === 'draft'): ?>
+<section class="request-panel">
+    <div class="request-section-head">
+        <div>
+            <span class="eyebrow">CAPTURA RÁPIDA P4</span>
+            <h2>Asignar dotación a varios funcionarios</h2>
+            <p>Busque en RRHH, seleccione varios funcionarios y asigne la misma talla
+                a todos en una sola operación. También puede importar un archivo XLSX.</p>
+        </div>
+    </div>
+
+    <form method="post"
+          action="<?= e(sindesg_url('?module=requests&action=add-nominal-bulk')) ?>"
+          data-bulk-nominal-picker data-search-url="<?= e($employeeSearchUrl) ?>">
+        <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
+        <input type="hidden" name="request_id" value="<?= (int) $serviceRequest['id'] ?>">
+        <label class="request-variant-field">
+            <span>Artículo y talla para todos los seleccionados *</span>
+            <select name="product_variant_id" required>
+                <option value="">Seleccione...</option>
+                <?php foreach ($variantOptions as $option): ?>
+                <option value="<?= (int) $option['id'] ?>">
+                    <?= e($option['category_name'] . ' · ' . $option['product_name']
+                         . ' · ' . $option['variant_code']
+                         . ' · Talla ' . ($option['size_name'] ?: '—')) ?>
+                </option>
+                <?php endforeach; ?>
+            </select>
+        </label>
+        <label>
+            <span>Buscar por nombre, cédula o posición</span>
+            <input type="search" data-bulk-search autocomplete="off"
+                   placeholder="Escriba al menos 2 caracteres...">
+        </label>
+        <div class="request-picker-results" data-bulk-results hidden></div>
+        <button type="button" class="secondary-button" data-bulk-select-page hidden>
+            Seleccionar todos los resultados visibles
+        </button>
+        <p aria-live="polite" data-bulk-counter>0 funcionarios seleccionados</p>
+        <div data-bulk-selection class="request-picker-selection"></div>
+        <button type="submit" class="primary-button" data-bulk-submit disabled>
+            Agregar selección al borrador
+        </button>
+        <p class="request-cell-sub">Máximo 500 por operación. El servidor valida
+           la pertenencia al P4, las posiciones y los duplicados. Sin descontar inventario.</p>
+    </form>
+</section>
+
+<section class="request-panel">
+    <div class="request-section-head">
+        <div>
+            <span class="eyebrow">CARGA MASIVA P4</span>
+            <h2>Importar listado nominal por Excel</h2>
+            <p>Útil para requisiciones como Colón: una fila por funcionario,
+                con posición, nombre y talla. Se cruza con RRHH2029 y catálogo.</p>
+        </div>
+    </div>
+    <form method="post" enctype="multipart/form-data"
+          action="<?= e(sindesg_url('?module=requests&action=import-nominal-file')) ?>">
+        <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
+        <input type="hidden" name="request_id" value="<?= (int) $serviceRequest['id'] ?>">
+        <label>
+            <span>Producto del catálogo para identificar sus tallas *</span>
+            <select name="product_id" required>
+                <option value="">Seleccione el modelo de botas...</option>
+                <?php foreach ($nominalProducts as $product): ?>
+                    <option value="<?= (int) $product['id'] ?>">
+                        <?= e($product['category_name'] . ' · ' . $product['name']) ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+        </label>
+        <label>
+            <span>Excel/CSV nominal (máximo 15 MB) *</span>
+            <input type="file" name="nominal_workbook" accept=".xlsx,.csv" required>
+        </label>
+        <label class="request-cell-sub">
+            <input type="checkbox" name="allow_partial" value="1">
+            Autorizo cargar solo los funcionarios y tallas verificados; las filas
+            con incidencias quedarán sin registrar, para su corrección posterior.
+        </label>
+        <button type="submit" class="primary-button">
+            Validar RRHH e importar a esta solicitud en borrador
+        </button>
+        <p class="request-cell-sub">
+            La importación NO aprueba ni transfiere existencias. Si encuentra
+            diferencias sin autorización para importación parcial, no guardará ninguna fila.
+            El Central revisará la solicitud antes de reservar stock real.
+        </p>
+    </form>
+</section>
+<?php endif; ?>
+
 <?php if ($serviceRequest['status'] === 'in_review' && $requestItems !== []): ?>
 <section class="request-panel review-panel">
     <div class="request-section-head">
