@@ -238,7 +238,7 @@ $remainingToDistribute = max(0.0, $totalApproved - $totalDispatched);
 
     <form method="post"
           action="<?= e(sindesg_url('?module=requests&action=add-nominal-bulk')) ?>"
-          data-bulk-nominal-picker data-search-url="<?= e($employeeSearchUrl) ?>">
+          data-bulk-nominal-picker data-search-url="<?= e($employeeSearchUrl) ?>" data-p4-unit-id="<?= (int) $serviceRequest['organization_unit_id'] ?>">
         <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
         <input type="hidden" name="request_id" value="<?= (int) $serviceRequest['id'] ?>">
         <label class="request-variant-field">
