@@ -257,7 +257,13 @@
                 if (!response.ok || !payload.ok) {
                     throw new Error(payload.message || 'Error al consultar RRHH');
                 }
-                renderResults(Array.isArray(payload.items) ? payload.items : []);
+                const p4Unit = Number(bulkForm.dataset.p4UnitId || 0);
+                const items = Array.isArray(payload.items) ? payload.items : [];
+                const eligible = items.filter((person) => {
+                    const path = Array.isArray(person.unit_path_ids) ? person.unit_path_ids : [];
+                    return p4Unit > 0 && path.some((id) => Number(id) === p4Unit);
+                });
+                renderResults(eligible);
             } catch (error) {
                 if (current !== sequence) return;
                 results.textContent = 'No fue posible consultar RRHH2029.';
