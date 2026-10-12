@@ -173,6 +173,9 @@ final class RequestRepository
             SELECT
                 pv.id,
                 pv.internal_code AS variant_code,
+                pv.institutional_code,
+                pv.supplier_code,
+                pv.color AS variant_color,
                 p.name AS product_name,
                 c.name AS category_name,
                 s.name AS size_name,
@@ -472,7 +475,7 @@ final class RequestRepository
     public function nominalProducts(): array
     {
         return $this->pdo->query(<<<'SQL'
-            SELECT DISTINCT p.id, p.name, c.name AS category_name
+            SELECT DISTINCT p.id, p.name, p.internal_code, c.name AS category_name
             FROM products p
             INNER JOIN categories c ON c.id = p.category_id
             INNER JOIN product_variants pv ON pv.product_id = p.id

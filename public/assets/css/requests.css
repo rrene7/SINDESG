@@ -34,3 +34,17 @@
 .request-selected-person{display:inline-flex;align-items:center;gap:8px;padding:5px 6px 5px 10px;border-radius:12px;border:1px solid rgba(53,178,255,.26);background:rgba(53,178,255,.07);font-size:.78rem}
 .request-selected-person .request-remove-button{width:27px;height:27px}
 form[action*='import-nominal-file'] label:has(input[type='checkbox']){display:flex;flex-direction:row;align-items:start;gap:9px}
+
+/* Selector reutilizable de artículos / variantes / productos por coincidencia */
+.request-catalog-picker{display:grid;gap:10px;min-width:0;width:100%}
+.request-catalog-picker>label{display:grid;gap:6px;min-width:0}
+.request-catalog-picker>label>span{font-size:.78rem;font-weight:700;color:#b8d7ea}
+.request-catalog-picker input[type="search"],.request-catalog-picker select{display:block;width:100%;min-height:44px;padding:10px 12px;border:1px solid rgba(61,176,246,.3);border-radius:11px;background:rgba(2,16,31,.78);color:#f0f9ff;outline-offset:2px}
+.request-catalog-result-count{margin:0;font-size:.75rem;color:var(--muted)}
+.request-catalog-no-matches{padding:14px;border:1px solid rgba(255,190,92,.35);border-radius:12px;background:rgba(255,190,92,.06);line-height:1.5}
+.request-catalog-no-matches[hidden]{display:none!important}
+.request-catalog-no-matches>strong{display:block;font-size:.86rem;color:#ffd491}
+.request-catalog-no-matches p{margin:6px 0}
+.request-catalog-actions{display:flex;flex-wrap:wrap;gap:14px;margin:9px 0}
+.request-catalog-actions a{color:#72d9ff;text-decoration:underline}
+.request-catalog-no-matches small{font-size:.73rem;color:var(--muted)}

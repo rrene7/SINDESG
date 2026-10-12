@@ -140,6 +140,72 @@
         resultsSelector: '[data-reviewer-results]',
         selectionSelector: '[data-reviewer-selection]'
     });
+    // Búsqueda por coincidencia en catálogo ACTIVO (también con stock 0).
+    // Se reusan las opciones entregadas por PHP; no inventamos artículos.
+    const normalizeCatalogText = (text) => String(text || '')
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .toLocaleLowerCase('es')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+    document.querySelectorAll('[data-catalog-picker]').forEach((root) => {
+        const search = root.querySelector('[data-catalog-search]');
+        const select = root.querySelector('[data-catalog-select]');
+        const counter = root.querySelector('[data-catalog-count]');
+        const noMatches = root.querySelector('[data-catalog-empty]');
+        if (!search || !select || !counter || !noMatches) return;
+
+        const placeholder = select.querySelector('option[value=""]');
+        if (!placeholder) return;
+
+        const all = Array.from(select.options)
+            .filter((option) => option.value !== '')
+            .map((option) => ({
+                option,
+                searchable: normalizeCatalogText(
+                    option.dataset.searchTerms + ' ' + option.textContent
+                )
+            }));
+
+        const update = () => {
+            const terms = normalizeCatalogText(search.value)
+                .split(' ').filter(Boolean);
+            const selected = select.value;
+            const matches = all.filter(({searchable}) =>
+                terms.every((term) => searchable.includes(term))
+            );
+
+            // Actualizar de verdad el dropdown, no solo ocultar <option>,
+            // porque algunos navegadores siguen mostrando opciones ocultas.
+            select.replaceChildren(placeholder, ...matches.map(({option}) => option));
+            if (selected && matches.some(({option}) => option.value === selected)) {
+                select.value = selected;
+            } else {
+                select.value = '';
+            }
+            const noun = matches.length === 1 ? 'coincidencia' : 'coincidencias';
+            counter.textContent = matches.length + ' ' + noun
+                + ' de ' + all.length + ' opciones activas'
+                + (terms.length ? ' para "' + search.value.trim() + '"' : '')
+                + '. Se pueden solicitar variantes con stock 0.';
+            noMatches.hidden = matches.length !== 0;
+        };
+
+        search.addEventListener('input', update);
+        search.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                if (select.options.length === 2 && !select.value) {
+                    select.value = select.options[1].value;
+                    select.dispatchEvent(new Event('change', {bubbles: true}));
+                }
+                select.focus();
+            }
+        });
+
+        update();
+    });
+
     // Selección múltiple: solo crea renglones nominales en un borrador P4.
     // La pertenencia a RRHH/P4 se verifica nuevamente en el servidor.
     const bulkForm = document.querySelector('[data-bulk-nominal-picker]');
