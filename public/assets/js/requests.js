@@ -140,4 +140,136 @@
         resultsSelector: '[data-reviewer-results]',
         selectionSelector: '[data-reviewer-selection]'
     });
+    // Selección múltiple: solo crea renglones nominales en un borrador P4.
+    // La pertenencia a RRHH/P4 se verifica nuevamente en el servidor.
+    const bulkForm = document.querySelector('[data-bulk-nominal-picker]');
+    if (bulkForm) {
+        const input = bulkForm.querySelector('[data-bulk-search]');
+        const results = bulkForm.querySelector('[data-bulk-results]');
+        const selectedView = bulkForm.querySelector('[data-bulk-selection]');
+        const countView = bulkForm.querySelector('[data-bulk-counter]');
+        const selectPage = bulkForm.querySelector('[data-bulk-select-page]');
+        const submit = bulkForm.querySelector('[data-bulk-submit]');
+        const chosen = new Map();
+        let shown = [];
+        let sequence = 0;
+
+        const renderSelected = () => {
+            selectedView.replaceChildren();
+            for (const person of chosen.values()) {
+                const label = document.createElement('span');
+                label.className = 'request-selected-person';
+
+                const hidden = document.createElement('input');
+                hidden.type = 'hidden';
+                hidden.name = 'employee_ids[]';
+                hidden.value = String(person.employee_id);
+
+                const name = document.createElement('span');
+                name.textContent = person.display_name
+                    + ' · Pos. ' + (person.position_number || '—');
+
+                const remove = document.createElement('button');
+                remove.type = 'button';
+                remove.className = 'request-remove-button';
+                remove.textContent = '×';
+                remove.setAttribute('aria-label', 'Quitar a ' + person.display_name);
+                remove.addEventListener('click', () => {
+                    chosen.delete(String(person.employee_id));
+                    renderSelected();
+                    renderResults(shown);
+                });
+                label.append(hidden, name, remove);
+                selectedView.appendChild(label);
+            }
+            countView.textContent = chosen.size + ' funcionarios seleccionados';
+            submit.disabled = chosen.size === 0;
+        };
+
+        const addPerson = (person) => {
+            if (chosen.size >= 500 && !chosen.has(String(person.employee_id))) {
+                countView.textContent = 'Límite de 500 por operación alcanzado.';
+                return;
+            }
+            chosen.set(String(person.employee_id), person);
+            renderSelected();
+        };
+
+        const renderResults = (list) => {
+            shown = list;
+            results.replaceChildren();
+            if (!list.length) {
+                const message = document.createElement('p');
+                message.textContent = 'No se encontraron funcionarios.';
+                results.appendChild(message);
+            }
+            list.forEach((person) => {
+                const label = document.createElement('label');
+                label.className = 'request-picker-result';
+                const check = document.createElement('input');
+                check.type = 'checkbox';
+                check.checked = chosen.has(String(person.employee_id));
+                check.addEventListener('change', () => {
+                    if (check.checked) {
+                        addPerson(person);
+                    } else {
+                        chosen.delete(String(person.employee_id));
+                        renderSelected();
+                    }
+                    check.checked = chosen.has(String(person.employee_id));
+                });
+                const description = document.createElement('span');
+                description.textContent = person.display_name
+                    + ' · Pos. ' + (person.position_number || '—')
+                    + ' · ' + (person.organization_unit_name || 'Sin unidad');
+                label.append(check, description);
+                results.appendChild(label);
+            });
+            results.hidden = false;
+            selectPage.hidden = list.length === 0;
+        };
+
+        selectPage.addEventListener('click', () => {
+            shown.forEach(addPerson);
+            renderResults(shown);
+        });
+
+        input.addEventListener('input', debounce(async () => {
+            const term = input.value.trim();
+            const current = ++sequence;
+            if (term.length < 2) {
+                shown = [];
+                results.hidden = true;
+                selectPage.hidden = true;
+                return;
+            }
+            results.hidden = false;
+            results.textContent = 'Consultando RRHH2029...';
+            selectPage.hidden = true;
+            try {
+                const url = new URL(bulkForm.dataset.searchUrl, window.location.href);
+                url.searchParams.set('q', term);
+                const response = await fetch(url.toString(), {
+                    headers: {Accept: 'application/json'}
+                });
+                const payload = await response.json();
+                if (current !== sequence) return;
+                if (!response.ok || !payload.ok) {
+                    throw new Error(payload.message || 'Error al consultar RRHH');
+                }
+                renderResults(Array.isArray(payload.items) ? payload.items : []);
+            } catch (error) {
+                if (current !== sequence) return;
+                results.textContent = 'No fue posible consultar RRHH2029.';
+            }
+        }, 250));
+
+        bulkForm.addEventListener('submit', (event) => {
+            if (chosen.size === 0) {
+                event.preventDefault();
+                countView.textContent = 'Seleccione al menos un funcionario.';
+            }
+        });
+    }
+
 })();
