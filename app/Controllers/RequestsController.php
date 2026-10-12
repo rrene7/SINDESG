@@ -7,6 +7,7 @@ use App\Repositories\RequestRepository;
 use App\Services\RequestService;
 use App\Services\SpreadsheetReader;
 use App\Services\BootsP4WorkbookPreview;
+use App\Services\NominalBulkRequestService;
 use App\Services\RrhhEmployeeDirectory;
 use App\Support\Database;
 use InvalidArgumentException;
@@ -17,14 +18,14 @@ final class RequestsController
 {
     private RequestRepository $repository;
     private RequestService $service;
+    private NominalBulkRequestService $bulk;
 
     public function __construct(private Database $database)
     {
         $this->repository = new RequestRepository($database->connection('sindesg'));
-        $this->service = new RequestService(
-            $this->repository,
-            new RrhhEmployeeDirectory($database)
-        );
+        $directory = new RrhhEmployeeDirectory($database);
+        $this->service = new RequestService($this->repository, $directory);
+        $this->bulk = new NominalBulkRequestService($this->repository, $directory);
     }
 
     public function handle(
@@ -101,6 +102,7 @@ final class RequestsController
                     'requestItems' => $this->repository->items($requestId),
                     'requestCommitmentEvidence' => $this->repository->commitmentEvidence($requestId),
                     'variantOptions' => $this->repository->variantOptions(),
+                    'nominalProducts' => $this->repository->nominalProducts(),
                     'employeeSearchUrl' => sindesg_url('public/api/employees.php'),
                 ],
             ];
@@ -118,6 +120,54 @@ final class RequestsController
 
     private function handlePost(string $action, array $post): array
     {
+        if ($action === 'add-nominal-bulk') {
+            $requestId = (int) ($post['request_id'] ?? 0);
+            $employeeIds = $post['employee_ids'] ?? [];
+            if (!is_array($employeeIds)) {
+                throw new InvalidArgumentException('Seleccione funcionarios válidos.');
+            }
+            $count = $this->bulk->addSelected(
+                $requestId,
+                (int) ($post['product_variant_id'] ?? 0),
+                $employeeIds
+            );
+            flash('success', $count . ' funcionarios agregados a la solicitud nominal.');
+            $this->redirect('?module=requests&action=show&id=' . $requestId);
+        }
+
+        if ($action === 'import-nominal-file') {
+            $requestId = (int) ($post['request_id'] ?? 0);
+            $file = $_FILES['nominal_workbook'] ?? null;
+            if (!is_array($file) || (int) ($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+                throw new InvalidArgumentException('Adjunte un XLSX o CSV válido.');
+            }
+            $path = (string) ($file['tmp_name'] ?? '');
+            $filename = basename((string) ($file['name'] ?? ''));
+            $ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+            $bytes = (int) ($file['size'] ?? 0);
+            if ($bytes <= 0 || $bytes > 15 * 1024 * 1024 || !in_array($ext, ['xlsx', 'csv'], true)) {
+                throw new InvalidArgumentException('Solo se admiten archivos XLSX/CSV de hasta 15 MB.');
+            }
+            if ($path === '' || !is_uploaded_file($path)) {
+                throw new InvalidArgumentException('La carga no es un archivo HTTP válido.');
+            }
+            $report = $this->bulk->importWorkbook(
+                $requestId,
+                (int) ($post['product_id'] ?? 0),
+                $path,
+                $ext,
+                $filename,
+                (string) ($post['allow_partial'] ?? '') === '1'
+            );
+            flash('success', 'Requisición ' . $report['requisition'] . ': '
+                . $report['added'] . ' asignaciones agregadas a borrador; '
+                . $report['skipped'] . ' pendientes de corrección. Ningún movimiento de inventario.');
+            if ($report['issues'] !== []) {
+                flash('error', 'Observaciones: ' . implode(' | ', array_slice($report['issues'], 0, 8)));
+            }
+            $this->redirect('?module=requests&action=show&id=' . $requestId);
+        }
+
         if ($action === 'preview-boots') {
             $file = $_FILES['boots_workbook'] ?? null;
             if (!is_array($file) || (int) ($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
