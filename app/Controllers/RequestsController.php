@@ -5,6 +5,8 @@ namespace App\Controllers;
 
 use App\Repositories\RequestRepository;
 use App\Services\RequestService;
+use App\Services\SpreadsheetReader;
+use App\Services\BootsP4WorkbookPreview;
 use App\Services\RrhhEmployeeDirectory;
 use App\Support\Database;
 use InvalidArgumentException;
@@ -45,9 +47,11 @@ final class RequestsController
             flash('error', $exception->getMessage());
 
             $requestId = (int) ($post['request_id'] ?? $query['id'] ?? 0);
-            $this->redirect($requestId > 0
-                ? '?module=requests&action=show&id=' . $requestId
-                : '?module=requests&action=new');
+            $this->redirect($action === 'preview-boots'
+                ? '?module=requests&action=import-boots'
+                : ($requestId > 0
+                    ? '?module=requests&action=show&id=' . $requestId
+                    : '?module=requests&action=new'));
         } catch (Throwable $exception) {
             return [
                 'view' => SINDESG_ROOT . '/app/Views/requests/unavailable.php',
@@ -61,6 +65,14 @@ final class RequestsController
 
     private function handleGet(string $action, array $query): array
     {
+        if ($action === 'import-boots') {
+            return [
+                'view' => SINDESG_ROOT . '/app/Views/requests/boots-import.php',
+                'title' => 'Prevalidación de dotación P4',
+                'data' => ['bootsPreview' => null],
+            ];
+        }
+
         if ($action === 'new') {
             return [
                 'view' => SINDESG_ROOT . '/app/Views/requests/form.php',
@@ -106,6 +118,36 @@ final class RequestsController
 
     private function handlePost(string $action, array $post): array
     {
+        if ($action === 'preview-boots') {
+            $file = $_FILES['boots_workbook'] ?? null;
+            if (!is_array($file) || (int) ($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+                throw new InvalidArgumentException('Adjunte un Excel XLSX o CSV válido para revisar.');
+            }
+            $fileSize = (int) ($file['size'] ?? 0);
+            $path = (string) ($file['tmp_name'] ?? '');
+            $fileName = basename((string) ($file['name'] ?? ''));
+            $extension = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+
+            if ($fileSize <= 0 || $fileSize > 15 * 1024 * 1024) {
+                throw new InvalidArgumentException('El listado debe tener entre 1 byte y 15 MB.');
+            }
+            if (!in_array($extension, ['xlsx', 'csv'], true)) {
+                throw new InvalidArgumentException('Únicamente se admiten XLSX o CSV.');
+            }
+            if ($path === '' || !is_uploaded_file($path)) {
+                throw new InvalidArgumentException('El archivo no procede de una carga HTTP válida.');
+            }
+
+            $sheets = (new SpreadsheetReader())->read($path, $extension);
+            $report = (new BootsP4WorkbookPreview())->analyze($sheets, $fileName);
+
+            return [
+                'view' => SINDESG_ROOT . '/app/Views/requests/boots-import.php',
+                'title' => 'Prevalidación de dotación P4',
+                'data' => ['bootsPreview' => $report],
+            ];
+        }
+
         if ($action === 'save') {
             $requestId = $this->service->createDraft($post);
             flash('success', 'Solicitud creada en borrador. Ahora agregue los artículos requeridos.');
