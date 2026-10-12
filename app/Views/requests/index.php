@@ -18,7 +18,10 @@ $statusLabels = [
         <h1>Solicitudes P4 → Almacén Central</h1>
         <p>Registre necesidades, revise disponibilidad y deje aprobadas las cantidades que la Fase 8 podrá distribuir físicamente.</p>
     </div>
-    <a class="primary-button" href="<?= e(sindesg_url('?module=requests&action=new')) ?>">+ Nueva solicitud</a>
+    <div class="request-bottom-actions">
+        <a class="secondary-button" href="<?= e(sindesg_url('?module=requests&action=import-boots')) ?>">Revisar Excel de dotación P4</a>
+        <a class="primary-button" href="<?= e(sindesg_url('?module=requests&action=new')) ?>">+ Nueva solicitud</a>
+    </div>
 </section>
 
 <section class="request-stats">
