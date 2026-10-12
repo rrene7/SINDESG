@@ -366,6 +366,166 @@ final class RequestRepository
         return (int) $this->pdo->lastInsertId();
     }
 
+    /**
+     * Inserta la selección nominal como UNA operación atómica. No mueve stock.
+     * Un funcionario no puede recibir dos renglones del mismo producto en
+     * una misma solicitud, aunque haya variantes/tallas distintas.
+     *
+     * @param list<array<string,mixed>> $rows
+     */
+    public function addNominalBatch(int $requestId, array $rows): int
+    {
+        if ($rows === [] || count($rows) > 1000) {
+            throw new RuntimeException('Seleccione entre 1 y 1,000 beneficiarios.');
+        }
+        $this->pdo->beginTransaction();
+        try {
+            $request = $this->lockRequest($requestId);
+            if ($request['status'] !== 'draft') {
+                throw new RuntimeException('Solo es posible agregar dotaciones a solicitudes en borrador.');
+            }
+
+            $existing = $this->pdo->prepare(<<<'SQL'
+                SELECT i.beneficiary_employee_id, pv.product_id
+                FROM service_request_items i
+                INNER JOIN product_variants pv ON pv.id = i.product_variant_id
+                WHERE i.request_id = :request_id AND i.beneficiary_employee_id IS NOT NULL
+                FOR UPDATE
+            SQL);
+            $existing->execute(['request_id' => $requestId]);
+            $seen = [];
+            foreach ($existing->fetchAll() as $line) {
+                $seen[$line['beneficiary_employee_id'] . ':' . $line['product_id']] = true;
+            }
+
+            $variantIds = [];
+            foreach ($rows as $line) {
+                $variantIds[(int) ($line['product_variant_id'] ?? 0)] = true;
+            }
+            $variants = [];
+            $lookup = $this->pdo->prepare(<<<'SQL'
+                SELECT pv.id, pv.product_id
+                FROM product_variants pv INNER JOIN products p ON p.id = pv.product_id
+                WHERE pv.id = :id AND pv.status = 'active' AND p.status = 'active'
+            SQL);
+            foreach (array_keys($variantIds) as $id) {
+                $lookup->execute(['id' => $id]);
+                $variant = $lookup->fetch();
+                if (!$variant) {
+                    throw new RuntimeException('Una talla o variante ya no está disponible en catálogo.');
+                }
+                $variants[$id] = (int) $variant['product_id'];
+            }
+
+            $insert = $this->pdo->prepare(<<<'SQL'
+                INSERT INTO service_request_items (
+                    request_id, product_variant_id,
+                    beneficiary_employee_id, beneficiary_label_snapshot,
+                    beneficiary_document_snapshot, beneficiary_position_snapshot,
+                    beneficiary_rank_snapshot, beneficiary_unit_id_snapshot,
+                    beneficiary_unit_name_snapshot, quantity_requested, notes
+                ) VALUES (
+                    :request_id, :variant_id,
+                    :employee_id, :label, :document, :position,
+                    :rank, :unit_id, :unit_name, :quantity, :notes
+                )
+            SQL);
+            foreach ($rows as $line) {
+                $employeeId = (int) ($line['employee_id'] ?? 0);
+                $variantId = (int) ($line['product_variant_id'] ?? 0);
+                if ($employeeId <= 0 || !isset($variants[$variantId])) {
+                    throw new RuntimeException('El destinatario o artículo no es válido.');
+                }
+                $key = $employeeId . ':' . $variants[$variantId];
+                if (isset($seen[$key])) {
+                    throw new RuntimeException(
+                        'Asignación duplicada para el funcionario RRHH #' . $employeeId
+                        . ' en este producto. Elimine o corrija la fila antes de repetir la carga.'
+                    );
+                }
+                $seen[$key] = true;
+                $insert->execute([
+                    'request_id' => $requestId,
+                    'variant_id' => $variantId,
+                    'employee_id' => $employeeId,
+                    'label' => (string) $line['display_name'],
+                    'document' => (string) $line['document_number'],
+                    'position' => $line['position_number'],
+                    'rank' => $line['rank_name'],
+                    'unit_id' => $line['organization_unit_id'],
+                    'unit_name' => $line['organization_unit_name'],
+                    'quantity' => '1.000',
+                    'notes' => mb_substr((string) ($line['notes'] ?? ''), 0, 255),
+                ]);
+            }
+            $this->pdo->commit();
+            return count($rows);
+        } catch (\Throwable $exception) {
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+            throw $exception;
+        }
+    }
+
+    /** @return array<int,array<string,mixed>> */
+    public function nominalProducts(): array
+    {
+        return $this->pdo->query(<<<'SQL'
+            SELECT DISTINCT p.id, p.name, c.name AS category_name
+            FROM products p
+            INNER JOIN categories c ON c.id = p.category_id
+            INNER JOIN product_variants pv ON pv.product_id = p.id
+            WHERE p.status = 'active' AND pv.status = 'active'
+            ORDER BY c.name, p.name
+        SQL)->fetchAll();
+    }
+
+    /** @return array<int,bool> */
+    public function nominalEmployeeIdsForProduct(int $requestId, int $productId): array
+    {
+        $stmt = $this->pdo->prepare(<<<'SQL'
+            SELECT DISTINCT i.beneficiary_employee_id
+            FROM service_request_items i
+            INNER JOIN product_variants pv ON pv.id = i.product_variant_id
+            WHERE i.request_id = :request_id
+              AND pv.product_id = :product_id
+              AND i.beneficiary_employee_id IS NOT NULL
+        SQL);
+        $stmt->execute(['request_id' => $requestId, 'product_id' => $productId]);
+        return array_fill_keys(array_map('intval', $stmt->fetchAll(PDO::FETCH_COLUMN)), true);
+    }
+
+    /** @return array<string,int> */
+    public function sizeVariantsForProduct(int $productId): array
+    {
+        $stmt = $this->pdo->prepare(<<<'SQL'
+            SELECT pv.id, s.name AS size_name
+            FROM product_variants pv
+            INNER JOIN products p ON p.id = pv.product_id
+            INNER JOIN sizes s ON s.id = pv.size_id
+            WHERE pv.product_id = :product_id
+              AND pv.status = 'active' AND p.status = 'active'
+        SQL);
+        $stmt->execute(['product_id' => $productId]);
+        $map = [];
+        foreach ($stmt->fetchAll() as $row) {
+            $key = str_replace(',', '.', trim((string) $row['size_name']));
+            if (!preg_match('/^\d{1,2}(?:\.5)?$/', $key)) {
+                continue;
+            }
+            $key = rtrim(rtrim(number_format((float) $key, 1, '.', ''), '0'), '.');
+            if (isset($map[$key])) {
+                throw new RuntimeException(
+                    'Hay más de una variante activa para talla ' . $key
+                    . '; seleccione un producto con tallas inequívocas.'
+                );
+            }
+            $map[$key] = (int) $row['id'];
+        }
+        return $map;
+    }
+
     public function removeItem(int $requestId, int $itemId): void
     {
         $request = $this->find($requestId);

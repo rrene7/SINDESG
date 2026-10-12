@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 $statusLabels = [
     'prepared' => 'Preparada',
-    'authorized' => 'Autorizada',
+    'authorized' => 'Lista para retirar',
     'dispatched' => 'En tránsito',
     'received' => 'Recibida',
     'cancelled' => 'Cancelada',

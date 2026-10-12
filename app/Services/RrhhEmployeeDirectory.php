@@ -122,6 +122,73 @@ final class RrhhEmployeeDirectory
         return isset($rows[0]) ? $this->normalize($rows[0]) : null;
     }
 
+    /**
+     * Resuelve funcionarios activos por ID o posición en lotes, siempre solo SELECT.
+     * La posición puede no ser única: los llamadores deben rechazar ambigüedades.
+     *
+     * @param list<int|string> $values
+     * @return list<array<string,mixed>>
+     */
+    public function resolveBulk(string $field, array $values): array
+    {
+        if (!in_array($field, ['employee_id', 'position_number'], true)) {
+            throw new \InvalidArgumentException('Campo RRHH no permitido.');
+        }
+        $numbers = [];
+        foreach ($values as $value) {
+            $value = trim((string) $value);
+            if (!ctype_digit($value) || (int) $value <= 0) {
+                throw new \InvalidArgumentException('Solo se admiten IDs o posiciones numéricas.');
+            }
+            $numbers[(int) $value] = (int) $value;
+        }
+        if (count($numbers) > 1000) {
+            throw new \InvalidArgumentException('El máximo es 1,000 funcionarios por operación.');
+        }
+        if ($numbers === []) {
+            return [];
+        }
+
+        $column = $field === 'employee_id' ? 'e.id' : 'pa.position_number';
+        $result = [];
+        foreach (array_chunk(array_values($numbers), 100) as $chunk) {
+            $bind = [];
+            $keys = [];
+            foreach ($chunk as $i => $id) {
+                $bind['v' . $i] = $id;
+                $keys[] = ':v' . $i;
+            }
+            $sql = '
+                SELECT
+                    e.id AS employee_id, e.document_number,
+                    e.first_name, e.last_name, pa.position_number,
+                    r.name AS rank_name, s.name AS status_name,
+                    ou.id AS organization_unit_id, ou.official_name AS organization_unit_name,
+                    ou.unit_type, ou.hierarchy_path
+                FROM employees e
+                LEFT JOIN ranks r ON r.id = e.rank_id
+                LEFT JOIN statuses s ON s.id = e.status_id
+                LEFT JOIN employee_position_assignments pa
+                    ON pa.employee_id = e.id AND pa.end_date IS NULL
+                LEFT JOIN employee_unit_assignments ua
+                    ON ua.employee_id = e.id AND ua.is_primary = 1
+                   AND ua.status = "active" AND ua.end_date IS NULL
+                LEFT JOIN organization_units_current ou
+                    ON ou.id = ua.organization_unit_id
+                WHERE ' . $column . ' IN (' . implode(', ', $keys) . ')
+                  AND e.document_number IS NOT NULL
+                  AND TRIM(e.document_number) <> ""
+                  AND COALESCE(s.blocks_actions, 0) = 0
+                  AND COALESCE(s.is_active, 1) = 1
+                ORDER BY e.id';
+            $rows = $this->withOrganizationContext($this->database->rrhhRead($sql, $bind));
+            foreach ($rows as $row) {
+                $result[] = $this->normalize($row);
+            }
+        }
+        return $result;
+    }
+
     public function belongsToOrganizationUnit(int $employeeId, int $organizationUnitId): bool
     {
         if ($employeeId <= 0 || $organizationUnitId <= 0) {
@@ -267,6 +334,7 @@ final class RrhhEmployeeDirectory
             'direction_name' => (string) ($row['direction_name'] ?? ''),
             'office_name' => (string) ($row['office_name'] ?? ''),
             'display_name' => trim(($rank !== '' ? $rank . ' · ' : '') . $name),
+            'unit_path_ids' => $this->hierarchyIds($row),
         ];
     }
 }

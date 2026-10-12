@@ -224,6 +224,42 @@ La Fase 13 quedó cerrada mediante:
 
 Los históricos cerrados no se convierten automáticamente en kardex vivo. El Control de inventario quedó archivado como snapshot y las hojas de ENTRADAS/SALIDAS/rendiciones se conservan como referencias.
 
+### Solicitudes nominales masivas P4 (Fase 15B)
+
+En **Solicitudes → Crear borrador P4 → Ver solicitud** se habilitan
+dos formas de agregar destinatarios sin capturarlos uno por uno:
+
+- **Selección múltiple en RRHH:** buscar por nombre, cédula o posición,
+  marcar varios resultados, «Seleccionar todos los visibles» y
+  asignar a esos funcionarios la misma variante/talla. Hasta **500**
+  destinatarios por operación, sin necesidad de repetir el formulario.
+- **Importar listado XLSX/CSV:** seleccionar previamente el producto
+  del catálogo con variantes de talla activas y subir el archivo nominal
+  de dotación. El sistema cruza **cada posición** con RRHH2029
+  (solo lectura), nombre, adscripción del P4, talla y duplicados.
+  Hasta **1,000** destinatarios por archivo.
+
+Todo se guarda únicamente como `service_request_items` de la **solicitud
+en borrador** dentro de `sindesg`. Una operación masiva es **atómica**:
+o se agregan todas las filas seleccionadas/verificadas o ninguna.
+Se impide repetir el mismo funcionario/producto dentro del borrador
+aunque se cambie de talla; para corregir, quitar el renglón anterior.
+
+Si el Excel presenta incidencias (como 688 frente a 723 del encabezado,
+talla inválida o posición duplicada), por defecto **se bloquea la carga**.
+El P4 puede autorizar explícitamente **importación parcial**: se guardan
+solo las filas comprobadas, y el resultado informa cuántas quedaron sin
+registrar para su corrección posterior. Las asignaciones rechazadas
+**no** se dan por atendidas ni se asignan automáticamente.
+Las notas de los renglones importados incluyen requisición, fila del
+documento y huella de origen para trazabilidad.
+
+La captura masiva NO confirma stock ni hace movimientos de inventario.
+Central revisa y aprueba cantidades solo si hay existencias
+operativas; después prepara, autoriza (**listo para retirar**),
+despacha al P4 y el P4 confirma la recepción y entrega individual.
+La estimación de unas 16 mil botas **no se registra como saldo inicial**.
+
 ### Piloto de dotación nominal de botas al P4 (Fase 15A)
 
 **Caso:** 3.ª Zona Policial de Colón, requisición documental **1122965**,
