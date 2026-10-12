@@ -165,6 +165,9 @@ jobs:
       - name: Spreadsheet reader test
         run: php tests/spreadsheet_reader_test.php
 
+      - name: Boots P4 import prevalidation test
+        run: php tests/boots_p4_preview_test.php
+
       - name: Historical import logic test
         run: php tests/historical_import_logic_test.php
 

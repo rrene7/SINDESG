@@ -224,6 +224,46 @@ La Fase 13 quedó cerrada mediante:
 
 Los históricos cerrados no se convierten automáticamente en kardex vivo. El Control de inventario quedó archivado como snapshot y las hojas de ENTRADAS/SALIDAS/rendiciones se conservan como referencias.
 
+### Piloto de dotación nominal de botas al P4 (Fase 15A)
+
+**Caso:** 3.ª Zona Policial de Colón, requisición documental **1122965**,
+contrato **DA-038-2025**, hoja "DOTACIÓN DE BOTAS 2026 OFICIALES Y CLASES.xlsx".
+
+Desde **Solicitudes → Revisar Excel de dotación P4**, un usuario autorizado
+puede subir un archivo XLSX o CSV de hasta 15 MB para ejecutar una
+**prevalidación en memoria**. Esta fase:
+
+- extrae la requisición, contrato, fecha, zona y cantidad declarada;
+- detecta las columnas RANGO, POSICIÓN, NOMBRE, APELLIDO y TALLA;
+- cuenta asignaciones nominales y tallas válidas;
+- compara el encabezado y el resumen por tallas con las filas nominales;
+- detecta posiciones repetidas y tallas no reconocidas;
+- muestra incidencias por fila sin guardar el archivo ni modificar la base.
+
+En el archivo de Colón: 723 asignaciones nominales, encabezado con 688,
+resumen por tallas de 723; posición 11828 duplicada y talla «8 5»
+que se debe resolver antes de crear la asignación. Una talla inválida
+**no se asigna automáticamente**.
+
+**Reglas:** esta prevalidación NO crea solicitud, aprobación, transferencia,
+recepción P4, entrega individual, stock, kardex ni reservas. No consulta
+ni escribe RRHH2029. El saldo inicial de unas 16 mil botas es una
+**estimación por verificar**, no un valor contable. La requisición del
+documento de Colón es una referencia documental y NO debe usarse como
+identificador del lote de inventario inicial sin evidencia de enlace.
+
+**Siguientes bloques separados:**
+1. Registrar documento y filas en staging persistente con hash y trazabilidad;
+   validar cada posición contra RRHH2029 por consulta estrictamente de lectura;
+   vincular variantes/tallas reales del catálogo y aprobación del listado.
+2. Generar distribución Central → P4, con comprobante firmado y recepción
+   efectiva de cantidades, sin permitir salida por encima del stock operativo.
+3. Dar seguimiento individual a pendientes y entregas confirmadas por P4;
+   admitir entregas directas del Central y cambios/devoluciones allí, vinculados
+   a la entrega original sin doble descuento.
+4. Establecer saldo inicial real con acta o recepción documentada, con
+   conciliación por talla y ajustes auditables, sin crear un lote ficticio.
+
 ### Auditoría local de históricos (Fase 14E)
 
 Desde el directorio de SINDESG en XAMPP:
