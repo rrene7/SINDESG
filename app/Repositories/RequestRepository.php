@@ -481,6 +481,21 @@ final class RequestRepository
         SQL)->fetchAll();
     }
 
+    /** @return array<int,bool> */
+    public function nominalEmployeeIdsForProduct(int $requestId, int $productId): array
+    {
+        $stmt = $this->pdo->prepare(<<<'SQL'
+            SELECT DISTINCT i.beneficiary_employee_id
+            FROM service_request_items i
+            INNER JOIN product_variants pv ON pv.id = i.product_variant_id
+            WHERE i.request_id = :request_id
+              AND pv.product_id = :product_id
+              AND i.beneficiary_employee_id IS NOT NULL
+        SQL);
+        $stmt->execute(['request_id' => $requestId, 'product_id' => $productId]);
+        return array_fill_keys(array_map('intval', $stmt->fetchAll(PDO::FETCH_COLUMN)), true);
+    }
+
     /** @return array<string,int> */
     public function sizeVariantsForProduct(int $productId): array
     {
