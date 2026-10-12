@@ -18,6 +18,37 @@ $totalDispatched = array_sum(array_map(static fn (array $row): float => (float) 
 $totalReceived = array_sum(array_map(static fn (array $row): float => (float) ($row['quantity_received'] ?? 0), $requestItems));
 $totalDelivered = array_sum(array_map(static fn (array $row): float => (float) ($row['quantity_delivered'] ?? 0), $requestItems));
 $remainingToDistribute = max(0.0, $totalApproved - $totalDispatched);
+
+// Se consultan las variantes ACTIVAS aunque su existencia sea cero.
+// El filtro busca coincidencias en artículo, categoría, marca y códigos.
+$catalogVariantOptions = [];
+foreach ($variantOptions as $entry) {
+    $stock = number_format((float) $entry['central_stock'], 0, '.', ',');
+    $label = $entry['category_name'] . ' · ' . $entry['product_name']
+        . ' · Talla ' . ($entry['size_name'] ?: '—')
+        . ' · ' . $entry['variant_code']
+        . ' · Central: ' . $stock;
+    $terms = implode(' ', array_filter([
+        $entry['category_name'], $entry['product_name'], $entry['size_name'],
+        $entry['brand_name'], $entry['variant_code'], $entry['institutional_code'],
+        $entry['supplier_code'], $entry['variant_color'],
+    ], static fn ($value): bool => trim((string) $value) !== ''));
+    $catalogVariantOptions[] = [
+        'value' => (int) $entry['id'],
+        'label' => $label,
+        'terms' => $terms,
+    ];
+}
+$catalogProductOptions = [];
+foreach ($nominalProducts ?? [] as $product) {
+    $label = $product['category_name'] . ' · ' . $product['name'];
+    $catalogProductOptions[] = [
+        'value' => (int) $product['id'],
+        'label' => $label,
+        'terms' => $label . ' ' . ($product['internal_code'] ?? ''),
+    ];
+}
+
 ?>
 <section class="request-detail-hero">
     <div>
@@ -127,17 +158,16 @@ $remainingToDistribute = max(0.0, $totalApproved - $totalDispatched);
         <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
         <input type="hidden" name="request_id" value="<?= e($serviceRequest['id']) ?>">
 
-        <label class="request-variant-field">
-            <span>Artículo / variante *</span>
-            <select name="product_variant_id" required>
-                <option value="">Seleccione...</option>
-                <?php foreach ($variantOptions as $option): ?>
-                    <option value="<?= e($option['id']) ?>">
-                        <?= e($option['category_name'] . ' · ' . $option['product_name'] . ' · ' . $option['variant_code'] . ($option['size_name'] ? ' · Talla ' . $option['size_name'] : '') . ' · Stock central ' . number_format((float) $option['central_stock'], 3, '.', ',')) ?>
-                    </option>
-                <?php endforeach; ?>
-            </select>
-        </label>
+        <?php
+        $catalogPicker = [
+            'id' => 'request-single-variant',
+            'name' => 'product_variant_id',
+            'label' => 'Artículo y variante',
+            'placeholder' => 'Buscar botas, talla 8.5, ISTMO o nombre...',
+            'options' => $catalogVariantOptions,
+        ];
+        require __DIR__ . '/catalog-picker.php';
+        ?>
 
         <label>
             <span>Cantidad *</span>
@@ -241,19 +271,16 @@ $remainingToDistribute = max(0.0, $totalApproved - $totalDispatched);
           data-bulk-nominal-picker data-search-url="<?= e($employeeSearchUrl) ?>" data-p4-unit-id="<?= (int) $serviceRequest['organization_unit_id'] ?>">
         <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
         <input type="hidden" name="request_id" value="<?= (int) $serviceRequest['id'] ?>">
-        <label class="request-variant-field">
-            <span>Artículo y talla para todos los seleccionados *</span>
-            <select name="product_variant_id" required>
-                <option value="">Seleccione...</option>
-                <?php foreach ($variantOptions as $option): ?>
-                <option value="<?= (int) $option['id'] ?>">
-                    <?= e($option['category_name'] . ' · ' . $option['product_name']
-                         . ' · ' . $option['variant_code']
-                         . ' · Talla ' . ($option['size_name'] ?: '—')) ?>
-                </option>
-                <?php endforeach; ?>
-            </select>
-        </label>
+        <?php
+        $catalogPicker = [
+            'id' => 'request-multiple-variant',
+            'name' => 'product_variant_id',
+            'label' => 'Artículo y talla para los funcionarios seleccionados',
+            'placeholder' => 'Ej.: botas 8.5, código, categoría, marca...',
+            'options' => $catalogVariantOptions,
+        ];
+        require __DIR__ . '/catalog-picker.php';
+        ?>
         <label>
             <span>Buscar por nombre, cédula o posición</span>
             <input type="search" data-bulk-search autocomplete="off"
@@ -286,17 +313,16 @@ $remainingToDistribute = max(0.0, $totalApproved - $totalDispatched);
           action="<?= e(sindesg_url('?module=requests&action=import-nominal-file')) ?>">
         <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
         <input type="hidden" name="request_id" value="<?= (int) $serviceRequest['id'] ?>">
-        <label>
-            <span>Producto del catálogo para identificar sus tallas *</span>
-            <select name="product_id" required>
-                <option value="">Seleccione el modelo de botas...</option>
-                <?php foreach ($nominalProducts as $product): ?>
-                    <option value="<?= (int) $product['id'] ?>">
-                        <?= e($product['category_name'] . ' · ' . $product['name']) ?>
-                    </option>
-                <?php endforeach; ?>
-            </select>
-        </label>
+        <?php
+        $catalogPicker = [
+            'id' => 'request-excel-product',
+            'name' => 'product_id',
+            'label' => 'Producto del catálogo para identificar las tallas',
+            'placeholder' => 'Buscar botas, calzado, código del artículo...',
+            'options' => $catalogProductOptions,
+        ];
+        require __DIR__ . '/catalog-picker.php';
+        ?>
         <label>
             <span>Excel/CSV nominal (máximo 15 MB) *</span>
             <input type="file" name="nominal_workbook" accept=".xlsx,.csv" required>
