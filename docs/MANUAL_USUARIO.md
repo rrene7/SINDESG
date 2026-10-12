@@ -4,6 +4,34 @@
 
 Versión documental: Fase 14C
 
+## Buscar artículos, tallas y botas en solicitudes P4
+
+En **Solicitudes → Nueva solicitud → abrir borrador**, los campos
+**Artículo / variante**, **Artículo y talla para varios funcionarios**
+y **Producto del catálogo para importar Excel** incluyen ahora
+un buscador por coincidencias. Puede escribir varias palabras
+en cualquier orden, por ejemplo «botas 8.5», «calzado 9»,
+un nombre de artículo, categoría, marca o código institucional.
+
+La búsqueda no exige stock: también se muestran variantes activas con
+existencia **0**, porque una solicitud en borrador no mueve bienes.
+
+Si no aparecen botas, vaya a **Inventario → Buscar «bota»** y revise si
+el producto está registrado. Si no existe, use **Nueva categoría**
+(en caso de no existir CALZADO) y **Nuevo artículo** para registrar el
+tipo de botas realmente requerido, luego agregue sus variantes
+por talla desde el detalle del artículo. El producto y sus
+variantes deben quedar activos. No cambie nombres de otros artículos
+para hacerlos parecer botas y no registre saldos inventados.
+Si un modelo de botas es diferente, debe tener su propio
+artículo y variantes identificables.
+
+**Importante:** el catálogo histórico 2026 importado contiene uniformes
+y otras prendas, pero no incluye automáticamente el artículo botas.
+Registrar artículos o tallas **no aumenta existencias**.
+Las 723 asignaciones nominales de Colón son una prueba del proceso;
+no pueden aprobarse ni despacharse sin stock operativo documentado.
+
 ## 1. Objetivo
 
 SINDESG permite controlar el catálogo, las existencias, recepciones, producción interna, solicitudes, transferencias a P4, entregas a funcionarios, ajustes, reportes, auditoría y administración de usuarios.
