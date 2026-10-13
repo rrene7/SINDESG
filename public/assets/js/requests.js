@@ -364,6 +364,7 @@
                 description.textContent = person.display_name
                     + ' · Pos. ' + (person.position_number || '—')
                     + ' · ' + (person.organization_unit_name || 'Sin unidad')
+                    + ' · Estado RRHH: ' + (person.status_name || 'No especificado')
                     + ' · ' + dateLabel(person);
                 label.append(check, description);
                 results.appendChild(label);
