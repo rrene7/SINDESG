@@ -212,6 +212,7 @@
     if (bulkForm) {
         const input = bulkForm.querySelector('[data-bulk-search]');
         const results = bulkForm.querySelector('[data-bulk-results]');
+        const resultCount = bulkForm.querySelector('[data-bulk-results-count]');
         const selectedView = bulkForm.querySelector('[data-bulk-selection]');
         const countView = bulkForm.querySelector('[data-bulk-counter]');
         const selectPage = bulkForm.querySelector('[data-bulk-select-page]');
@@ -332,6 +333,12 @@
 
         const renderResults = (list) => {
             shown = list;
+            if (resultCount) {
+                resultCount.textContent = list.length
+                    + (list.length === 1 ? ' funcionario encontrado en RRHH2029.' :
+                        ' funcionarios encontrados en RRHH2029.')
+                    + ' Marque los que necesite.';
+            }
             results.replaceChildren();
             if (!list.length) {
                 const message = document.createElement('p');
@@ -374,13 +381,18 @@
             const term = input.value.trim();
             const current = ++sequence;
             if (term.length < 2) {
+                ++lastDeliverySequence;
                 shown = [];
+                results.replaceChildren();
                 results.hidden = true;
                 selectPage.hidden = true;
+                if (resultCount) resultCount.textContent =
+                    'Escriba al menos 2 caracteres para buscar en RRHH2029.';
                 return;
             }
             results.hidden = false;
             results.textContent = 'Consultando RRHH2029...';
+            if (resultCount) resultCount.textContent = 'Buscando funcionarios...';
             selectPage.hidden = true;
             try {
                 const url = new URL(bulkForm.dataset.searchUrl, window.location.href);
@@ -398,7 +410,9 @@
                 await loadLastDeliveries();
             } catch (error) {
                 if (current !== sequence) return;
-                results.textContent = 'No fue posible consultar RRHH2029.';
+                results.textContent = 'No fue posible consultar RRHH2029. Verifique la conexión o sesión.';
+                if (resultCount) resultCount.textContent = 'Error al buscar funcionarios.';
+                selectPage.hidden = true;
             }
         }, 250));
 
