@@ -183,6 +183,9 @@ jobs:
       - name: P4 manual row identity validation test
         run: php tests/p4_manual_validation_test.php
 
+      - name: P4 one-click bulk review test
+        run: php tests/p4_bulk_review_test.php
+
       - name: P4 duplicate nominal rows test
         run: php tests/p4_duplicate_nominal_rows_test.php
 
