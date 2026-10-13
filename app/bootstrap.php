@@ -200,6 +200,36 @@ function sindesg_permission_for(string $module, string $action = 'index', string
     return $viewPermissions[$module] ?? null;
 }
 
+/**
+ * Separación operativa adicional al RBAC de módulos.
+ * No concede permisos: exige rol funcional más permisos existentes.
+ */
+function sindesg_role_action_allowed(string $module, string $action, string $method, array $user): bool
+{
+    $roles = (array) ($user['role_codes'] ?? []);
+    if (in_array('ADMIN', $roles, true)) {
+        return true;
+    }
+
+    $isWrite = strtoupper($method) === 'POST';
+    $centralOnly = $module === 'requests' && (
+        ($isWrite && in_array($action, ['start-review', 'decide'], true))
+        || (!$isWrite && $action === 'central-review')
+    );
+    $centralOnly = $centralOnly || ($module === 'distribution' && (
+        ($isWrite && in_array($action, ['prepare', 'authorize', 'dispatch', 'cancel'], true))
+        || (!$isWrite && $action === 'new')
+    ));
+    if ($centralOnly) {
+        return in_array('CENTRAL', $roles, true);
+    }
+
+    if ($module === 'distribution' && $isWrite && $action === 'receive') {
+        return in_array('P4', $roles, true);
+    }
+    return true;
+}
+
 function sindesg_api_authorized(bool $allowSetup = false): bool
 {
     global $authService;
