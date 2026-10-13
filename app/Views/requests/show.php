@@ -214,7 +214,19 @@ foreach ($nominalProducts ?? [] as $product) {
                         <td><strong><?= e($item['product_name']) ?></strong><small class="request-cell-sub"><?= e($item['category_name']) ?></small></td>
                         <td><code><?= e($item['variant_code']) ?></code></td>
                         <td><?= e($item['size_name'] ?: '—') ?></td>
-                        <td><?= e($item['beneficiary_label_snapshot'] ?: 'Cantidad consolidada') ?></td>
+                        <td>
+                            <?= e($item['beneficiary_label_snapshot'] ?: 'Cantidad consolidada') ?>
+                            <?php if (!empty($item['beneficiary_employee_id'])): ?>
+                                <small class="request-cell-sub">
+                                    <?php if (!empty($item['last_delivered_same_product_at'])): ?>
+                                        Última entrega de este artículo:
+                                        <?= e(date('d/m/Y', strtotime((string) $item['last_delivered_same_product_at']))) ?>
+                                    <?php else: ?>
+                                        Sin entrega registrada de este artículo en SINDESG
+                                    <?php endif; ?>
+                                </small>
+                            <?php endif; ?>
+                        </td>
                         <td class="request-qty"><?= e(number_format((float) $item['quantity_requested'], 3, '.', ',')) ?></td>
                         <td><?= e(number_format((float) $item['central_stock'], 3, '.', ',')) ?></td>
                         <td><?= e(number_format((float) $item['available_to_approve'], 3, '.', ',')) ?></td>
@@ -268,7 +280,8 @@ foreach ($nominalProducts ?? [] as $product) {
 
     <form method="post"
           action="<?= e(sindesg_url('?module=requests&action=add-nominal-bulk')) ?>"
-          data-bulk-nominal-picker data-search-url="<?= e($employeeSearchUrl) ?>" data-p4-unit-id="<?= (int) $serviceRequest['organization_unit_id'] ?>">
+          data-bulk-nominal-picker data-search-url="<?= e($employeeSearchUrl) ?>"
+          data-last-delivery-url="<?= e(sindesg_url('public/api/last-nominal-delivery.php')) ?>">
         <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
         <input type="hidden" name="request_id" value="<?= (int) $serviceRequest['id'] ?>">
         <?php
@@ -295,8 +308,11 @@ foreach ($nominalProducts ?? [] as $product) {
         <button type="submit" class="primary-button" data-bulk-submit disabled>
             Agregar selección al borrador
         </button>
-        <p class="request-cell-sub">Máximo 500 por operación. El servidor valida
-           la pertenencia al P4, las posiciones y los duplicados. Sin descontar inventario.</p>
+        <p class="request-cell-sub">Máximo 500 por operación. Puede seleccionar personal de cualquier
+           zona o dirección, incluyendo personal prestado. La fecha de última
+           entrega es informativa: el P4 decide si corresponde solicitar.
+           Se mantiene la validación de RRHH y de duplicados dentro de esta solicitud.
+           Sin descontar inventario.</p>
     </form>
 </section>
 
@@ -306,7 +322,14 @@ foreach ($nominalProducts ?? [] as $product) {
             <span class="eyebrow">CARGA MASIVA P4</span>
             <h2>Importar listado nominal por Excel</h2>
             <p>Útil para requisiciones como Colón: una fila por funcionario,
-                con posición, nombre y talla. Se cruza con RRHH2029 y catálogo.</p>
+                con posición, nombre y talla. Se valida la posición en RRHH2029,
+                aunque corresponda a otra zona o dirección. Tras importar,
+                verá la fecha de última entrega en el detalle de la solicitud;
+                el P4 decide si mantiene la asignación.</p>
+            <a class="secondary-button"
+               href="<?= e(sindesg_url('?module=requests&action=download-nominal-template')) ?>">
+                Descargar plantilla CSV para Excel
+            </a>
         </div>
     </div>
     <form method="post" enctype="multipart/form-data"
