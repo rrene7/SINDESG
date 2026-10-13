@@ -178,7 +178,7 @@ for ($number = 1; $number <= 19; $number++) {
 }
 
 if (count(array_intersect(range(1, 19), array_keys($schemaNumbers))) === 19) {
-    $ok('Migraciones versionadas', '001–018 presentes en el repositorio');
+    $ok('Migraciones versionadas', '001–019 presentes en el repositorio');
 }
 
 if (!$skipDatabase) {
@@ -224,14 +224,14 @@ if (!$skipDatabase) {
             }
 
             $missingApplied = [];
-            for ($number = 1; $number <= 18; $number++) {
+            for ($number = 1; $number <= 19; $number++) {
                 if (!isset($appliedNumbers[$number])) {
                     $missingApplied[] = str_pad((string) $number, 3, '0', STR_PAD_LEFT);
                 }
             }
 
             if ($missingApplied === []) {
-                $ok('Migraciones DB', '001–018 registradas en schema_migrations');
+                $ok('Migraciones DB', '001–019 registradas en schema_migrations');
             } else {
                 $error(
                     'Migraciones DB',
@@ -248,7 +248,7 @@ if (!$skipDatabase) {
             $versionStatement->execute();
             $schemaVersion = trim((string) ($versionStatement->fetchColumn() ?: ''));
 
-            if ($schemaVersion === '0.13.0-c') {
+            if (in_array($schemaVersion, ['0.13.0-c', '0.15.0-p4-val'], true)) {
                 $ok('Versión esquema', $schemaVersion);
             } else {
                 $warn(
