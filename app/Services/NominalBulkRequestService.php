@@ -437,7 +437,11 @@ final class NominalBulkRequestService
                 $notes = 'REQ ' . $requisition . ' · ' . basename($filename)
                     . ' · Fila ' . $excelRow . ' · SHA256 ' . $sourceHash;
                 if ($manualApproved) {
-                    $notes .= ' · Validación P4 #' . (int) $saved['id'];
+                    // Evidencia completa en tabla auditada; no sobrepasar
+                    // límite VARCHAR(255) de notas del borrador.
+                    $notes = 'REQ ' . $requisition . ' · Fila ' . $excelRow
+                        . ' · SHA256 ' . $sourceHash
+                        . ' · Validación P4 #' . (int) $saved['id'];
                 }
                 $batch[] = $this->nominalLine($person, (int) $variants[$size], $notes);
             }
