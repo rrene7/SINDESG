@@ -56,7 +56,7 @@ $js = (string) file_get_contents(dirname(__DIR__) . '/public/assets/js/requests.
 
 foreach ([
     'resolveBulk',
-    'requireP4Member',
+    // Personal prestado también puede solicitarse: no se bloquea por adscripción.
     'namesCompatible',
     'addNominalBatch',
     'allowPartial',
