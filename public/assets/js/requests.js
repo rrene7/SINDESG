@@ -464,3 +464,84 @@
         init();
     }
 })();
+
+
+/* Central: decidir por talla sin abrir cientos de expedientes. Las
+ * validaciones de stock y beneficiarios siguen en el servidor. */
+(() => {
+    const init = () => {
+        const form = document.querySelector('[data-central-review]');
+        if (!form) return;
+        const summary = form.querySelector('[data-central-message]');
+        const groups = Array.from(form.querySelectorAll('[data-central-variant]'));
+        const parse = (value) => {
+            const n = Number(value);
+            return Number.isFinite(n) && n >= 0 ? n : 0;
+        };
+        const display = (value) => Number(value.toFixed(3)).toLocaleString('es-PA', {
+            maximumFractionDigits: 3
+        });
+        const refresh = () => {
+            let assigned = 0;
+            groups.forEach(group => {
+                const variantId = group.dataset.variantId;
+                const inputs = Array.from(form.querySelectorAll('[data-central-item]'))
+                    .filter(x => x.dataset.variantId === variantId);
+                const value = inputs.reduce((sum, input) => sum + parse(input.value), 0);
+                assigned += value;
+                const groupCounter = group.querySelector('[data-central-selected]');
+                if (groupCounter) groupCounter.textContent = display(value) + ' asignadas';
+            });
+            if (summary) summary.textContent = display(assigned)
+                + ' unidades seleccionadas para aprobación. No se descontará inventario hasta un despacho.';
+        };
+        groups.forEach(group => {
+            const variantId = group.dataset.variantId;
+            const quantity = group.querySelector('[data-central-quantity]');
+            const button = group.querySelector('[data-central-apply]');
+            const inputs = Array.from(form.querySelectorAll('[data-central-item]'))
+                .filter(input => input.dataset.variantId === variantId);
+            const available = parse(group.dataset.variantAvailable);
+            if (available <= 0 && button) {
+                button.disabled = true;
+                button.title = 'Sin stock comprometible en Almacén Central';
+            }
+            if (button && quantity) button.addEventListener('click', () => {
+                let remaining = Math.min(parse(quantity.value), available);
+                inputs.forEach(input => {
+                    const allowed = parse(input.dataset.requested);
+                    const selected = Math.min(allowed, Math.max(0, remaining));
+                    input.value = selected.toFixed(3);
+                    remaining = Math.max(0, remaining - selected);
+                });
+                refresh();
+            });
+            inputs.forEach(input => input.addEventListener('input', refresh));
+        });
+        form.addEventListener('submit', event => {
+            let total = 0;
+            let invalid = false;
+            groups.forEach(group => {
+                const available = parse(group.dataset.variantAvailable);
+                const inputs = Array.from(form.querySelectorAll('[data-central-item]'))
+                    .filter(x => x.dataset.variantId === group.dataset.variantId);
+                const totalForGroup = inputs.reduce((sum, el) => sum + parse(el.value), 0);
+                if (totalForGroup > available + 0.000001) invalid = true;
+                total += totalForGroup;
+            });
+            if (invalid) {
+                event.preventDefault();
+                if (summary) summary.textContent =
+                    'La selección supera el stock comprometible de al menos una talla. Corrija antes de continuar.';
+                return;
+            }
+            if (total === 0 && !window.confirm(
+                'Está a punto de rechazar la solicitud porque ninguna unidad será aprobada. ¿Continuar?'
+            )) event.preventDefault();
+        });
+        refresh();
+    };
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init, {once: true});
+    } else init();
+})();
