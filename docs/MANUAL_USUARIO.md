@@ -112,10 +112,12 @@ Después de seleccionar un Excel en **Prevalidar y ver incidencias sin guardar**
 cada fila bloqueada exclusivamente por **diferencia de nombres** y con
 funcionario RRHH de posición vigente inequívoca muestra **Validar**.
 
-El responsable del P4 pulsa **Validar**, contrasta el expediente RRHH y
-la cédula del destinatario real, introduce la cédula exacta y una
-justificación documentada de 20 caracteres o más, marca la confirmación
-de identidad y pulsa **Confirmar validación**. SINDESG vuelve a consultar
+El responsable del P4 pulsa **Validar**, revisa el expediente RRHH y
+la identidad del destinatario real, introduce una justificación
+documentada de 20 caracteres o más, marca la confirmación de
+responsabilidad y pulsa **Confirmar validación**. **No tiene que escribir
+la cédula:** SINDESG la consulta y verifica internamente contra
+RRHH2029. La cédula no se altera ni se convierte en un campo editable. SINDESG vuelve a consultar
 RRHH2029 **solo lectura** y comprueba la cédula, el estado, la posición
 vigente y la talla activa. Si cualquiera cambió, **no se valida**.
 
@@ -139,11 +141,25 @@ distintas, **no pulse Validar**; corrija el documento de origen y
 prevalide de nuevo. El botón exige constancia de la identificación,
 no permite sobreescribir la identidad de RRHH.
 
-La cantidad documental declarada y el número de filas también son
-independientes: 723 declaradas frente a 722 nominales sigue
-impidiendo la importación total hasta reconciliarse. La opción
-de importación parcial mantiene su autorización expresa y nunca
-aprueba, descuenta ni entrega bienes.
+La cantidad documental declarada y el número de filas siguen siendo
+**dos datos independientes**. Si la requisición declara **723** y
+contiene **722 funcionarios**, el P4 puede importar **todos los 722
+beneficiarios del Excel** después de resolver las incidencias y marcar
+la casilla **«Autorizo registrar diferencia documental pendiente»**.
+SINDESG deja constancia en **auditoría institucional**, con el usuario,
+la requisición, el SHA-256 del archivo, los totales y la diferencia
+de una unidad. Esa unidad **no se convierte** en una dotación, activo,
+existencia ni movimiento de almacén. Queda pendiente de aclarar por
+los responsables. La solicitud nominal al P4 solo contiene las
+personas realmente identificadas.
+
+La autorización de diferencia **no reemplaza** la comprobación de
+nombres/identidades: si quedan filas pendientes se sigue exigiendo
+resolución individual o autorización expresa de importación parcial.
+Si el listado contiene más personas que unidades declaradas, deben
+corregirse los datos del documento antes de una carga íntegra.
+Nunca se crea una persona ficticia ni se descuenta inventario durante
+esta importación.
 
 ### Instalación en XAMPP
 
