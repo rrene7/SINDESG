@@ -407,7 +407,8 @@ foreach ($nominalProducts ?? [] as $product) {
             <table>
                 <thead>
                 <tr><th>Fila</th><th>Posición Excel</th><th>Nombre Excel</th>
-                    <th>Nombre encontrado RRHH</th><th>Talla</th><th>Resultado</th></tr>
+                    <th>Nombre encontrado RRHH</th><th>Origen RRHH</th>
+                    <th>Talla</th><th>Resultado</th></tr>
                 </thead>
                 <tbody>
                 <?php foreach ($nominalPreview['issues'] as $issue): ?>
@@ -416,6 +417,21 @@ foreach ($nominalProducts ?? [] as $product) {
                         <td><?= e($issue['position'] ?: '—') ?></td>
                         <td><?= e($issue['excel_name'] ?: '—') ?></td>
                         <td><?= e($issue['rrhh_name'] ?: 'No determinado') ?></td>
+                        <td>
+                            <?php
+                            $sourceLabel = match ((string) ($issue['position_source'] ?? '')) {
+                                'current' => 'Posición del expediente',
+                                'assignment' => 'Asignación vigente',
+                                'assignment_conflict' => 'Asignación distinta al expediente',
+                                'historical' => 'Posición anterior',
+                                default => 'No determinada',
+                            };
+                            ?>
+                            <?= e($sourceLabel) ?>
+                            <?php if (!empty($issue['rrhh_status'])): ?>
+                                <small class="request-cell-sub"><?= e($issue['rrhh_status']) ?></small>
+                            <?php endif; ?>
+                        </td>
                         <td><?= e($issue['size'] ?: '—') ?></td>
                         <td><?= e($issue['message']) ?></td>
                     </tr>

@@ -149,22 +149,58 @@ final class RrhhEmployeeDirectory
             return [];
         }
 
-        $column = $field === 'employee_id' ? 'e.id' : 'pa.position_number';
         $result = [];
         foreach (array_chunk(array_values($numbers), 100) as $chunk) {
-            $bind = [];
-            $keys = [];
+            $ids = array_fill_keys($chunk, true);
+            $params = [];
+            $main = [];
+            $assignment = [];
+            $historical = [];
             foreach ($chunk as $i => $id) {
-                $bind['v' . $i] = $id;
-                $keys[] = ':v' . $i;
+                $params['target' . $i] = $id;
+                $main[] = ':target' . $i;
+                if ($field === 'position_number') {
+                    $params['assignment' . $i] = $id;
+                    $params['historical' . $i] = $id;
+                    $assignment[] = ':assignment' . $i;
+                    $historical[] = ':historical' . $i;
+                }
             }
+
+            // RRHH2029's own EmployeeController searches positions using
+            // employees.legacy_position (current) and
+            // employees.last_position_number (previous). The older lookup
+            // only checked open employee_position_assignments; it falsely
+            // treated many real RRHH dossiers as nonexistent.
+            $criteria = $field === 'employee_id'
+                ? 'e.id IN (' . implode(', ', $main) . ')'
+                : '(e.legacy_position IN (' . implode(', ', $main) . ')'
+                  . ' OR pa.position_number IN (' . implode(', ', $assignment) . ')'
+                  . ' OR e.last_position_number IN (' . implode(', ', $historical) . '))';
+
             $sql = '
-                SELECT
-                    e.id AS employee_id, e.document_number,
-                    e.first_name, e.last_name, pa.position_number,
-                    r.name AS rank_name, s.name AS status_name,
-                    ou.id AS organization_unit_id, ou.official_name AS organization_unit_name,
-                    ou.unit_type, ou.hierarchy_path
+                SELECT e.id AS employee_id,
+                       e.document_number,
+                       COALESCE(
+                           NULLIF(TRIM(CONCAT_WS(" ",
+                               NULLIF(e.first_name_1, ""), NULLIF(e.first_name_2, ""))), ""),
+                           e.first_name
+                       ) AS first_name,
+                       COALESCE(
+                           NULLIF(TRIM(CONCAT_WS(" ",
+                               NULLIF(e.last_name_1, ""), NULLIF(e.last_name_2, ""))), ""),
+                           e.last_name
+                       ) AS last_name,
+                       e.legacy_position,
+                       e.last_position_number,
+                       pa.position_number AS assignment_position,
+                       r.name AS rank_name,
+                       s.name AS status_name,
+                       COALESCE(s.blocks_actions, 0) AS blocks_actions,
+                       COALESCE(s.is_active, 1) AS status_is_active,
+                       ou.id AS organization_unit_id,
+                       ou.official_name AS organization_unit_name,
+                       ou.unit_type, ou.hierarchy_path
                 FROM employees e
                 LEFT JOIN ranks r ON r.id = e.rank_id
                 LEFT JOIN statuses s ON s.id = e.status_id
@@ -175,18 +211,65 @@ final class RrhhEmployeeDirectory
                    AND ua.status = "active" AND ua.end_date IS NULL
                 LEFT JOIN organization_units_current ou
                     ON ou.id = ua.organization_unit_id
-                WHERE ' . $column . ' IN (' . implode(', ', $keys) . ')
-                  AND e.document_number IS NOT NULL
-                  AND TRIM(e.document_number) <> ""
-                  AND COALESCE(s.blocks_actions, 0) = 0
-                  AND COALESCE(s.is_active, 1) = 1
+                WHERE ' . $criteria . '
                 ORDER BY e.id';
-            $rows = $this->withOrganizationContext($this->database->rrhhRead($sql, $bind));
+
+            $rows = $this->withOrganizationContext($this->database->rrhhRead($sql, $params));
             foreach ($rows as $row) {
-                $result[] = $this->normalize($row);
+                $current = (int) ($row['legacy_position'] ?? 0);
+                $assigned = (int) ($row['assignment_position'] ?? 0);
+                $previous = (int) ($row['last_position_number'] ?? 0);
+                $eligible = trim((string) ($row['document_number'] ?? '')) !== ''
+                    && (int) ($row['blocks_actions'] ?? 0) === 0
+                    && (int) ($row['status_is_active'] ?? 1) === 1;
+
+                if ($field === 'employee_id') {
+                    $position = $current ?: $assigned;
+                    $row['position_number'] = $position ?: null;
+                    $row['position_source'] = $current ? 'current' : ($assigned ? 'assignment' : 'missing');
+                    $row['is_rrhh_eligible'] = $eligible;
+                    $result[] = $this->normalize($row);
+                    continue;
+                }
+
+                $sources = self::positionSources($current, $assigned, $previous, $ids);
+                foreach ($sources as $position => $source) {
+                    $match = $row;
+                    $match['position_number'] = (string) $position;
+                    $match['position_source'] = $source;
+                    $match['is_rrhh_eligible'] = $eligible;
+                    $result[] = $this->normalize($match);
+                }
             }
         }
         return $result;
+    }
+
+
+    /**
+     * Prioriza la posición del expediente RRHH. Una posición anterior es
+     * solamente una coincidencia para revisión, nunca una aprobación.
+     *
+     * @param array<int,bool> $requested
+     * @return array<int,string>
+     */
+    private static function positionSources(
+        int $current,
+        int $assigned,
+        int $previous,
+        array $requested
+    ): array {
+        $sources = [];
+        if ($current > 0 && isset($requested[$current])) {
+            $sources[$current] = 'current';
+        }
+        if ($assigned > 0 && isset($requested[$assigned]) && !isset($sources[$assigned])) {
+            $sources[$assigned] = $current > 0 ? 'assignment_conflict' : 'assignment';
+        }
+        if ($previous > 0 && isset($requested[$previous]) && !isset($sources[$previous])) {
+            $sources[$previous] = 'historical';
+        }
+        return $sources;
     }
 
     public function belongsToOrganizationUnit(int $employeeId, int $organizationUnitId): bool
@@ -325,6 +408,8 @@ final class RrhhEmployeeDirectory
             'first_name' => (string) ($row['first_name'] ?? ''),
             'last_name' => (string) ($row['last_name'] ?? ''),
             'position_number' => $row['position_number'] !== null ? (string) $row['position_number'] : null,
+            'position_source' => (string) ($row['position_source'] ?? 'current'),
+            'is_rrhh_eligible' => (bool) ($row['is_rrhh_eligible'] ?? true),
             'rank_name' => $rank !== '' ? $rank : null,
             'status_name' => (string) ($row['status_name'] ?? ''),
             'organization_unit_id' => $row['organization_unit_id'] !== null

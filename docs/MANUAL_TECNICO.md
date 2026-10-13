@@ -224,6 +224,40 @@ La Fase 13 quedó cerrada mediante:
 
 Los históricos cerrados no se convierten automáticamente en kardex vivo. El Control de inventario quedó archivado como snapshot y las hojas de ENTRADAS/SALIDAS/rendiciones se conservan como referencias.
 
+### Compatibilidad con la posición del expediente RRHH2029
+
+La conciliación nominal debe consultar las **referencias institucionales del
+expediente**, además de las asignaciones técnicas de posiciones:
+
+- `employees.legacy_position`: posición actual utilizada por la búsqueda
+  institucional RRHH2029 (fuente prioritaria);
+- `employee_position_assignments.position_number` con `end_date IS NULL`:
+  asignación técnica; si contradice la posición actual del expediente,
+  requiere revisión;
+- `employees.last_position_number`: **posición anterior**, utilizada solo
+  para mostrar un candidato posible, nunca para aprobar automáticamente
+  una asignación nominal actual.
+
+Se consultan tanto expedientes activos como inactivos **en la prevalidación**,
+con estado y origen claramente diferenciados. La importación únicamente
+acepta una posición vigente única, funcionario elegible, artículo/talla válida
+e identidad compatible. No se asume que «RRHH encontró un expediente» pruebe
+una posición vigente. Si RRHH encuentra más de una persona para una misma
+posición, la asignación continúa bloqueada.
+
+La comparación nominal prioriza campos estructurados de RRHH
+(`first_name_1`, `first_name_2`, `last_name_1`, `last_name_2`)
+y admite abreviación y **una errata de una letra** con suficientes datos
+de nombre y apellido y posición única. Esto soluciona el rechazo erróneo
+de expedientes como el de la posición 15080, que aparecía en RRHH2029
+pero no en la asignación técnica utilizada por SINDESG.
+
+La consulta es solo lectura de RRHH2029; no modifica datos, no crea
+movimientos de stock ni entrega bienes. Después de desplegar la corrección
+se debe **prevalidar nuevamente** el Excel y comprobar el nuevo resumen:
+no se puede prometer que las 723 filas sean verificables sin comprobar
+los datos de la base local.
+
 ### Solicitudes nominales masivas P4 (Fase 15B)
 
 En **Solicitudes → Crear borrador P4 → Ver solicitud** se habilitan

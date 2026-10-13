@@ -225,6 +225,7 @@ $required = [
     'tests/p4_nominal_xlsx_template_test.php',
     'tests/p4_nominal_bulk_test.php',
     'tests/p4_nominal_reconciliation_test.php',
+    'tests/p4_rrhh_canonical_position_test.php',
     'tests/p4_last_delivery_advisory_test.php',
     'tests/p4_rrhh_picker_visibility_test.php',
     'tests/p4_catalog_search_test.php',
