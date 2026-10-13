@@ -160,6 +160,33 @@ final class InventoryController
 
     private function handlePost(string $action, array $post, array $files): array
     {
+        if ($action === 'prepare-footwear') {
+            if ((string) ($post['confirm_footwear'] ?? '') !== 'yes') {
+                throw new InvalidArgumentException('Confirme que desea preparar el catálogo base de calzado.');
+            }
+            $result = $this->service->prepareFootwearCatalog();
+            flash('success',
+                'Calzado preparado: ' . count($result['created']) . ' artículos nuevos; '
+                . count($result['existing']) . ' existentes reutilizados. '
+                . 'Agregue las tallas verificadas desde cada artículo. Inventario intacto.'
+            );
+            $this->redirect('?module=inventory');
+        }
+
+        if ($action === 'save-sizes-bulk') {
+            $productId = (int) ($post['product_id'] ?? 0);
+            $result = $this->service->createNumericSizesBulk(
+                $productId,
+                (string) ($post['sizes_bulk'] ?? '')
+            );
+            flash('success',
+                count($result['created']) . ' tallas nuevas; '
+                . count($result['existing']) . ' tallas ya registradas. '
+                . 'Sin movimientos de inventario.'
+            );
+            $this->redirect('?module=inventory&action=product&id=' . $productId);
+        }
+
         if ($action === 'save-category') {
             $this->service->createCategory($post);
             flash('success', 'Categoría creada correctamente.');
