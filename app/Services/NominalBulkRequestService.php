@@ -122,8 +122,8 @@ final class NominalBulkRequestService
                 'La cédula no coincide exactamente con el expediente RRHH. No se validó.'
             );
         }
-        $size = (string) ($issue['size'] ?? '');
-        if (!isset($this->requests->sizeVariantsForProduct($productId)[str_replace(',', '.', trim($size))])) {
+        $size = (string) ($issue['normalized_size'] ?? '');
+        if (!isset($this->requests->sizeVariantsForProduct($productId)[$size])) {
             throw new InvalidArgumentException('Talla inválida o variante no disponible. Corrija el archivo.');
         }
         if (isset($this->requests->nominalEmployeeIdsForProduct($requestId, $productId)[$employeeId])) {
@@ -405,6 +405,7 @@ final class NominalBulkRequestService
                     'rrhh_status' => (string) ($person['status_name'] ?? ''),
                     'candidate_employee_id' => (int) ($person['employee_id'] ?? 0),
                     'candidate_document' => (string) ($person['document_number'] ?? ''),
+                    'normalized_size' => (string) ($row['size'] ?? ''),
                     'size' => (string) ($row['raw_size'] ?? ''),
                     'severity' => 'blocking',
                     'message' => $cause,
