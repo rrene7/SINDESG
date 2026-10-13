@@ -226,6 +226,7 @@ $required = [
     'tests/p4_nominal_xlsx_template_test.php',
     'tests/p4_nominal_bulk_test.php',
     'tests/p4_nominal_reconciliation_test.php',
+    'tests/p4_last_incidents_test.php',
     'tests/p4_duplicate_nominal_rows_test.php',
     'tests/p4_rrhh_canonical_position_test.php',
     'tests/p4_nominal_status_policy_test.php',
