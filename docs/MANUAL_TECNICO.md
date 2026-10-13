@@ -89,7 +89,7 @@ La cuenta usada contra RRHH2029 en producción debe limitarse a `SELECT` sobre l
 ```text
 app/                 lógica de aplicación
 config/              configuración versionada y configuración local excluida
-database/schema/     migraciones SQL 001–018
+database/schema/     migraciones SQL 001–019
 database/seeds/      fuentes controladas del catálogo histórico
 docs/                documentación
 public/              punto de entrada y recursos públicos
@@ -118,7 +118,7 @@ No se deben aplicar cambios locales improvisados si el cambio pertenece al códi
 
 ## 7. Migraciones de base de datos
 
-Los scripts versionados están en `database/schema/` y actualmente abarcan `001` a `018`.
+Los scripts versionados están en `database/schema/` y actualmente abarcan `001` a `019`.
 
 Una migración nueva debe:
 
@@ -129,6 +129,37 @@ Una migración nueva debe:
 5. actualizar `system_settings.schema_version` cuando corresponda.
 
 No se debe reaplicar a ciegas un SQL destructivo ni ejecutar scripts sobre `rrhh2029`.
+
+### Validación manual de filas P4 (migración 019)
+
+El botón **Validar** aparece exclusivamente en incidencias de nombres
+con posición vigente y funcionario RRHH identificable. El operador
+autenticado con `requests.manage` debe aportar la **cédula exacta
+de RRHH**, motivo detallado y consentimiento expreso. SINDESG
+reconsulta la identidad en RRHH2029 mediante **solo SELECT** y
+rechaza estados excluidos, posiciones anteriores/ambiguas y tallas
+no vigentes. La tabla `p4_nominal_validation_decisions` en
+`sindesg` conserva cada decisión de manera **append-only**
+(requisición, SHA-256, fila, posición, identidad, evidencia,
+usuario y fecha). No modifica RRHH, kardex ni entregas.
+
+La prevalidación inicial no escribe en la base. Guarda el informe
+temporalmente en la sesión web durante una hora. Cada confirmación
+humana sí escribe un registro **solo en sindesg**. Al importar el
+Excel, el servidor recalcula las filas y reutiliza la evidencia
+únicamente para el **mismo archivo** (SHA-256), requisición,
+producto, fila y datos del funcionario aún vigentes.
+
+Instalación local (después del respaldo completo de SINDESG):
+
+```powershell
+& "C:\xampp\php\php.exe" ".\scripts\apply_p4_nominal_validation.php"
+& "C:\xampp\php\php.exe" ".\tests\p4_manual_validation_test.php"
+```
+
+El instalador rechaza cualquier configuración que no apunte a la
+base exacta `sindesg`. La migración 019 es aditiva y no
+altera el historial, las existencias ni RRHH2029.
 
 ## 8. Verificación estructural
 
@@ -155,7 +186,7 @@ Revisa:
 - configuración;
 - directorios escribibles;
 - secretos excluidos de Git;
-- migraciones 001–018;
+- migraciones 001–019;
 - conexión `sindesg`;
 - conexión `rrhh`;
 - versión del esquema;
