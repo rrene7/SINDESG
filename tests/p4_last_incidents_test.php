@@ -60,9 +60,10 @@ if ($preview['document']['declared_quantity'] !== 723
 }
 $code = (string) file_get_contents(dirname(__DIR__) . '/app/Services/NominalBulkRequestService.php');
 $view = (string) file_get_contents(dirname(__DIR__) . '/app/Views/requests/show.php');
-if (!str_contains($code, 'if (!$allowPartial && $declared !== null')
+if (!str_contains($code, 'if ($gap !== 0 && (!$allowPartial || $fullyVerified))')
     || !str_contains($code, "'size_format'")
-    || !str_contains($view, 'La importación completa permanece bloqueada')) {
+    || !str_contains($view, 'pendiente documental')
+    || !str_contains($view, 'name="accept_document_gap"')) {
     throw new RuntimeException('Falta control documental.');
 }
 echo "[OK] Conciliación ortográfica, talla 8 5 y cantidad declarada distinta.\n";
