@@ -32,6 +32,37 @@ $statusLabels = [
     <article><span>Rechazadas</span><strong><?= e($requestStats['rejected']) ?></strong><small>Sin compromiso</small></article>
 </section>
 
+<?php
+$draftReady = null;
+foreach ($serviceRequests as $candidate) {
+    if ((string) ($candidate['status'] ?? '') === 'draft'
+        && (int) ($candidate['item_count'] ?? 0) > 0) {
+        $draftReady = $candidate;
+        break;
+    }
+}
+?>
+<?php if ($draftReady !== null): ?>
+<section class="request-panel request-draft-next-step" role="status">
+    <div class="request-section-head">
+        <div>
+            <span class="eyebrow">SIGUIENTE PASO · BORRADOR CON DOTACIONES CARGADAS</span>
+            <h2><?= e($draftReady['request_code']) ?> — listo para revisar y enviar</h2>
+            <p>
+                <?= (int) $draftReady['item_count'] ?> asignaciones ya están en SINDESG.
+                No vuelva a importar el Excel. Revise los destinatarios y envíe
+                la solicitud al Almacén Central cuando corresponda.
+                El envío no crea existencias ni entrega bienes.
+            </p>
+        </div>
+        <a class="primary-button"
+           href="<?= e(sindesg_url('?module=requests&action=show&id=' . (int) $draftReady['id'] . '#request-send-panel')) ?>">
+            Revisar borrador y enviar al Central →
+        </a>
+    </div>
+</section>
+<?php endif; ?>
+
 <section class="request-panel">
     <div class="request-section-head">
         <div><span class="eyebrow">TRAZABILIDAD</span><h2>Solicitudes recientes</h2></div>

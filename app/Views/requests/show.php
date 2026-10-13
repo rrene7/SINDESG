@@ -63,6 +63,26 @@ foreach ($nominalProducts ?? [] as $product) {
     </div>
 </section>
 
+<?php if ($serviceRequest['status'] === 'draft' && $requestItems !== []): ?>
+<section class="request-panel request-draft-next-step" role="status">
+    <div class="request-section-head">
+        <div>
+            <span class="eyebrow">NÓMINA YA REGISTRADA · SIGUIENTE PASO</span>
+            <h2><?= count($requestItems) ?> renglones cargados en el borrador</h2>
+            <p>
+                Las asignaciones ya están guardadas. No vuelva a importar el Excel.
+                Revise el detalle y, si es correcto, envíe esta solicitud al
+                Almacén Central para que la evalúe. Todavía no hay entrega ni
+                movimiento de existencias.
+            </p>
+        </div>
+        <a class="primary-button" href="#request-send-panel">
+            Revisar y enviar al Central →
+        </a>
+    </div>
+</section>
+<?php endif; ?>
+
 <section class="request-detail-grid">
     <article class="request-panel">
         <span class="eyebrow">CABECERA</span>
@@ -80,7 +100,7 @@ foreach ($nominalProducts ?? [] as $product) {
         <?php endif; ?>
     </article>
 
-    <aside class="request-panel request-workflow">
+    <aside class="request-panel request-workflow" id="request-send-panel">
         <span class="eyebrow">FLUJO</span>
         <h2><?= e($statusLabels[$serviceRequest['status']] ?? $serviceRequest['status']) ?></h2>
 
@@ -569,14 +589,16 @@ foreach ($nominalProducts ?? [] as $product) {
         SINDESG verifica nuevamente la cédula y la posición sin pedirle
         escribirlas, y guarda una evidencia independiente para cada fila.
         Si realmente son personas distintas, NO las valide: corrija el Excel.
-        Después de resolver las incidencias, seleccione el mismo archivo
-        para importar. Si declara 723 unidades y enumera 722 destinatarios,
-        podrá cargar esos 722 siempre que todos estén verificados y marque
-        la autorización de diferencia documental. La unidad no listada
-        quedará registrada como pendiente, nunca asignada automáticamente. Corrija el Excel según la posición
-        actual confirmada en RRHH y vuelva a prevalidar. Para importar parcialmente, vuelva a seleccionar el archivo,
-        marque la autorización correspondiente y use el botón de importación.
-        No cambie una posición basándose únicamente en una coincidencia de nombre.
+        Una vez resueltas las incidencias, utilice el botón
+        «Cargar al sistema» situado al inicio de este resultado: no necesita
+        adjuntar otra vez el Excel mientras la sesión siga vigente.
+        Si declara 723 unidades y contiene 722 destinatarios, podrá
+        registrar la diferencia documental con autorización explícita.
+        No se crean beneficiarios ni existencias adicionales.
+        Si las posiciones corresponden a personas realmente distintas,
+        corrija el origen del listado en lugar de forzar la validación.
+        Cuando la nómina ya figure en el borrador, continúe con
+        «Revisar y enviar al Central», sin repetir la importación.
     </p>
 </section>
 <?php endif; ?>

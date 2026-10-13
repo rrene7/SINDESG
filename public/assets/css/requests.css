@@ -145,3 +145,26 @@ form[action*='import-nominal-file'] label:has(input[type='checkbox']){display:fl
     height: 18px;
     accent-color: #24b7ff;
 }
+
+/* Guía explícita de continuación tras importar la nómina P4. */
+.request-draft-next-step{
+    border-color:rgba(65,174,255,.48);
+    background:linear-gradient(115deg,rgba(5,40,75,.96),rgba(4,30,56,.82));
+}
+.request-draft-next-step .request-section-head>a{
+    white-space:normal;
+    text-align:center;
+    flex-shrink:0;
+}
+#request-send-panel{
+    scroll-margin-top:96px;
+}
+@media(max-width:720px){
+    .request-draft-next-step .request-section-head{
+        align-items:stretch;
+        flex-direction:column;
+    }
+    .request-draft-next-step .request-section-head>a{
+        width:100%;
+    }
+}

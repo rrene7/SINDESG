@@ -233,6 +233,7 @@ $required = [
     'tests/p4_last_incidents_test.php',
     'tests/p4_manual_validation_test.php',
     'tests/p4_direct_import_from_review_test.php',
+    'tests/p4_post_import_navigation_test.php',
     'tests/p4_bulk_review_test.php',
     'tests/p4_duplicate_nominal_rows_test.php',
     'tests/p4_rrhh_canonical_position_test.php',

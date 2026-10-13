@@ -186,6 +186,9 @@ jobs:
       - name: P4 direct reviewed XLSX import test
         run: php tests/p4_direct_import_from_review_test.php
 
+      - name: P4 post-import navigation test
+        run: php tests/p4_post_import_navigation_test.php
+
       - name: P4 one-click bulk review test
         run: php tests/p4_bulk_review_test.php
 
