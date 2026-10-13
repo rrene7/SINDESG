@@ -222,6 +222,7 @@ $required = [
     'tests/boots_p4_preview_test.php',
     'tests/p4_nominal_bulk_test.php',
     'tests/p4_catalog_search_test.php',
+    'tests/footwear_catalog_test.php',
     'tests/historical_import_logic_test.php',
     'tests/historical_catalog_logic_test.php',
     'tests/historical_reconciliation_logic_test.php',
