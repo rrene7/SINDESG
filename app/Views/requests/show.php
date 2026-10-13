@@ -105,10 +105,12 @@ foreach ($nominalProducts ?? [] as $product) {
     </article>
 
     <aside class="request-panel request-workflow" id="request-send-panel">
+        <?php if (sindesg_role_action_allowed('requests', 'central-review', 'GET', (array) sindesg_user())): ?>
         <a class="secondary-button request-central-review-link"
            href="<?= e(sindesg_url('?module=requests&action=central-review&id=' . (int) $serviceRequest['id'])) ?>">
             Ver revisión del Almacén Central por talla →
         </a>
+        <?php endif; ?>
         <span class="eyebrow">FLUJO</span>
         <h2><?= e($statusLabels[$serviceRequest['status']] ?? $serviceRequest['status']) ?></h2>
 
@@ -119,7 +121,7 @@ foreach ($nominalProducts ?? [] as $product) {
                 <input type="hidden" name="request_id" value="<?= e($serviceRequest['id']) ?>">
                 <button class="primary-button request-full-button" type="submit" <?= $requestItems === [] ? 'disabled' : '' ?>>Enviar solicitud</button>
             </form>
-        <?php elseif ($serviceRequest['status'] === 'submitted'): ?>
+        <?php elseif ($serviceRequest['status'] === 'submitted' && sindesg_role_action_allowed('requests', 'central-review', 'GET', (array) sindesg_user())): ?>
             <p>La solicitud fue enviada y está pendiente de revisión en Servicios Generales.</p>
             <p class="request-cell-sub">Antes de aprobar, consulte el consolidado por talla del Almacén Central.</p>
             <form method="post" action="<?= e(sindesg_url('?module=requests&action=start-review')) ?>">
@@ -127,7 +129,7 @@ foreach ($nominalProducts ?? [] as $product) {
                 <input type="hidden" name="request_id" value="<?= e($serviceRequest['id']) ?>">
                 <button class="primary-button request-full-button" type="submit">Iniciar revisión</button>
             </form>
-        <?php elseif ($serviceRequest['status'] === 'in_review'): ?>
+        <?php elseif ($serviceRequest['status'] === 'in_review' && sindesg_role_action_allowed('requests', 'central-review', 'GET', (array) sindesg_user())): ?>
             <p>Revise las cantidades por talla en la pantalla del Central. La aprobación compromete disponibilidad, pero todavía no mueve inventario.</p>
             <a class="primary-button request-full-button" href="<?= e(sindesg_url('?module=requests&action=central-review&id=' . (int) $serviceRequest['id'])) ?>">Revisar y aprobar por talla →</a>
         <?php else: ?>
@@ -139,7 +141,7 @@ foreach ($nominalProducts ?? [] as $product) {
                 <div class="request-note"><strong>Observación de revisión</strong><p><?= e($serviceRequest['review_notes']) ?></p></div>
             <?php endif; ?>
 
-            <?php if (in_array($serviceRequest['status'], ['approved', 'partially_approved'], true) && $remainingToDistribute > 0): ?>
+            <?php if (in_array($serviceRequest['status'], ['approved', 'partially_approved'], true) && $remainingToDistribute > 0 && sindesg_role_action_allowed('distribution', 'new', 'GET', (array) sindesg_user())): ?>
                 <a class="primary-button request-full-button"
                    href="<?= e(sindesg_url('?module=distribution&action=new&request_id=' . (int) $serviceRequest['id'])) ?>">
                     Preparar distribución
@@ -614,7 +616,7 @@ foreach ($nominalProducts ?? [] as $product) {
 <?php endif; ?>
 <?php endif; ?>
 
-<?php if ($serviceRequest['status'] === 'in_review' && $requestItems !== []): ?>
+<?php if ($serviceRequest['status'] === 'in_review' && $requestItems !== [] && sindesg_role_action_allowed('requests', 'central-review', 'GET', (array) sindesg_user())): ?>
 <section class="request-panel review-panel">
     <p class="request-cell-sub">
         Para solicitudes grandes, recomendamos la
