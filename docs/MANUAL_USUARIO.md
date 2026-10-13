@@ -34,11 +34,15 @@ muestran la última entrega del mismo artículo confirmada en SINDESG.
 La persona responsable del P4 podrá revisar esas fechas y retirar
 cualquier asignación antes de enviar la solicitud.
 
-Se incluye **Descargar plantilla CSV para Excel** para crear listados
-nominales. Hay que reemplazar el encabezado de requisición, completar
-una fila por funcionario con N°, rango, posición, nombre, apellido y
-talla, y guardar como CSV separado por comas o XLSX compatible.
-Las filas vacías de la plantilla no generan dotaciones.
+Se incluye **Descargar plantilla Excel (.xlsx)** para crear listados
+nominales. Excel abre cada dato en su propia columna, sin depender del
+separador regional de CSV. Complete el número de requisición en **B2**,
+el contrato en **B3** (si aplica), el total declarado en **B4** y
+el P4 responsable en **B5**. Desde la fila **8**, agregue un funcionario
+por renglón: rango, posición, nombre, apellido y talla. La columna
+**N° es opcional** y las filas vacías no generan dotaciones.
+Puede conservar el archivo en formato .xlsx; no necesita convertirlo a CSV.
+Se admiten hasta 1,000 funcionarios en una carga nominal.
 
 El módulo de **Entrega individual** conserva su validación y registro
 de excepciones por adscripción; esta mejora solo flexibiliza la fase

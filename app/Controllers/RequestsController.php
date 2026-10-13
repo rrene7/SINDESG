@@ -8,6 +8,7 @@ use App\Services\RequestService;
 use App\Services\SpreadsheetReader;
 use App\Services\BootsP4WorkbookPreview;
 use App\Services\NominalBulkRequestService;
+use App\Services\P4NominalXlsxTemplate;
 use App\Services\RrhhEmployeeDirectory;
 use App\Support\Database;
 use InvalidArgumentException;
@@ -67,22 +68,27 @@ final class RequestsController
     private function handleGet(string $action, array $query): array
     {
         if ($action === 'download-nominal-template') {
-            header('Content-Type: text/csv; charset=utf-8');
-            header('Content-Disposition: attachment; filename="sindesg_plantilla_dotacion_p4.csv"');
-            header('Cache-Control: no-store');
-            $output = fopen('php://output', 'wb');
-            if ($output === false) {
-                throw new RuntimeException('No fue posible generar la plantilla.');
+            // Excel nativo evita que Windows/Excel regional abra el CSV
+            // completo como una sola columna.
+            $filename = tempnam(sys_get_temp_dir(), 'sindesg_p4_');
+            if ($filename === false) {
+                throw new RuntimeException('No se pudo crear la plantilla temporal.');
             }
-            fwrite($output, "\xEF\xBB\xBF");
-            fputcsv($output, ['REQUISICION Nº (ESCRIBA EL NUMERO)', '', '', '', '', '', '']);
-            fputcsv($output, ['CONTRATO (SI CORRESPONDE)', '', '', '', '', '', '']);
-            fputcsv($output, ['CANTIDAD DE UNIDADES A DOTAR: (ESCRIBA EL TOTAL)', '', '', '', '', '', '']);
-            fputcsv($output, ['N°', 'RANGO', 'POSICIÓN', 'NOMBRE', 'APELLIDO', 'TALLA', 'FIRMA']);
-            for ($i = 0; $i < 15; $i++) {
-                fputcsv($output, ['', '', '', '', '', '', '']);
+            try {
+                (new P4NominalXlsxTemplate())->write($filename);
+                if (!is_file($filename) || filesize($filename) === 0) {
+                    throw new RuntimeException('No se pudo construir la plantilla XLSX.');
+                }
+                header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+                header('Content-Disposition: attachment; filename="SINDESG_Plantilla_Dotacion_P4.xlsx"');
+                header('Content-Length: ' . filesize($filename));
+                header('Cache-Control: no-store, no-cache, must-revalidate');
+                if (readfile($filename) === false) {
+                    throw new RuntimeException('No fue posible enviar el archivo Excel.');
+                }
+            } finally {
+                @unlink($filename);
             }
-            fclose($output);
             exit;
         }
 

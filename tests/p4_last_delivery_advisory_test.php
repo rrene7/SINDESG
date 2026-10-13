@@ -45,7 +45,7 @@ if (str_contains($service, "funcionario fuera de la estructura del P4")
 }
 foreach ([
     'last-nominal-delivery.php', 'Última entrega de este artículo',
-    'Sin entrega registrada de este artículo en SINDESG', 'Descargar plantilla CSV',
+    'Sin entrega registrada de este artículo en SINDESG', 'Descargar plantilla Excel (.xlsx)',
 ] as $token) {
     if (!str_contains($view, $token)) {
         throw new RuntimeException('Falta mostrar fecha o plantilla: ' . $token);
@@ -58,12 +58,17 @@ foreach (['dateLabel', 'loadLastDeliveries', 'last_delivery_status',
         throw new RuntimeException('Falta mostrar fecha en selección múltiple: ' . $token);
     }
 }
-foreach ([
-    'download-nominal-template', 'text/csv', 'fputcsv',
-    'POSICIÓN', 'NOMBRE', 'APELLIDO', 'TALLA',
-] as $token) {
+foreach (['download-nominal-template', 'P4NominalXlsxTemplate', 'readfile'] as $token) {
     if (!str_contains($controller, $token)) {
-        throw new RuntimeException('Falta descarga de plantilla: ' . $token);
+        throw new RuntimeException('Falta descarga XLSX: ' . $token);
+    }
+}
+$xlsxGenerator = (string) file_get_contents(
+    $root . '/app/Services/P4NominalXlsxTemplate.php'
+);
+foreach (['POSICIÓN', 'NOMBRE', 'APELLIDO', 'TALLA'] as $token) {
+    if (!str_contains($xlsxGenerator, $token)) {
+        throw new RuntimeException('Falta columna Excel: ' . $token);
     }
 }
 
@@ -106,4 +111,4 @@ if (in_array('sqlite', PDO::getAvailableDrivers(), true)) {
         throw new RuntimeException('Lista vacía debe devolver vacío.');
     }
 }
-echo "[OK] Búsqueda global P4; fecha de última entrega por artículo, solo informativa; plantilla CSV." . PHP_EOL;
+echo "[OK] Búsqueda global P4; fecha de última entrega por artículo, solo informativa; plantilla XLSX." . PHP_EOL;

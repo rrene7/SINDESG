@@ -332,7 +332,7 @@ foreach ($nominalProducts ?? [] as $product) {
                 el P4 decide si mantiene la asignación.</p>
             <a class="secondary-button"
                href="<?= e(sindesg_url('?module=requests&action=download-nominal-template')) ?>">
-                Descargar plantilla CSV para Excel
+                Descargar plantilla Excel (.xlsx)
             </a>
         </div>
     </div>

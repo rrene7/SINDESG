@@ -100,21 +100,29 @@ final class BootsP4WorkbookPreview
                     }
                     break;
                 }
-                if ($seq === '') {
-                    continue;
-                }
-                if (!ctype_digit($seq)) {
-                    continue;
-                }
-
                 $position = (string) ($row[2] ?? '');
                 $size = (string) ($row[5] ?? '');
                 $first = (string) ($row[3] ?? '');
                 $last = (string) ($row[4] ?? '');
+                $rank = (string) ($row[1] ?? '');
+
+                // La numeración N° es opcional en la plantilla. No ignorar a
+                // los funcionarios si el P4 pegó únicamente los datos reales.
+                // Omitir únicamente las filas completamente vacías.
+                if (trim($position . $size . $first . $last . $rank . $seq) === '') {
+                    continue;
+                }
+                if ($seq !== '' && !ctype_digit($seq)) {
+                    $issues[] = [
+                        'excel_row' => $displayRow,
+                        'type' => 'sequence',
+                        'message' => 'N° de línea inválido; revíselo o déjelo vacío.',
+                    ];
+                }
                 $record = [
                     'excel_row' => $displayRow,
-                    'number' => (int) $seq,
-                    'rank' => (string) ($row[1] ?? ''),
+                    'number' => ctype_digit($seq) ? (int) $seq : count($nominal) + 1,
+                    'rank' => $rank,
                     'position' => $position,
                     'name' => trim($first . ' ' . $last),
                     'raw_size' => $size,
