@@ -217,8 +217,76 @@
         const selectPage = bulkForm.querySelector('[data-bulk-select-page]');
         const submit = bulkForm.querySelector('[data-bulk-submit]');
         const chosen = new Map();
+        const variantSelect = bulkForm.querySelector('[data-catalog-select]');
         let shown = [];
         let sequence = 0;
+        let lastDeliverySequence = 0;
+
+        const dateLabel = (person) => {
+            if (person.last_delivery_status === 'unavailable') {
+                return 'Última entrega: historial no disponible';
+            }
+            if (person.last_delivery_status !== 'loaded') {
+                return 'Última entrega: consultando...';
+            }
+            const date = person.last_delivered_at;
+            return date
+                ? 'Última entrega de este artículo: '
+                    + date.slice(8, 10) + '/' + date.slice(5, 7) + '/' + date.slice(0, 4)
+                : 'Sin entrega registrada de este artículo en SINDESG';
+        };
+
+        const loadLastDeliveries = async () => {
+            if (!variantSelect || !variantSelect.value) {
+                [...chosen.values(), ...shown].forEach((p) => {
+                    p.last_delivery_status = 'pending';
+                    p.last_delivered_at = null;
+                });
+                renderSelected();
+                renderResults(shown);
+                return;
+            }
+            const current = ++lastDeliverySequence;
+            const people = new Map();
+            [...chosen.values(), ...shown].forEach((person) => {
+                people.set(String(person.employee_id), person);
+                person.last_delivery_status = 'pending';
+            });
+            renderSelected();
+            renderResults(shown);
+            const persons = Array.from(people.values());
+            try {
+                for (let i = 0; i < persons.length; i += 100) {
+                    const portion = persons.slice(i, i + 100);
+                    const url = new URL(bulkForm.dataset.lastDeliveryUrl, window.location.href);
+                    url.searchParams.set('variant_id', variantSelect.value);
+                    url.searchParams.set('employee_ids', portion.map(p => p.employee_id).join(','));
+                    const response = await fetch(url.toString(), {
+                        headers: {Accept: 'application/json'}
+                    });
+                    const payload = await response.json();
+                    if (!response.ok || !payload.ok) {
+                        throw new Error(payload.message || 'Historial no disponible');
+                    }
+                    if (current !== lastDeliverySequence) return;
+                    portion.forEach((person) => {
+                        person.last_delivered_at = payload.dates[String(person.employee_id)] || null;
+                        person.last_delivery_status = 'loaded';
+                    });
+                }
+            } catch (_) {
+                if (current !== lastDeliverySequence) return;
+                persons.forEach(p => {
+                    if (p.last_delivery_status !== 'loaded') {
+                        p.last_delivery_status = 'unavailable';
+                    }
+                });
+            }
+            if (current === lastDeliverySequence) {
+                renderSelected();
+                renderResults(shown);
+            }
+        };
 
         const renderSelected = () => {
             selectedView.replaceChildren();
@@ -233,7 +301,8 @@
 
                 const name = document.createElement('span');
                 name.textContent = person.display_name
-                    + ' · Pos. ' + (person.position_number || '—');
+                    + ' · Pos. ' + (person.position_number || '—')
+                    + ' · ' + dateLabel(person);
 
                 const remove = document.createElement('button');
                 remove.type = 'button';
@@ -287,7 +356,8 @@
                 const description = document.createElement('span');
                 description.textContent = person.display_name
                     + ' · Pos. ' + (person.position_number || '—')
-                    + ' · ' + (person.organization_unit_name || 'Sin unidad');
+                    + ' · ' + (person.organization_unit_name || 'Sin unidad')
+                    + ' · ' + dateLabel(person);
                 label.append(check, description);
                 results.appendChild(label);
             });
@@ -323,18 +393,18 @@
                 if (!response.ok || !payload.ok) {
                     throw new Error(payload.message || 'Error al consultar RRHH');
                 }
-                const p4Unit = Number(bulkForm.dataset.p4UnitId || 0);
                 const items = Array.isArray(payload.items) ? payload.items : [];
-                const eligible = items.filter((person) => {
-                    const path = Array.isArray(person.unit_path_ids) ? person.unit_path_ids : [];
-                    return p4Unit > 0 && path.some((id) => Number(id) === p4Unit);
-                });
-                renderResults(eligible);
+                renderResults(items);  // RRHH global: incluye personal prestado de otras unidades
+                await loadLastDeliveries();
             } catch (error) {
                 if (current !== sequence) return;
                 results.textContent = 'No fue posible consultar RRHH2029.';
             }
         }, 250));
+
+        if (variantSelect) {
+            variantSelect.addEventListener('change', loadLastDeliveries);
+        }
 
         bulkForm.addEventListener('submit', (event) => {
             if (chosen.size === 0) {
