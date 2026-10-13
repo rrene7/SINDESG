@@ -402,6 +402,52 @@ foreach ($nominalProducts ?? [] as $product) {
             </p>
         </div>
     </div>
+    <?php if (!empty($nominalReviewFileReady)): ?>
+        <form method="post" class="p4-import-from-preview"
+              action="<?= e(sindesg_url('?module=requests&action=import-from-nominal-preview')) ?>">
+            <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
+            <input type="hidden" name="request_id" value="<?= (int) $serviceRequest['id'] ?>">
+            <input type="hidden" name="product_id" value="<?= (int) $nominalPreview['product_id'] ?>">
+            <strong>Archivo ya cargado y conciliado.</strong>
+            <p class="request-cell-sub">
+                No tiene que seleccionar el Excel nuevamente. Después de validar
+                las filas que correspondan, pulse «Cargar al sistema».
+                Antes de guardar se volverán a comprobar los datos de RRHH.
+            </p>
+            <?php if ((int) ($nominalPreview['blocked_count'] ?? 0) > 0): ?>
+                <label class="request-cell-sub">
+                    <input type="checkbox" name="allow_partial" value="1">
+                    Autorizo carga parcial: dejar sin asignar las
+                    <?= (int) $nominalPreview['blocked_count'] ?> incidencias pendientes.
+                </label>
+            <?php endif; ?>
+            <?php if (isset($nominalPreview['declared_quantity'])
+                && (int) $nominalPreview['declared_quantity'] > (int) $nominalPreview['total']): ?>
+                <label class="request-cell-sub">
+                    <input type="checkbox" name="accept_document_gap" value="1"
+                           <?= (int) ($nominalPreview['blocked_count'] ?? 0) === 0 ? 'required' : '' ?>>
+                    Autorizo registrar la diferencia de
+                    <?= (int) $nominalPreview['declared_quantity'] - (int) $nominalPreview['total'] ?>
+                    unidad(es) declarada(s) sin destinatario como
+                    pendiente documental, sin inventar funcionarios ni stock.
+                </label>
+            <?php endif; ?>
+            <button class="primary-button" type="submit">
+                Cargar al sistema <?= (int) ($nominalPreview['valid_count'] ?? 0) ?>
+                funcionarios verificados
+            </button>
+            <small class="request-cell-sub">
+                La carga incorpora las filas verificadas al borrador,
+                no aprueba ni transfiere botas. La conciliación caduca tras una hora.
+            </small>
+        </form>
+    <?php else: ?>
+        <p class="request-cell-sub">
+            La carga directa solo está disponible para los archivos
+            previsualizados después de esta actualización. Prevalide
+            el Excel una vez para activar «Cargar al sistema».
+        </p>
+    <?php endif; ?>
     <div class="request-verification-summary">
         <span><strong><?= (int) $nominalPreview['total'] ?></strong><small>Filas nominales</small></span>
         <span><strong><?= (int) $nominalPreview['valid_count'] ?></strong><small>Verificables únicos</small></span>
