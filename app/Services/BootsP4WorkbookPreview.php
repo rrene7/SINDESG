@@ -119,6 +119,15 @@ final class BootsP4WorkbookPreview
                         'message' => 'N° de línea inválido; revíselo o déjelo vacío.',
                     ];
                 }
+                if (preg_match('/^\\d{1,2}\\s+5$/u', $size) && self::validSize($size)) {
+                    $issues[] = [
+                        'excel_row' => $displayRow,
+                        'type' => 'size_format',
+                        'message' => 'La talla escrita como "' . $size
+                            . '" se interpretó como ' . self::canonicalSize($size)
+                            . '. Confirme el formato en el Excel antes de aprobar la dotación.',
+                    ];
+                }
                 $record = [
                     'excel_row' => $displayRow,
                     'number' => ctype_digit($seq) ? (int) $seq : count($nominal) + 1,
@@ -248,7 +257,7 @@ final class BootsP4WorkbookPreview
 
     private static function validSize(string $size): bool
     {
-        $size = str_replace(',', '.', trim($size));
+        $size = self::normalizeSizeInput($size);
         if (!preg_match('/^\d{1,2}(?:\.5)?$/', $size)) {
             return false;
         }
@@ -258,6 +267,17 @@ final class BootsP4WorkbookPreview
 
     private static function canonicalSize(string $size): string
     {
-        return rtrim(rtrim(number_format((float) str_replace(',', '.', $size), 1, '.', ''), '0'), '.');
+        return rtrim(rtrim(number_format((float) self::normalizeSizeInput($size), 1, '.', ''), '0'), '.');
+    }
+
+    /**
+     * Una única celda de talla "8 5" (frecuente al copiar archivos)
+     * equivale a talla 8.5, nunca a dos renglones diferentes.
+     * La variante activa 8.5 sigue siendo obligatoria.
+     */
+    private static function normalizeSizeInput(string $size): string
+    {
+        $size = str_replace(',', '.', trim($size));
+        return preg_replace('/^(\\d{1,2})\\s+5$/u', '$1.5', $size) ?? $size;
     }
 }
