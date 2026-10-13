@@ -177,6 +177,9 @@ jobs:
       - name: P4 nominal reconciliation test
         run: php tests/p4_nominal_reconciliation_test.php
 
+      - name: P4 duplicate nominal rows test
+        run: php tests/p4_duplicate_nominal_rows_test.php
+
       - name: P4 RRHH canonical position test
         run: php tests/p4_rrhh_canonical_position_test.php
 
