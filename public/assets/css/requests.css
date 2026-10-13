@@ -48,3 +48,7 @@ form[action*='import-nominal-file'] label:has(input[type='checkbox']){display:fl
 .request-catalog-actions{display:flex;flex-wrap:wrap;gap:14px;margin:9px 0}
 .request-catalog-actions a{color:#72d9ff;text-decoration:underline}
 .request-catalog-no-matches small{font-size:.73rem;color:var(--muted)}
+
+/* Mantener los campos del nuevo renglón alineados arriba cuando aparece el buscador. */
+.request-item-form{align-items:start}
+.request-item-form>label,.request-item-form>.request-catalog-picker{align-self:start}

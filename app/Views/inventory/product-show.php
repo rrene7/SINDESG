@@ -167,6 +167,28 @@ foreach ($variants as $variantStockRow) {
 
             <button class="primary-button" type="submit">Agregar variante</button>
         </form>
+        <?php if (sindesg_can('inventory.manage')): ?>
+        <div class="catalog-size-bulk">
+            <span class="eyebrow">CARGA RÁPIDA · TALLAS</span>
+            <h3>Agregar varias tallas</h3>
+            <p>Escriba únicamente las tallas reales del artículo, separadas
+               por espacios, comas o saltos de línea. Las medias tallas utilizan
+               punto decimal: <strong>8.5</strong>.</p>
+            <form method="post"
+                  action="<?= e(sindesg_url('?module=inventory&action=save-sizes-bulk')) ?>">
+                <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
+                <input type="hidden" name="product_id" value="<?= (int) $product['id'] ?>">
+                <label>
+                    <span>Lista de tallas (3 a 20, hasta 40 por operación)</span>
+                    <textarea name="sizes_bulk" rows="3" required
+                              placeholder="Ejemplo: 8 8.5 9 9.5"></textarea>
+                </label>
+                <button class="secondary-button" type="submit">Agregar tallas en lote</button>
+            </form>
+            <small>Se reutilizan tallas existentes, sin repetirlas. No crea unidades
+                   en almacén ni asigna códigos institucionales no verificados.</small>
+        </div>
+        <?php endif; ?>
     </aside>
 </section>
 

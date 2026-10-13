@@ -284,6 +284,207 @@ final class CatalogRepository
         }
     }
 
+    /**
+     * Prepara un catálogo base de calzado SIN inventario ni variantes ficticias.
+     * Crea solo lo que falte; reutiliza productos del mismo nombre ya registrados,
+     * incluso si pertenecen a una categoría histórica (por ejemplo BOTAS).
+     * Si existen homónimos ambiguos, interrumpe el proceso sin escribir nada.
+     *
+     * @return array{category_id:int,created:array<string,int>,existing:array<string,int>}
+     */
+    public function prepareFootwearCatalog(): array
+    {
+        $names = ['BOTAS TÁCTICAS', 'ZAPATOS DE CHAROL', 'ZAPATOS REGULARES'];
+        $this->pdo->beginTransaction();
+        try {
+            $findCategory = $this->pdo->prepare(
+                'SELECT id, is_active FROM categories
+                 WHERE slug = :slug OR name = :name ORDER BY id FOR UPDATE'
+            );
+            $findCategory->execute(['slug' => 'calzado', 'name' => 'CALZADO']);
+            $categories = $findCategory->fetchAll();
+            if (count($categories) > 1) {
+                throw new \InvalidArgumentException(
+                    'Hay múltiples categorías llamadas Calzado. Concílielas antes de continuar.'
+                );
+            }
+            if ($categories !== []) {
+                if ((int) $categories[0]['is_active'] !== 1) {
+                    throw new \InvalidArgumentException('La categoría Calzado existente está inactiva.');
+                }
+                $categoryId = (int) $categories[0]['id'];
+            } else {
+                $insertCategory = $this->pdo->prepare(
+                    'INSERT INTO categories (code, slug, name, description, sort_order, is_active)
+                     VALUES (:code, :slug, :name, :description, 0, 1)'
+                );
+                $insertCategory->execute([
+                    'code' => 'TMP-' . strtoupper(bin2hex(random_bytes(6))),
+                    'slug' => 'calzado',
+                    'name' => 'CALZADO',
+                    'description' => 'Dotación institucional de botas y zapatos.',
+                ]);
+                $categoryId = (int) $this->pdo->lastInsertId();
+                $this->pdo->prepare(
+                    'UPDATE categories SET code = :code, sort_order = :sort_order WHERE id = :id'
+                )->execute([
+                    'code' => sprintf('CAT-%06d', $categoryId),
+                    'sort_order' => $categoryId * 10,
+                    'id' => $categoryId,
+                ]);
+            }
+
+            $findProduct = $this->pdo->prepare(
+                'SELECT id, status FROM products WHERE TRIM(name) = :name
+                 ORDER BY id FOR UPDATE'
+            );
+            $insertProduct = $this->pdo->prepare(
+                'INSERT INTO products (category_id, internal_code, name, description,
+                                      sex, color, status)
+                 VALUES (:category_id, NULL, :name, :description,
+                         :sex, NULL, "active")'
+            );
+            $updateCode = $this->pdo->prepare(
+                'UPDATE products SET internal_code = :code WHERE id = :id'
+            );
+            $categoryCodeQuery = $this->pdo->prepare(
+                'SELECT code FROM categories WHERE id = :id'
+            );
+            $categoryCodeQuery->execute(['id' => $categoryId]);
+            $categoryCode = (string) $categoryCodeQuery->fetchColumn();
+            $result = ['category_id' => $categoryId, 'created' => [], 'existing' => []];
+
+            foreach ($names as $name) {
+                $findProduct->execute(['name' => $name]);
+                $matches = $findProduct->fetchAll();
+                if (count($matches) > 1) {
+                    throw new \InvalidArgumentException(
+                        "Hay más de un artículo llamado {$name}. Debe conciliar los duplicados."
+                    );
+                }
+                if ($matches !== []) {
+                    if ($matches[0]['status'] !== 'active') {
+                        throw new \InvalidArgumentException(
+                            "El artículo {$name} existe, pero está inactivo. Revíselo."
+                        );
+                    }
+                    $result['existing'][$name] = (int) $matches[0]['id'];
+                    continue;
+                }
+                $insertProduct->execute([
+                    'category_id' => $categoryId,
+                    'name' => $name,
+                    'description' => 'Dotación institucional por talla. Modelo o código oficial por verificar.',
+                    'sex' => 'no_aplica',
+                ]);
+                $id = (int) $this->pdo->lastInsertId();
+                $updateCode->execute([
+                    'code' => sprintf('SND-%s-%06d', strtoupper($categoryCode), $id),
+                    'id' => $id,
+                ]);
+                $result['created'][$name] = $id;
+            }
+            $this->pdo->commit();
+            return $result;
+        } catch (\Throwable $exception) {
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+            throw $exception;
+        }
+    }
+
+    /**
+     * Crea tallas numéricas sin repetir tallas existentes y sin modificar
+     * kardex, stock ni datos históricos. Una sola transacción para el lote.
+     *
+     * @param list<string> $sizes
+     * @return array{created:list<string>,existing:list<string>}
+     */
+    public function addNumericSizesBulk(int $productId, array $sizes): array
+    {
+        if ($productId <= 0 || $sizes === [] || count($sizes) > 40) {
+            throw new \InvalidArgumentException('Seleccione un producto y de 1 a 40 tallas.');
+        }
+
+        $this->pdo->beginTransaction();
+        try {
+            $productQuery = $this->pdo->prepare(
+                'SELECT id, status FROM products WHERE id = :id FOR UPDATE'
+            );
+            $productQuery->execute(['id' => $productId]);
+            $product = $productQuery->fetch();
+            if (!$product || $product['status'] !== 'active') {
+                throw new \InvalidArgumentException('El artículo no existe o no está activo.');
+            }
+
+            $existingQuery = $this->pdo->prepare(
+                'SELECT pv.id, pv.status, s.name AS size_name
+                 FROM product_variants pv
+                 INNER JOIN sizes s ON s.id = pv.size_id
+                 WHERE pv.product_id = :product_id FOR UPDATE'
+            );
+            $existingQuery->execute(['product_id' => $productId]);
+            $existing = [];
+            foreach ($existingQuery->fetchAll() as $row) {
+                $size = str_replace(',', '.', trim((string) $row['size_name']));
+                if (preg_match('/^\d{1,2}(?:\.5)?$/', $size)) {
+                    $canonical = rtrim(rtrim(number_format((float) $size, 1, '.', ''), '0'), '.');
+                    $existing[$canonical][] = $row;
+                }
+            }
+            foreach ($existing as $key => $found) {
+                if (count($found) > 1) {
+                    throw new \InvalidArgumentException(
+                        "La talla {$key} ya tiene variantes duplicadas en el producto. Revise el catálogo."
+                    );
+                }
+                if ($found[0]['status'] !== 'active') {
+                    throw new \InvalidArgumentException(
+                        "La talla {$key} existe inactiva. Debe revisarse antes de crear otra."
+                    );
+                }
+            }
+
+            $result = ['created' => [], 'existing' => []];
+            $insert = $this->pdo->prepare(
+                'INSERT INTO product_variants
+                 (product_id, size_id, brand_id, internal_code,
+                  institutional_code, supplier_code, color, status)
+                 VALUES (:product_id, :size_id, NULL, NULL,
+                         NULL, NULL, NULL, "active")'
+            );
+            $setCode = $this->pdo->prepare(
+                'UPDATE product_variants SET internal_code = :code WHERE id = :id'
+            );
+
+            foreach ($sizes as $size) {
+                if (isset($existing[$size])) {
+                    $result['existing'][] = $size;
+                    continue;
+                }
+                $sizeId = $this->findOrCreateSize($size);
+                if ($sizeId === null) {
+                    throw new \InvalidArgumentException('No se pudo registrar talla ' . $size);
+                }
+                $insert->execute(['product_id' => $productId, 'size_id' => $sizeId]);
+                $variantId = (int) $this->pdo->lastInsertId();
+                $setCode->execute([
+                    'code' => sprintf('SND-V-%07d', $variantId),
+                    'id' => $variantId,
+                ]);
+                $result['created'][] = $size;
+            }
+            $this->pdo->commit();
+            return $result;
+        } catch (\Throwable $exception) {
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+            throw $exception;
+        }
+    }
+
     public function addProductImage(
         int $productId,
         string $path,

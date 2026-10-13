@@ -157,6 +157,58 @@ final class CatalogService
         ]);
     }
 
+    /** @return array{category_id:int,created:array<string,int>,existing:array<string,int>} */
+    public function prepareFootwearCatalog(): array
+    {
+        return $this->repository->prepareFootwearCatalog();
+    }
+
+    /**
+     * Solo tallas que se indiquen explícitamente; no se presumen del Excel.
+     * Use coma, espacios, salto de línea o punto y coma para separar.
+     * Medias tallas usan punto: 8.5 (no 8,5).
+     *
+     * @return list<string>
+     */
+    public function parseNumericSizes(string $input): array
+    {
+        if (preg_match('/\d,\d/u', $input)) {
+            throw new InvalidArgumentException(
+                'Talla con coma ambigua. Escriba 8.5 para media talla o separe con espacios.'
+            );
+        }
+        $raw = preg_split('/[\s,;]+/u', trim($input), -1, PREG_SPLIT_NO_EMPTY);
+        if (!$raw || count($raw) > 40) {
+            throw new InvalidArgumentException('Indique entre 1 y 40 tallas, sin usar coma decimal.');
+        }
+        $result = [];
+        foreach ($raw as $value) {
+            if (!preg_match('/^\d{1,2}(?:\.5)?$/', $value)) {
+                throw new InvalidArgumentException(
+                    'Talla no válida: ' . $value . '. Use 8 o 8.5, por ejemplo.'
+                );
+            }
+            $n = (float) $value;
+            if ($n < 3 || $n > 20) {
+                throw new InvalidArgumentException(
+                    'La talla ' . $value . ' está fuera del rango 3 a 20.'
+                );
+            }
+            $key = rtrim(rtrim(number_format($n, 1, '.', ''), '0'), '.');
+            $result[$key] = $key;
+        }
+        return array_values($result);
+    }
+
+    /** @return array{created:list<string>,existing:list<string>} */
+    public function createNumericSizesBulk(int $productId, string $input): array
+    {
+        return $this->repository->addNumericSizesBulk(
+            $productId,
+            $this->parseNumericSizes($input)
+        );
+    }
+
     private function nullableText(mixed $value): ?string
     {
         $value = trim((string) $value);
