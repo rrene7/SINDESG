@@ -88,10 +88,20 @@ no se crean tallas ni unidades adicionales.
 
 Después de verificar posición vigente y única en RRHH2029, se permite
 reconocer ciertas pequeñas variantes ortográficas de nombre y
-apellido. Esto **no autoriza** asociar registros cuyos nombres
+apellido. En nombres de dos palabras, SINDESG admite también el
+intercambio de dos letras del primer nombre (por ejemplo,
+`AZALE/AZAEL`, `JHONS/JOHNS`, `ELMER/ERMEL`) **únicamente**
+si el apellido es exacto y la posición actual RRHH es inequívoca. Esto **no autoriza** asociar registros cuyos nombres
 pertenecen claramente a personas distintas. En esos casos, el P4
 debe comprobar con RRHH si cambió el ocupante de la posición y
 corregir el origen del listado antes de continuar.
+
+Si la requisición declara 723 unidades y el Excel solo lista 722
+funcionarios, compare con el documento de origen antes de cambiar la
+cantidad. Si se copió una tabla con filtros activos en Excel,
+asegúrese de que se hayan incluido todas las filas previstas.
+Nunca invente una línea nominal ni reasigne una posición para
+completar el total.
 
 La prevalidación nunca escribe datos. No se modifican RRHH2029,
 existencias, movimientos ni históricos.
