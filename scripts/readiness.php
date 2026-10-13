@@ -177,7 +177,7 @@ for ($number = 1; $number <= 19; $number++) {
     }
 }
 
-if (count(array_intersect(range(1, 18), array_keys($schemaNumbers))) === 18) {
+if (count(array_intersect(range(1, 19), array_keys($schemaNumbers))) === 19) {
     $ok('Migraciones versionadas', '001–018 presentes en el repositorio');
 }
 
