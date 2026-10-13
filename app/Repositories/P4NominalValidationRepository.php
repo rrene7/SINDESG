@@ -41,6 +41,38 @@ final class P4NominalValidationRepository
         return $found;
     }
 
+    /**
+     * Guarda todas las decisiones verificadas como una unidad atómica.
+     * Si una falla, no queda ninguna aprobación parcial ni movimientos.
+     *
+     * @param array<int,array<string,mixed>> $rows fila Excel => evidencia
+     * @return array<int,int> fila Excel => id de evidencia
+     */
+    public function recordBatch(array $rows): array
+    {
+        if ($rows === [] || count($rows) > 100 || $this->pdo->inTransaction()) {
+            throw new RuntimeException('La validación colectiva P4 es inválida.');
+        }
+        $this->pdo->beginTransaction();
+        try {
+            $ids = [];
+            foreach ($rows as $excelRow => $data) {
+                if ((int) $excelRow <= 0
+                    || (int) ($data['excel_row'] ?? 0) !== (int) $excelRow) {
+                    throw new RuntimeException('Fila de validación incongruente.');
+                }
+                $ids[(int) $excelRow] = $this->record($data);
+            }
+            $this->pdo->commit();
+            return $ids;
+        } catch (\Throwable $error) {
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+            throw $error;
+        }
+    }
+
     /** @param array<string,mixed> $data */
     public function record(array $data): int
     {
