@@ -20,9 +20,11 @@ final class P4NominalStatusPolicy
         if ((int) ($rrhh['status_is_inactive'] ?? 0) === 1) {
             return false;
         }
-        if ((int) ($rrhh['status_is_active'] ?? 1) === 0) {
-            return false;
-        }
+        // statuses.is_active es un indicador de disponibilidad/operatividad
+        // del catálogo RRHH; no equivale necesariamente a condición
+        // administrativa "Inactivo". Algunas licencias válidas llevan 0.
+        // Excluir ÚNICAMENTE la señal específica is_inactive y los
+        // estados/códigos explícitos de jubilación o inactividad.
         if (trim((string) ($rrhh['status_legacy_code'] ?? '')) === '15') {
             return false;
         }
