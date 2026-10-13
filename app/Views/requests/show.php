@@ -363,13 +363,21 @@ foreach ($nominalProducts ?? [] as $product) {
             Autorizo cargar solo los funcionarios y tallas verificados; las filas
             con incidencias quedarán sin registrar, para su corrección posterior.
         </label>
+        <label class="request-cell-sub">
+            <input type="checkbox" name="accept_document_gap" value="1">
+            Si la requisición declara más unidades que funcionarios listados, autorizo
+            incorporar <strong>todos los destinatarios verificados del Excel</strong>
+            y dejar la diferencia registrada como <strong>pendiente documental sin
+            beneficiario</strong>. No constituye inventario, despacho ni dotación.
+            Esta opción NO permite saltarse filas con identidad sin validar.
+        </label>
         <div class="request-nominal-actions">
             <button type="submit" class="secondary-button"
                     formaction="<?= e(sindesg_url('?module=requests&action=preview-nominal-file')) ?>">
                 Prevalidar y ver incidencias sin guardar
             </button>
             <button type="submit" class="primary-button">
-                Importar solo las filas verificadas al borrador
+                Cargar todos los funcionarios verificados al borrador
             </button>
         </div>
         <p class="request-cell-sub">
@@ -406,9 +414,11 @@ foreach ($nominalProducts ?? [] as $product) {
             <strong>Atención: el documento declara
                 <?= (int) $nominalPreview['declared_quantity'] ?> unidades,
                 pero hay <?= (int) $nominalPreview['total'] ?> filas nominales.</strong>
-            La importación completa permanece bloqueada hasta corregir el
-            listado o la cantidad declarada. La importación parcial requiere
-            autorización explícita.
+            Puede cargar todas las filas verificadas marcando la autorización
+            para dejar el sobrante declarado <strong>pendiente documental</strong>.
+            No se crea un beneficiario ficticio ni una unidad adicional.
+            Si hay identidades sin verificar, deberán resolverse o autorizar
+            la importación parcial por separado.
         </p>
     <?php endif; ?>
     <p class="request-cell-sub">
@@ -473,11 +483,10 @@ foreach ($nominalProducts ?? [] as $product) {
                                         <input type="hidden" name="request_id" value="<?= (int) $serviceRequest['id'] ?>">
                                         <input type="hidden" name="excel_row" value="<?= (int) $issue['excel_row'] ?>">
                                         <input type="hidden" name="employee_id" value="<?= (int) $issue['candidate_employee_id'] ?>">
-                                        <label>
-                                            <span>Cédula del expediente RRHH *</span>
-                                            <input name="document_number" type="text" required
-                                                   autocomplete="off" placeholder="Cédula verificada en RRHH">
-                                        </label>
+                                        <p class="request-cell-sub">
+                                            SINDESG consulta y comprueba la cédula directamente en RRHH2029;
+                                            el P4 no necesita escribirla.
+                                        </p>
                                         <label>
                                             <span>Justificación y respaldo de la identidad *</span>
                                             <textarea name="justification" required rows="3"
@@ -486,7 +495,8 @@ foreach ($nominalProducts ?? [] as $product) {
                                         </label>
                                         <label class="request-cell-sub">
                                             <input type="checkbox" name="confirm_identity" value="1" required>
-                                            Confirmo personalmente la cédula, posición y destinatario real.
+                                            Como P4, confirmo bajo mi responsabilidad que el expediente
+                                            RRHH mostrado corresponde al destinatario real de esta fila.
                                         </label>
                                         <button type="submit" class="primary-button">
                                             Confirmar validación
@@ -509,8 +519,10 @@ foreach ($nominalProducts ?? [] as $product) {
         decisión se registra en SINDESG y se aplica únicamente al mismo
         archivo y fila. Si realmente son personas distintas, corrija el Excel.
         Después de resolver las incidencias, seleccione el mismo archivo
-        para importar. La diferencia entre 723 declaradas y 722 filas se
-        debe conciliar por separado. Corrija el Excel según la posición
+        para importar. Si declara 723 unidades y enumera 722 destinatarios,
+        podrá cargar esos 722 siempre que todos estén verificados y marque
+        la autorización de diferencia documental. La unidad no listada
+        quedará registrada como pendiente, nunca asignada automáticamente. Corrija el Excel según la posición
         actual confirmada en RRHH y vuelva a prevalidar. Para importar parcialmente, vuelva a seleccionar el archivo,
         marque la autorización correspondiente y use el botón de importación.
         No cambie una posición basándose únicamente en una coincidencia de nombre.
