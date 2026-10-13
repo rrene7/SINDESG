@@ -69,7 +69,7 @@ foreach ([
         throw new RuntimeException('Falta campo RRHH solo lectura: ' . $part);
     }
 }
-foreach (['historical', 'assignment_conflict', 'is_rrhh_eligible', 'namesCompatible'] as $part) {
+foreach (['historical', 'is_rrhh_eligible', 'namesCompatible', 'position_source'] as $part) {
     if (!str_contains($nominalSource, $part)) {
         throw new RuntimeException('No se protege una coincidencia de RRHH: ' . $part);
     }
