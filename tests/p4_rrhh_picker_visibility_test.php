@@ -13,15 +13,18 @@ $api = (string) file_get_contents($root . '/public/api/employees.php');
 if (!str_contains($css, '.request-picker-results{position:absolute')) {
     throw new RuntimeException('Unexpected base employee popup selector.');
 }
-if (!preg_match(
+preg_match_all(
     '/\[data-bulk-nominal-picker\]\s+\[data-bulk-results\]\s*\{([^}]+)\}/s',
     $css,
-    $match
-) || !preg_match('/position\s*:\s*static\s*;/i', $match[1])) {
+    $matches
+);
+$lastRule = end($matches[1]);
+if (!is_string($lastRule)
+    || !preg_match('/position\s*:\s*static\s*;/i', $lastRule)) {
     throw new RuntimeException('P4 bulk RRHH results must use normal document flow.');
 }
 foreach (['display:block;', 'max-height:320px;', 'overflow-y:auto;'] as $rule) {
-    if (!str_contains($match[1], $rule)) {
+    if (!str_contains($lastRule, $rule)) {
         throw new RuntimeException('Missing list visual rule: ' . $rule);
     }
 }
