@@ -4,6 +4,46 @@
 
 Versión documental: Fase 14C
 
+## P4: búsqueda institucional y fecha de última dotación
+
+En **Solicitudes → Borrador P4 → Asignar dotación a varios funcionarios**
+la búsqueda de RRHH2029 es **general**. Puede seleccionar funcionarios
+adscritos a otra dirección o zona si el P4 solicitante es responsable
+de su dotación (por ejemplo, personal prestado). Se conserva la unidad
+actual que muestra RRHH2029 sin modificarla.
+
+Después de seleccionar una variante, el buscador consulta **la última
+entrega individual confirmada del mismo artículo**, con cualquier talla
+y por cualquier P4, y muestra solo la **fecha**. Cuando no hay entrega
+del artículo confirmada en SINDESG, indica **«Sin entrega registrada de
+este artículo en SINDESG»**, lo que NO significa que no exista una
+dotación previa en documentos históricos o fuera del sistema. Si no
+responde la consulta, se informa «historial no disponible» en lugar
+de reportar falsamente ausencia de entrega.
+
+La fecha es **informativa**; el P4 decide si incorpora al funcionario.
+La entrega previa **no bloquea** la selección. Sí se conserva el control
+contra registrar dos veces el mismo funcionario y producto dentro
+de una **misma solicitud**, y la validación de RRHH y variantes activas.
+La solicitud no acredita entrega física ni crea existencias.
+
+En **Importar listado nominal por Excel** se admite personal de otras
+zonas y se valida principalmente su posición; nombre y talla se
+concilián con RRHH y el catálogo. Al importar, las filas del borrador
+muestran la última entrega del mismo artículo confirmada en SINDESG.
+La persona responsable del P4 podrá revisar esas fechas y retirar
+cualquier asignación antes de enviar la solicitud.
+
+Se incluye **Descargar plantilla CSV para Excel** para crear listados
+nominales. Hay que reemplazar el encabezado de requisición, completar
+una fila por funcionario con N°, rango, posición, nombre, apellido y
+talla, y guardar como CSV separado por comas o XLSX compatible.
+Las filas vacías de la plantilla no generan dotaciones.
+
+El módulo de **Entrega individual** conserva su validación y registro
+de excepciones por adscripción; esta mejora solo flexibiliza la fase
+de solicitud. El saldo inicial y el kardex no se alteran.
+
 ## Preparar calzado institucional sin inventario inicial
 
 La clasificación confirmada para el piloto P4 es:

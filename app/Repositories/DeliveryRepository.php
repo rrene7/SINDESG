@@ -890,6 +890,57 @@ final class DeliveryRepository
         return $statement->fetchAll();
     }
 
+    /**
+     * Última entrega individual CONFIRMADA del mismo ARTÍCULO (cualquier talla
+     * y P4), para facilitar la decisión humana del P4 solicitante.
+     * Ausencia de datos NO prueba que no hubo dotaciones fuera de SINDESG.
+     *
+     * @param list<int> $employeeIds
+     * @return array<int,string> employee_id => fecha DATETIME
+     */
+    public function lastConfirmedDatesForProduct(int $productId, array $employeeIds): array
+    {
+        if ($productId <= 0 || count($employeeIds) > 100) {
+            throw new \InvalidArgumentException('Producto o lote de funcionarios no válido.');
+        }
+        $ids = [];
+        foreach ($employeeIds as $id) {
+            $id = (int) $id;
+            if ($id <= 0) {
+                throw new \InvalidArgumentException('Funcionario no válido.');
+            }
+            $ids[$id] = $id;
+        }
+        if (!$ids) {
+            return [];
+        }
+
+        $bind = ['product_id' => $productId];
+        $holders = [];
+        foreach (array_values($ids) as $idx => $employeeId) {
+            $key = 'person' . $idx;
+            $holders[] = ':' . $key;
+            $bind[$key] = $employeeId;
+        }
+        $sql = '
+            SELECT d.recipient_employee_id AS employee_id,
+                   MAX(d.delivered_at) AS last_delivered_at
+            FROM individual_deliveries d
+            INNER JOIN individual_delivery_items di ON di.delivery_id = d.id
+            INNER JOIN product_variants pv ON pv.id = di.product_variant_id
+            WHERE d.status = "confirmed"
+              AND pv.product_id = :product_id
+              AND d.recipient_employee_id IN (' . implode(', ', $holders) . ')
+            GROUP BY d.recipient_employee_id';
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($bind);
+        $dates = [];
+        foreach ($stmt->fetchAll() as $row) {
+            $dates[(int) $row['employee_id']] = (string) $row['last_delivered_at'];
+        }
+        return $dates;
+    }
+
     public function historySummaryForEmployee(int $employeeId, int $limit = 12): array
     {
         $rows = $this->historyForEmployee($employeeId, $limit);
