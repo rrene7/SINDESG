@@ -163,6 +163,8 @@ $required = [
     'database/schema/016_historical_imports.sql',
     'database/schema/017_historical_catalog_preparation.sql',
     'database/schema/018_historical_reconciliation.sql',
+    'database/schema/019_p4_nominal_validation.sql',
+    'scripts/apply_p4_nominal_validation.php',
     'database/seeds/historical_uniform_catalog_2026.json',
     'database/seeds/historical_uniform_reconciliation_2026.json',
     'scripts/audit_historical_data.php',
