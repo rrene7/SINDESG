@@ -83,6 +83,10 @@ foreach ($nominalProducts ?? [] as $product) {
 </section>
 <?php endif; ?>
 
+<?php if (!empty($requestTracking)): ?>
+    <?php require __DIR__ . '/tracking.php'; ?>
+<?php endif; ?>
+
 <section class="request-detail-grid">
     <article class="request-panel">
         <span class="eyebrow">CABECERA</span>
@@ -101,6 +105,10 @@ foreach ($nominalProducts ?? [] as $product) {
     </article>
 
     <aside class="request-panel request-workflow" id="request-send-panel">
+        <a class="secondary-button request-central-review-link"
+           href="<?= e(sindesg_url('?module=requests&action=central-review&id=' . (int) $serviceRequest['id'])) ?>">
+            Ver revisión del Almacén Central por talla →
+        </a>
         <span class="eyebrow">FLUJO</span>
         <h2><?= e($statusLabels[$serviceRequest['status']] ?? $serviceRequest['status']) ?></h2>
 
@@ -113,13 +121,15 @@ foreach ($nominalProducts ?? [] as $product) {
             </form>
         <?php elseif ($serviceRequest['status'] === 'submitted'): ?>
             <p>La solicitud fue enviada y está pendiente de revisión en Servicios Generales.</p>
+            <p class="request-cell-sub">Antes de aprobar, consulte el consolidado por talla del Almacén Central.</p>
             <form method="post" action="<?= e(sindesg_url('?module=requests&action=start-review')) ?>">
                 <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
                 <input type="hidden" name="request_id" value="<?= e($serviceRequest['id']) ?>">
                 <button class="primary-button request-full-button" type="submit">Iniciar revisión</button>
             </form>
         <?php elseif ($serviceRequest['status'] === 'in_review'): ?>
-            <p>Defina las cantidades aprobadas. La aprobación compromete disponibilidad, pero todavía no mueve inventario.</p>
+            <p>Revise las cantidades por talla en la pantalla del Central. La aprobación compromete disponibilidad, pero todavía no mueve inventario.</p>
+            <a class="primary-button request-full-button" href="<?= e(sindesg_url('?module=requests&action=central-review&id=' . (int) $serviceRequest['id'])) ?>">Revisar y aprobar por talla →</a>
         <?php else: ?>
             <div class="request-decision-summary">
                 <span><strong><?= e(number_format($totalApproved, 0, '.', ',')) ?></strong><small>unidades aprobadas</small></span>
@@ -606,6 +616,11 @@ foreach ($nominalProducts ?? [] as $product) {
 
 <?php if ($serviceRequest['status'] === 'in_review' && $requestItems !== []): ?>
 <section class="request-panel review-panel">
+    <p class="request-cell-sub">
+        Para solicitudes grandes, recomendamos la
+        <a href="<?= e(sindesg_url('?module=requests&action=central-review&id=' . (int) $serviceRequest['id'])) ?>">revisión agrupada por tallas</a>
+        en lugar de aprobar a cada funcionario por separado.
+    </p>
     <div class="request-section-head">
         <div>
             <span class="eyebrow">DECISIÓN</span>
