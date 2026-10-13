@@ -52,3 +52,59 @@ form[action*='import-nominal-file'] label:has(input[type='checkbox']){display:fl
 /* Mantener los campos del nuevo renglón alineados arriba cuando aparece el buscador. */
 .request-item-form{align-items:start}
 .request-item-form>label,.request-item-form>.request-catalog-picker{align-self:start}
+
+/* La lista nominal P4 NO es un popover: debe permanecer en el flujo del
+   formulario. El estilo global .request-picker-results usa position:absolute
+   para los buscadores individuales y dejaba los resultados RRHH invisibles
+   o desplazados fuera de la sección de captura masiva. */
+[data-bulk-nominal-picker] [data-bulk-results]{
+    position:static;
+    inset:auto;
+    z-index:auto;
+    display:block;
+    width:100%;
+    max-height:320px;
+    overflow-y:auto;
+    margin:0;
+    padding:8px;
+    border:1px solid rgba(37,196,255,.36);
+    border-radius:12px;
+    background:#061a31;
+    box-shadow:none;
+    min-height:52px;
+}
+[data-bulk-nominal-picker] [data-bulk-results][hidden]{display:none!important}
+[data-bulk-nominal-picker] [data-bulk-results] .request-picker-result{
+    display:flex;
+    width:100%;
+    flex-direction:row;
+    align-items:center;
+    justify-content:flex-start;
+    gap:12px;
+    padding:11px 12px;
+    margin:0;
+    border-radius:9px;
+    cursor:pointer;
+    text-align:left;
+    color:#eaf8ff;
+    font-size:.83rem;
+    line-height:1.5;
+    overflow-wrap:anywhere;
+}
+[data-bulk-nominal-picker] [data-bulk-results] .request-picker-result:hover,
+[data-bulk-nominal-picker] [data-bulk-results] .request-picker-result:focus-within{
+    background:rgba(31,146,255,.16);
+}
+[data-bulk-nominal-picker] [data-bulk-results] .request-picker-result input[type=checkbox]{
+    flex:0 0 auto;
+    width:17px;
+    height:17px;
+    accent-color:#24b7ff;
+    cursor:pointer;
+}
+[data-bulk-nominal-picker] [data-bulk-results] .request-picker-result span{
+    display:block;
+    flex:1 1 auto;
+    color:#eaf8ff;
+    font-size:.83rem;
+}

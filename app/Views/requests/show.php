@@ -299,7 +299,11 @@ foreach ($nominalProducts ?? [] as $product) {
             <input type="search" data-bulk-search autocomplete="off"
                    placeholder="Escriba al menos 2 caracteres...">
         </label>
-        <div class="request-picker-results" data-bulk-results hidden></div>
+        <p class="request-cell-sub" data-bulk-results-count role="status" aria-live="polite">
+            Escriba el nombre, la cédula o la posición para consultar RRHH2029.
+        </p>
+        <div class="request-picker-results" data-bulk-results hidden
+             aria-label="Funcionarios encontrados en RRHH2029"></div>
         <button type="button" class="secondary-button" data-bulk-select-page hidden>
             Seleccionar todos los resultados visibles
         </button>
