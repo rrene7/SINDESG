@@ -78,7 +78,7 @@ foreach ($serviceRequests as $candidate) {
         <div class="responsive-table">
             <table>
                 <thead>
-                <tr><th>Solicitud</th><th>P4</th><th>Solicitante</th><th>Fecha</th><th>Renglones</th><th>Solicitado</th><th>Aprobado</th><th>Estado</th></tr>
+                <tr><th>Solicitud</th><th>P4</th><th>Solicitante</th><th>Fecha</th><th>Renglones</th><th>Solicitado</th><th>Aprobado</th><th>Estado</th><th>Seguimiento</th></tr>
                 </thead>
                 <tbody>
                 <?php foreach ($serviceRequests as $row): ?>
@@ -91,6 +91,12 @@ foreach ($serviceRequests as $candidate) {
                         <td><?= e(number_format((float) $row['quantity_requested'], 0, '.', ',')) ?></td>
                         <td><?= e(number_format((float) $row['quantity_approved'], 0, '.', ',')) ?></td>
                         <td><span class="request-status <?= e($row['status']) ?>"><?= e($statusLabels[$row['status']] ?? $row['status']) ?></span></td>
+                        <td>
+                            <a class="request-link" href="<?= e(sindesg_url('?module=requests&action=show&id=' . (int) $row['id'] . '#seguimiento-p4')) ?>">Ver estado →</a>
+                            <?php if (in_array($row['status'], ['submitted', 'in_review'], true)): ?>
+                                <small class="request-cell-sub"><a href="<?= e(sindesg_url('?module=requests&action=central-review&id=' . (int) $row['id'])) ?>">Revisión Central</a></small>
+                            <?php endif; ?>
+                        </td>
                     </tr>
                 <?php endforeach; ?>
                 </tbody>
