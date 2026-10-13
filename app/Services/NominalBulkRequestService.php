@@ -149,6 +149,37 @@ final class NominalBulkRequestService
         ]);
     }
 
+    /**
+     * No reutilizar una decisión si el Excel, la identidad, la posición
+     * vigente o el estado RRHH cambió desde que el P4 confirmó la fila.
+     * El hash del archivo y el producto son filtrados en byFile().
+     *
+     * @param ?array<string,mixed> $saved
+     * @param array<string,mixed> $row
+     * @param ?array<string,mixed> $person
+     */
+    public static function isSavedValidationApplicable(
+        ?array $saved,
+        array $row,
+        ?array $person
+    ): bool {
+        return $saved !== null
+            && $person !== null
+            && (int) ($saved['rrhh_employee_id'] ?? 0) > 0
+            && (int) $saved['rrhh_employee_id'] === (int) ($person['employee_id'] ?? 0)
+            && (string) ($saved['rrhh_document_snapshot'] ?? '') !== ''
+            && hash_equals(
+                (string) $saved['rrhh_document_snapshot'],
+                (string) ($person['document_number'] ?? '')
+            )
+            && (string) ($saved['rrhh_position_snapshot'] ?? '') === (string) ($person['position_number'] ?? '')
+            && (string) ($saved['excel_position'] ?? '') === (string) ($row['position'] ?? '')
+            && (string) ($saved['excel_name'] ?? '') === (string) ($row['name'] ?? '')
+            && (string) ($saved['excel_size'] ?? '') === (string) ($row['raw_size'] ?? '')
+            && in_array((string) ($person['position_source'] ?? ''), ['current','assignment'], true)
+            && !empty($person['is_rrhh_eligible']);
+    }
+
     /** Solo discrepancias nominales con candidato RRHH inequívoco y vigente. */
     public static function isManuallyValidatable(array $issue): bool
     {
@@ -314,16 +345,7 @@ final class NominalBulkRequestService
             $matches = array_values($byPosition[$position] ?? []);
             $person = count($matches) === 1 ? $matches[0] : null;
             $saved = $savedValidations[$excelRow] ?? null;
-            $manualApproved = $person !== null
-                && $saved !== null
-                && (int) $saved['rrhh_employee_id'] === (int) $person['employee_id']
-                && hash_equals((string) $saved['rrhh_document_snapshot'], (string) $person['document_number'])
-                && (string) $saved['rrhh_position_snapshot'] === (string) $person['position_number']
-                && (string) $saved['excel_position'] === $rawPosition
-                && (string) $saved['excel_name'] === (string) ($row['name'] ?? '')
-                && (string) $saved['excel_size'] === (string) ($row['raw_size'] ?? '')
-                && in_array((string) ($person['position_source'] ?? ''), ['current','assignment'], true)
-                && !empty($person['is_rrhh_eligible']);
+            $manualApproved = self::isSavedValidationApplicable($saved, $row, $person);
             $redundantFirstRow = $duplicates['redundant'][$excelRow] ?? null;
             if ($redundantFirstRow !== null) {
                 $issues[] = [
