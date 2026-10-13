@@ -171,6 +171,9 @@ jobs:
       - name: P4 nominal bulk capture test
         run: php tests/p4_nominal_bulk_test.php
 
+      - name: P4 last delivery advisory test
+        run: php tests/p4_last_delivery_advisory_test.php
+
       - name: P4 searchable catalog test
         run: php tests/p4_catalog_search_test.php
 
