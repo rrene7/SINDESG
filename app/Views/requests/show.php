@@ -391,14 +391,19 @@ foreach ($nominalProducts ?? [] as $product) {
     </div>
     <div class="request-verification-summary">
         <span><strong><?= (int) $nominalPreview['total'] ?></strong><small>Filas nominales</small></span>
-        <span><strong><?= (int) $nominalPreview['valid_count'] ?></strong><small>Verificables</small></span>
+        <span><strong><?= (int) $nominalPreview['valid_count'] ?></strong><small>Verificables únicos</small></span>
+        <span><strong><?= (int) ($nominalPreview['duplicate_count'] ?? 0) ?></strong><small>Repetidos que se omitirán</small></span>
         <span><strong><?= (int) $nominalPreview['blocked_count'] ?></strong><small>Pendientes de revisión</small></span>
     </div>
     <p class="request-cell-sub">
         La posición debe coincidir con un funcionario identificable en RRHH.
         Los nombres se comparan completos, aunque los campos de nombre y apellido
-        estén distribuidos de manera distinta. Si falta la posición o no coincide
-        la identidad, NO se asignará a nadie automáticamente.
+        estén distribuidos de manera distinta. Las copias verificadas del mismo
+        funcionario y talla se muestran como repetidas y no generan otra dotación.
+        Si la posición está duplicada con tallas o nombres contradictorios, se
+        bloquean todas las filas afectadas. Licencias, estados no elegibles y
+        posiciones anteriores siguen requiriendo revisión; nunca se asignan
+        automáticamente por parecido del nombre.
     </p>
     <?php if ($nominalPreview['issues'] === []): ?>
         <p>Todos los registros pasaron la validación nominal preliminar.</p>
