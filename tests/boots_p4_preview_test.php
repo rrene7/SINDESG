@@ -32,7 +32,8 @@ try {
     $preview = new BootsP4WorkbookPreview();
     $sheets = (new SpreadsheetReader())->read($temp, 'csv');
     $result = $preview->analyze($sheets, 'piloto.csv');
-    if ($result['nominal_count'] !== 3 || $result['validated_size_count'] !== 2) {
+    if ($result['nominal_count'] !== 3 || $result['validated_size_count'] !== 3
+        || $result['nominal'][2]['size'] !== '8.5') {
         throw new RuntimeException('No se contó correctamente el listado nominal.');
     }
     if ($result['document']['requisition'] !== '1122965'
@@ -40,10 +41,14 @@ try {
         throw new RuntimeException('Falta contrato o requisición.');
     }
     $issues = array_column($result['issues'], 'type');
-    foreach (['duplicate', 'size', 'quantity', 'size_summary'] as $type) {
+    foreach (['duplicate', 'size_format', 'quantity'] as $type) {
         if (!in_array($type, $issues, true)) {
             throw new RuntimeException('No se reportó la incidencia: ' . $type);
         }
+    }
+    if (in_array('size', $issues, true) || in_array('size_summary', $issues, true)
+        || ($result['size_counts']['8.5'] ?? 0) !== 2) {
+        throw new RuntimeException('La talla 8 5 debe interpretarse como 8.5 sin inventar cantidades.');
     }
     if ($result['status'] !== 'preview_only' || $result['summary_total'] !== 3) {
         throw new RuntimeException('No es una vista previa válida.');
