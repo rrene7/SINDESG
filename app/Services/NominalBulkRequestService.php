@@ -368,9 +368,30 @@ final class NominalBulkRequestService
         if (count($source) < 2 || !$firstTokens || !$lastTokens) {
             return false;
         }
-        // Como mínimo el primer nombre debe coincidir sin aproximaciones.
-        if (!in_array($source[0], $firstTokens, true)) {
-            return false;
+        // Coincidencia estricta del primer nombre o, como máximo,
+        // una errata de una letra SI el apellido del Excel coincide
+        // exactamente con el apellido institucional y la posición
+        // RRHH ya fue resuelta inequívocamente por número.
+        $firstIsExact = in_array($source[0], $firstTokens, true);
+        if (!$firstIsExact) {
+            $surnameConfirmed = count(array_intersect(
+                array_slice($source, 1),
+                $lastTokens
+            )) >= 1;
+            $oneLetterNameDifference = false;
+            if (strlen($source[0]) >= 6 && $surnameConfirmed) {
+                foreach ($firstTokens as $firstToken) {
+                    if (strlen($firstToken) >= 6
+                        && abs(strlen($source[0]) - strlen($firstToken)) <= 1
+                        && levenshtein($source[0], $firstToken) === 1) {
+                        $oneLetterNameDifference = true;
+                        break;
+                    }
+                }
+            }
+            if (!$oneLetterNameDifference) {
+                return false;
+            }
         }
 
         $remaining = $reference;
