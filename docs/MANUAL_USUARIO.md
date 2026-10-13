@@ -72,6 +72,30 @@ Excel original. Si hay bloqueos, la carga íntegra no se guarda;
 la importación parcial continúa exigiendo autorización expresa.
 No se generan existencias ni movimientos.
 
+## Conciliación de últimos errores nominales
+
+La vista previa de solicitudes P4 muestra diferencias **documentales**
+cuando el encabezado declara una cantidad distinta de las filas
+nominales realmente identificadas. Una requisición que declara 723
+pares y solo tiene 722 filas **no puede importarse íntegramente**
+sin corregir la fila faltante o el encabezado. La importación
+parcial requiere la autorización expresa ya existente.
+
+Los listados que contienen una talla `8 5` dentro de una sola
+celda se normalizan a `8.5`, siempre que la variante exista y esté
+activa. Se deja una **observación de formato** con la fila original;
+no se crean tallas ni unidades adicionales.
+
+Después de verificar posición vigente y única en RRHH2029, se permite
+reconocer ciertas pequeñas variantes ortográficas de nombre y
+apellido. Esto **no autoriza** asociar registros cuyos nombres
+pertenecen claramente a personas distintas. En esos casos, el P4
+debe comprobar con RRHH si cambió el ocupante de la posición y
+corregir el origen del listado antes de continuar.
+
+La prevalidación nunca escribe datos. No se modifican RRHH2029,
+existencias, movimientos ni históricos.
+
 ## Revisar coincidencias RRHH al importar 723 asignaciones nominales
 
 La opción **Solicitudes → Borrador P4 → Importar listado nominal por Excel**
