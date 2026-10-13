@@ -168,7 +168,7 @@ foreach ($schemaFiles as $file) {
     }
 }
 
-for ($number = 1; $number <= 18; $number++) {
+for ($number = 1; $number <= 19; $number++) {
     if (!isset($schemaNumbers[$number])) {
         $error(
             'Migración ' . str_pad((string) $number, 3, '0', STR_PAD_LEFT),
