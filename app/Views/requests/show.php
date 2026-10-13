@@ -131,6 +131,9 @@ foreach ($nominalProducts ?? [] as $product) {
         </span>
     </div>
 
+    <?php if (!empty($nominalPreviewSuccess)): ?>
+        <p class="request-cell-sub" role="status"><strong><?= e($nominalPreviewSuccess) ?></strong></p>
+    <?php endif; ?>
     <div class="request-verification-summary">
         <span><strong><?= e(number_format((float) ($requestCommitmentEvidence['approved'] ?? 0), 0, '.', ',')) ?></strong><small>Aprobado</small></span>
         <span><strong><?= e(number_format((float) ($requestCommitmentEvidence['committed'] ?? 0), 0, '.', ',')) ?></strong><small>Comprometido</small></span>
@@ -386,7 +389,8 @@ foreach ($nominalProducts ?? [] as $product) {
             <p>
                 Requisición <?= e($nominalPreview['requisition']) ?> ·
                 <?= e($nominalPreview['filename']) ?>.
-                No se guardaron funcionarios ni movimientos de inventario.
+                No se importaron funcionarios ni se movió inventario.
+                Las validaciones manuales requieren confirmación expresa y quedan auditadas.
             </p>
         </div>
     </div>
@@ -425,7 +429,7 @@ foreach ($nominalProducts ?? [] as $product) {
                 <thead>
                 <tr><th>Fila</th><th>Posición Excel</th><th>Nombre Excel</th>
                     <th>Nombre encontrado RRHH</th><th>Origen RRHH</th>
-                    <th>Talla</th><th>Resultado</th></tr>
+                    <th>Talla</th><th>Resultado</th><th>Acción</th></tr>
                 </thead>
                 <tbody>
                 <?php foreach ($nominalPreview['issues'] as $issue): ?>
@@ -451,6 +455,48 @@ foreach ($nominalProducts ?? [] as $product) {
                         </td>
                         <td><?= e($issue['size'] ?: '—') ?></td>
                         <td><?= e($issue['message']) ?></td>
+                        <td>
+                            <?php if (
+                                (int) ($issue['excel_row'] ?? 0) > 0
+                                && \App\Services\NominalBulkRequestService::isManuallyValidatable($issue)
+                            ): ?>
+                                <details class="p4-validate-row">
+                                    <summary class="secondary-button">Validar</summary>
+                                    <p class="request-cell-sub">
+                                        Confirme que <?= e($issue['rrhh_name'] ?? 'el funcionario') ?>
+                                        es el destinatario real. Si es otra persona,
+                                        no valide: corrija el listado con RRHH.
+                                    </p>
+                                    <form method="post"
+                                          action="<?= e(sindesg_url('?module=requests&action=validate-nominal-row')) ?>">
+                                        <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
+                                        <input type="hidden" name="request_id" value="<?= (int) $serviceRequest['id'] ?>">
+                                        <input type="hidden" name="excel_row" value="<?= (int) $issue['excel_row'] ?>">
+                                        <input type="hidden" name="employee_id" value="<?= (int) $issue['candidate_employee_id'] ?>">
+                                        <label>
+                                            <span>Cédula del expediente RRHH *</span>
+                                            <input name="document_number" type="text" required
+                                                   autocomplete="off" placeholder="Cédula verificada en RRHH">
+                                        </label>
+                                        <label>
+                                            <span>Justificación y respaldo de la identidad *</span>
+                                            <textarea name="justification" required rows="3"
+                                                      minlength="20" maxlength="1000"
+                                                      placeholder="Indique cómo verificó que es el destinatario correcto..."></textarea>
+                                        </label>
+                                        <label class="request-cell-sub">
+                                            <input type="checkbox" name="confirm_identity" value="1" required>
+                                            Confirmo personalmente la cédula, posición y destinatario real.
+                                        </label>
+                                        <button type="submit" class="primary-button">
+                                            Confirmar validación
+                                        </button>
+                                    </form>
+                                </details>
+                            <?php else: ?>
+                                <small class="request-cell-sub">Requiere corregir Excel o RRHH</small>
+                            <?php endif; ?>
+                        </td>
                     </tr>
                 <?php endforeach; ?>
                 </tbody>
@@ -458,8 +504,14 @@ foreach ($nominalProducts ?? [] as $product) {
         </div>
     <?php endif; ?>
     <p class="request-cell-sub">
-        Corrija el Excel según la posición actual confirmada en RRHH y vuelva
-        a prevalidar. Para importar parcialmente, vuelva a seleccionar el archivo,
+        Para nombres diferentes, use «Validar» solamente si comprobó con la
+        cédula y el expediente RRHH que se trata del destinatario real. Esa
+        decisión se registra en SINDESG y se aplica únicamente al mismo
+        archivo y fila. Si realmente son personas distintas, corrija el Excel.
+        Después de resolver las incidencias, seleccione el mismo archivo
+        para importar. La diferencia entre 723 declaradas y 722 filas se
+        debe conciliar por separado. Corrija el Excel según la posición
+        actual confirmada en RRHH y vuelva a prevalidar. Para importar parcialmente, vuelva a seleccionar el archivo,
         marque la autorización correspondiente y use el botón de importación.
         No cambie una posición basándose únicamente en una coincidencia de nombre.
     </p>
