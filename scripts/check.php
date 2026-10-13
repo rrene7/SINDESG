@@ -222,6 +222,7 @@ $required = [
     'tests/historical_import_schema_test.php',
     'tests/spreadsheet_reader_test.php',
     'tests/boots_p4_preview_test.php',
+    'tests/p4_nominal_xlsx_template_test.php',
     'tests/p4_nominal_bulk_test.php',
     'tests/p4_last_delivery_advisory_test.php',
     'tests/p4_rrhh_picker_visibility_test.php',
