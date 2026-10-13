@@ -4,6 +4,43 @@
 
 Versión documental: Fase 14C
 
+## Preparar calzado institucional sin inventario inicial
+
+La clasificación confirmada para el piloto P4 es:
+
+- **CALZADO → BOTAS TÁCTICAS** (uso habitual)
+- **CALZADO → ZAPATOS DE CHAROL**
+- **CALZADO → ZAPATOS REGULARES**
+
+Desde **Inventario → Preparar catálogo de calzado**, un usuario con
+permiso de administración de inventario puede marcar la confirmación
+y preparar los tres artículos en **una sola operación**. Si ya existe
+un artículo con ese nombre, se reutiliza incluso si estaba bajo la
+categoría histórica «Botas». Si existen dos artículos homónimos
+ambiguos o inactivos, la operación se bloquea para revisión en vez
+de crear duplicados. No se cambian datos existentes.
+
+Los nuevos artículos nacen **sin variantes ni unidades ficticias**.
+En el detalle del artículo use **Agregar varias tallas** e introduzca
+únicamente las tallas verificadas separadas por espacios o punto
+y coma. Por ejemplo: `8 8.5 9 9.5 10`. Las medias tallas usan
+punto; se rechaza `8,5` ambiguo. Un lote puede contener hasta 40
+tallas y se ejecuta de forma atómica. Repetir una talla ya
+registrada no crea un duplicado. Si existen tallas duplicadas o
+inactivas se exige resolverlas antes de continuar.
+
+**No cargar cifras estimadas como stock.** Los nombres se consideran
+un catálogo provisional hasta cotejar el modelo oficial y los
+códigos ISTMO. Los códigos internos SINDESG se generan automáticamente,
+pero los códigos institucionales o del proveedor permanecen vacíos
+si todavía no fueron verificados.
+
+Después de crear las variantes por talla, vuelva a la solicitud
+en borrador del P4 de Colón: podrá buscar `botas tácticas` en
+el selector y elegir el producto para importar el listado nominal.
+Solo en esa etapa se registran las necesidades individuales; la
+aprobación y el despacho exigen stock real disponible.
+
 ## Buscar artículos, tallas y botas en solicitudes P4
 
 En **Solicitudes → Nueva solicitud → abrir borrador**, los campos
