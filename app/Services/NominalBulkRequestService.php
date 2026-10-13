@@ -470,6 +470,32 @@ final class NominalBulkRequestService
         if (count($source) < 2 || !$firstTokens || !$lastTokens) {
             return false;
         }
+        // En un Excel con nombre y apellido abreviados (dos palabras),
+        // admitir exclusivamente ortografías muy próximas cuando RRHH ya
+        // identificó una posición actual única. No usar esto para
+        // resolver la identidad de personas distintas por nombre.
+        if (count($source) === 2) {
+            foreach ($firstTokens as $registeredFirst) {
+                $firstDiff = levenshtein($source[0], $registeredFirst);
+                foreach ($lastTokens as $registeredLast) {
+                    $lastDiff = levenshtein($source[1], $registeredLast);
+                    $firstLong = min(strlen($source[0]), strlen($registeredFirst)) >= 5;
+                    $lastLong = min(strlen($source[1]), strlen($registeredLast)) >= 5;
+                    $sameSurname = $lastDiff === 0;
+                    if (
+                        ($firstDiff === 0 && $lastDiff === 0)
+                        || ($firstDiff === 0 && $lastDiff === 1 && $lastLong)
+                        || ($firstDiff === 1 && $sameSurname && $firstLong)
+                        || ($firstDiff === 1 && $lastDiff === 1 && $firstLong && $lastLong)
+                        || ($firstDiff === 2 && $sameSurname
+                            && min(strlen($source[0]), strlen($registeredFirst)) >= 7)
+                    ) {
+                        return true;
+                    }
+                }
+            }
+        }
+
         // Coincidencia estricta del primer nombre o, como máximo,
         // una errata de una letra SI el apellido del Excel coincide
         // exactamente con el apellido institucional y la posición
