@@ -12,6 +12,14 @@ con sueldo por estudio, otros permisos o condiciones administrativas.
 La unidad actual tampoco debe coincidir necesariamente con la del P4:
 se admite personal prestado bajo responsabilidad del P4 solicitante.
 
+Para este procedimiento, el indicador interno `statuses.is_active` **no
+representa por sí solo el estado administrativo «Inactivo»**. Una licencia
+o permiso puede tener `is_active = 0` en RRHH y seguir siendo elegible
+para **solicitud nominal P4**. Se evalúa el indicador específico
+`is_inactive`, el nombre real del estado y el código institucional
+`15` de Vacaciones por jubilación; el estado `blocks_actions` no debe
+descartar automáticamente a quien tiene permiso o licencia.
+
 **ÚNICOS estados administrativos excluidos por la regla de dotación P4:**
 - **Vacaciones por jubilación** (código de estado RRHH2029 15).
 - **Inactivo** / condición de inactividad del expediente RRHH.

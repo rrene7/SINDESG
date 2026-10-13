@@ -16,10 +16,11 @@ $base = [
 ];
 
 $allow = [
-    ['Licencia con sueldo por estudio', '10', 1, 0, 1],
-    ['Licencia sin sueldo', '30', 1, 0, 1],
-    ['Incapacidad', '08', 1, 0, 1],
-    ['Vacaciones regulares', '04', 1, 0, 1],
+    // Estados no operativos pueden tener is_active=0: NO son inactivos.
+    ['Licencia con sueldo por estudio', '10', 0, 0, 1],
+    ['Licencia sin sueldo', '30', 0, 0, 1],
+    ['Incapacidad', '08', 0, 0, 1],
+    ['Vacaciones regulares', '04', 0, 0, 1],
     ['Permiso administrativo', '20', 1, 0, 1],
     ['Activo / en servicio', '01', 1, 0, 0],
 ];
@@ -43,7 +44,7 @@ $reject = [
     ['Inactivo / baja', '09', 1, 1, 1],
     ['Desconocido', '09', 1, 1, 0],
     ['Inactiva', '09', 1, 0, 0],
-    ['No registrado', '09', 0, 0, 0],
+    ['No registrado / Inactivo', '09', 0, 1, 0],
     ['Vacaciones', '15', 1, 0, 0],
 ];
 foreach ($reject as [$label, $code, $active, $inactive, $blocks]) {
@@ -65,9 +66,13 @@ $eligible = $reflection->getMethod('isP4NomineeEligible');
 $permit = array_merge($base, [
     'status_name' => 'Licencia con sueldo por estudio',
     'blocks_actions' => 1,
+    'status_is_active' => 0,
 ]);
 if (!$eligible->invoke(null, $permit)) {
     throw new RuntimeException('Licencia de estudios debe poder nominarse en P4.');
+}
+if (P4NominalStatusPolicy::rejectionReason($permit) !== null) {
+    throw new RuntimeException('Licencia no debe tener causa de exclusión.');
 }
 if ($eligible->invoke(null, array_merge($permit, ['document_number' => '']))) {
     throw new RuntimeException('Un expediente sin identidad verificable nunca se asigna.');
