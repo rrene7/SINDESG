@@ -45,7 +45,7 @@ if (str_contains($service, "funcionario fuera de la estructura del P4")
 }
 foreach ([
     'last-nominal-delivery.php', 'Última entrega de este artículo',
-    'Sin entrega registrada de este artículo en SINDESG', 'Descargar plantilla CSV',
+    'Sin entrega registrada de este artículo en SINDESG', 'Descargar plantilla Excel (.xlsx)',
 ] as $token) {
     if (!str_contains($view, $token)) {
         throw new RuntimeException('Falta mostrar fecha o plantilla: ' . $token);
@@ -59,7 +59,7 @@ foreach (['dateLabel', 'loadLastDeliveries', 'last_delivery_status',
     }
 }
 foreach ([
-    'download-nominal-template', 'text/csv', 'fputcsv',
+    'download-nominal-template', 'P4NominalXlsxTemplate', 'readfile',
     'POSICIÓN', 'NOMBRE', 'APELLIDO', 'TALLA',
 ] as $token) {
     if (!str_contains($controller, $token)) {
@@ -106,4 +106,4 @@ if (in_array('sqlite', PDO::getAvailableDrivers(), true)) {
         throw new RuntimeException('Lista vacía debe devolver vacío.');
     }
 }
-echo "[OK] Búsqueda global P4; fecha de última entrega por artículo, solo informativa; plantilla CSV." . PHP_EOL;
+echo "[OK] Búsqueda global P4; fecha de última entrega por artículo, solo informativa; plantilla XLSX." . PHP_EOL;
