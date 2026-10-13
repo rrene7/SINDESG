@@ -237,6 +237,7 @@
         };
 
         const loadLastDeliveries = async () => {
+            const current = ++lastDeliverySequence;
             if (!variantSelect || !variantSelect.value) {
                 [...chosen.values(), ...shown].forEach((p) => {
                     p.last_delivery_status = 'pending';
@@ -246,7 +247,6 @@
                 renderResults(shown);
                 return;
             }
-            const current = ++lastDeliverySequence;
             const people = new Map();
             [...chosen.values(), ...shown].forEach((person) => {
                 people.set(String(person.employee_id), person);
