@@ -183,6 +183,9 @@ jobs:
       - name: P4 RRHH canonical position test
         run: php tests/p4_rrhh_canonical_position_test.php
 
+      - name: P4 nominal status policy test
+        run: php tests/p4_nominal_status_policy_test.php
+
       - name: P4 last delivery advisory test
         run: php tests/p4_last_delivery_advisory_test.php
 

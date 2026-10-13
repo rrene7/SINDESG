@@ -28,9 +28,21 @@ if (mb_strlen($query) < 2) {
 
 try {
     $directory = new RrhhEmployeeDirectory($database);
+    $forP4 = (string) ($_GET['scope'] ?? '') === 'p4';
+    if ($forP4 && !sindesg_can('requests.view')) {
+        http_response_code(403);
+        echo json_encode([
+            'ok' => false,
+            'message' => 'Permiso de consulta P4 requerido.',
+            'items' => [],
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        exit;
+    }
     echo json_encode([
         'ok' => true,
-        'items' => $directory->search($query, 20),
+        'items' => $forP4
+            ? $directory->searchForP4($query, 20)
+            : $directory->search($query, 20),
     ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 } catch (Throwable $exception) {
     http_response_code(503);

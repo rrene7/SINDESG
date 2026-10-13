@@ -4,6 +4,30 @@
 
 Versión documental: Fase 14C
 
+## Elegibilidad administrativa para solicitar dotación en P4
+
+En **Solicitudes P4** se admiten funcionarios identificados en RRHH2029
+con posición vigente, aunque estén en vacaciones ordinarias, licencia
+con sueldo por estudio, otros permisos o condiciones administrativas.
+La unidad actual tampoco debe coincidir necesariamente con la del P4:
+se admite personal prestado bajo responsabilidad del P4 solicitante.
+
+**ÚNICOS estados administrativos excluidos por la regla de dotación P4:**
+- **Vacaciones por jubilación** (código de estado RRHH2029 15).
+- **Inactivo** / condición de inactividad del expediente RRHH.
+
+La solicitud por Excel y la selección nominal manual aplican la misma
+regla. Los estados admitidos se muestran como información al P4;
+los excluidos se indican como incidencia con el estado concreto, sin
+cambiar información en RRHH2029. Se sigue exigiendo identidad verificable,
+posición actual inequívoca, variante/talla válida y ausencia de
+conflictos o duplicados incompatibles dentro de la solicitud.
+
+**La elegibilidad para nominar NO equivale a autorización de entrega
+física.** Las validaciones de funcionarios solicitantes/revisores,
+despachos, firmas y entregas individuales mantienen sus reglas
+específicas; tampoco se crean existencias o movimientos por importar.
+
 ## Filas repetidas y coincidencias de nombre en solicitudes P4
 
 La prevalidación nominal cuenta por separado **filas del Excel**,

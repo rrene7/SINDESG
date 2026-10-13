@@ -39,7 +39,8 @@ final class NominalBulkRequestService
                 || !in_array((string) ($employee['position_source'] ?? ''), ['current', 'assignment'], true)) {
                 throw new InvalidArgumentException(
                     'Funcionario RRHH #' . $id
-                    . ' no tiene una identidad activa y posición vigente verificables.'
+                    . ': ' . ($employee['p4_rejection_reason']
+                        ?? 'la identidad o posición vigente no pudo verificarse.')
                 );
             }
             // Personal prestado puede ser atendido por el P4 responsable, sin bloqueo por adscripción.
@@ -230,7 +231,8 @@ final class NominalBulkRequestService
                     ? 'RRHH reconoce esta posición como anterior, no vigente. Confirme la posición actual antes de asignar.'
                     : 'La asignación abierta difiere de la posición actual del expediente RRHH; conciliar antes de asignar.';
             } elseif (empty($person['is_rrhh_eligible'])) {
-                $cause = 'El expediente RRHH no cumple el estado/documento requeridos para asignación automática; verifique su situación.';
+                $cause = (string) ($person['p4_rejection_reason']
+                    ?? 'No puede verificarse el documento o estado RRHH del funcionario.');
             } elseif (!is_string($size) || !isset($variants[$size])) {
                 $cause = 'Talla no válida o sin variante activa para este artículo.';
             } elseif (isset($already[(int) $person['employee_id']])) {
