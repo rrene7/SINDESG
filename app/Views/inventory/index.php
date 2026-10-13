@@ -42,6 +42,29 @@ declare(strict_types=1);
     </article>
 </section>
 
+<?php if (sindesg_can('inventory.manage')): ?>
+<section class="catalog-footwear-panel">
+    <div>
+        <span class="eyebrow">CATÁLOGO INSTITUCIONAL · CALZADO</span>
+        <h2>Preparar botas tácticas y zapatos</h2>
+        <p>Dar de alta, sin duplicarlos, tres artículos independientes:
+           <strong>Botas tácticas</strong>, <strong>Zapatos de charol</strong>
+           y <strong>Zapatos regulares</strong>. SINDESG crea códigos internos;
+           las tallas, códigos ISTMO y cantidades reales se registran aparte.</p>
+        <small>Acción controlada: no crea stock, kardex, lotes, recepciones ni entregas.</small>
+    </div>
+    <form method="post"
+          action="<?= e(sindesg_url('?module=inventory&action=prepare-footwear')) ?>">
+        <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
+        <label>
+            <input type="checkbox" name="confirm_footwear" value="yes" required>
+            Confirmo que deseo preparar los tres artículos de calzado sin existencias
+        </label>
+        <button class="secondary-button" type="submit">Preparar catálogo de calzado</button>
+    </form>
+</section>
+<?php endif; ?>
+
 <section class="catalog-toolbar">
     <form method="get" action="<?= e(sindesg_url()) ?>">
         <input type="hidden" name="module" value="inventory">
