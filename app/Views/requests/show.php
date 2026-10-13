@@ -396,6 +396,17 @@ foreach ($nominalProducts ?? [] as $product) {
         <span><strong><?= (int) ($nominalPreview['duplicate_count'] ?? 0) ?></strong><small>Repetidos que se omitirán</small></span>
         <span><strong><?= (int) $nominalPreview['blocked_count'] ?></strong><small>Pendientes de revisión</small></span>
     </div>
+    <?php if (isset($nominalPreview['declared_quantity'])
+        && (int) $nominalPreview['declared_quantity'] !== (int) $nominalPreview['total']): ?>
+        <p class="request-cell-sub" role="alert">
+            <strong>Atención: el documento declara
+                <?= (int) $nominalPreview['declared_quantity'] ?> unidades,
+                pero hay <?= (int) $nominalPreview['total'] ?> filas nominales.</strong>
+            La importación completa permanece bloqueada hasta corregir el
+            listado o la cantidad declarada. La importación parcial requiere
+            autorización explícita.
+        </p>
+    <?php endif; ?>
     <p class="request-cell-sub">
         La posición debe coincidir con un funcionario identificable en RRHH.
         Los nombres se comparan completos, aunque los campos de nombre y apellido

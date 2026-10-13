@@ -31,10 +31,15 @@ if (($book['document']['requisition'] ?? '') !== '1122965') {
     throw new RuntimeException('La requisición no fue identificada.');
 }
 $types = array_column($book['issues'], 'type');
-foreach (['duplicate', 'size', 'quantity', 'size_summary'] as $type) {
+foreach (['duplicate', 'size_format', 'quantity'] as $type) {
     if (!in_array($type, $types, true)) {
         throw new RuntimeException('Falta advertencia: ' . $type);
     }
+}
+
+if (in_array('size', $types, true) || in_array('size_summary', $types, true)
+    || ($book['size_counts']['8.5'] ?? null) !== 2) {
+    throw new RuntimeException('La talla 8 5 no se normalizó a una sola variante 8.5.');
 }
 
 $reflect = new ReflectionClass(NominalBulkRequestService::class);

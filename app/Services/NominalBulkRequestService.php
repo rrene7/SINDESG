@@ -85,6 +85,14 @@ final class NominalBulkRequestService
     ): array {
         $report = $this->reconcileWorkbook($requestId, $productId, $path, $extension, $filename);
         $blockers = $report['blocked_count'];
+        $declared = $report['declared_quantity'] ?? null;
+        if (!$allowPartial && $declared !== null && (int) $declared !== (int) $report['total']) {
+            throw new InvalidArgumentException(
+                'La requisición declara ' . (int) $declared . ' unidades, pero el Excel contiene '
+                . (int) $report['total'] . ' filas nominales. '
+                . 'Revise la fila faltante o el total antes de importar toda la solicitud.'
+            );
+        }
         if ($blockers > 0 && !$allowPartial) {
             throw new InvalidArgumentException(
                 'La solicitud NO se importó: ' . $blockers . ' funcionarios requieren revisión. '
@@ -289,14 +297,27 @@ final class NominalBulkRequestService
             ];
         }
 
+        $sourceRows = [];
+        foreach ($nominal as $sourceRow) {
+            $sourceRows[(int) ($sourceRow['excel_row'] ?? 0)] = $sourceRow;
+        }
         foreach ((array) ($book['issues'] ?? []) as $issue) {
-            if (in_array($issue['type'] ?? '', ['quantity', 'summary', 'size_summary'], true)) {
+            if (in_array($issue['type'] ?? '', ['quantity', 'summary', 'size_summary', 'size_format'], true)) {
+                $excelRow = (int) ($issue['excel_row'] ?? 0);
+                $origin = $sourceRows[$excelRow] ?? [];
+                $position = (int) ($origin['position'] ?? 0);
+                $candidates = array_values($byPosition[$position] ?? []);
+                $person = count($candidates) === 1 ? $candidates[0] : null;
                 $issues[] = [
-                    'excel_row' => 0,
-                    'position' => '',
-                    'excel_name' => '',
-                    'rrhh_name' => null,
-                    'size' => '',
+                    'excel_row' => $excelRow,
+                    'position' => (string) ($origin['position'] ?? ''),
+                    'excel_name' => (string) ($origin['name'] ?? ''),
+                    'rrhh_name' => $person !== null
+                        ? trim((string) $person['first_name'] . ' ' . (string) $person['last_name'])
+                        : null,
+                    'position_source' => (string) ($person['position_source'] ?? ''),
+                    'rrhh_status' => (string) ($person['status_name'] ?? ''),
+                    'size' => (string) ($origin['raw_size'] ?? ''),
                     'severity' => 'notice',
                     'message' => (string) $issue['message'],
                 ];
@@ -305,6 +326,7 @@ final class NominalBulkRequestService
 
         return [
             'requisition' => $requisition,
+            'declared_quantity' => $book['document']['declared_quantity'] ?? null,
             'filename' => basename($filename),
             'total' => count($nominal),
             'valid_count' => count($batch),
@@ -470,6 +492,32 @@ final class NominalBulkRequestService
         if (count($source) < 2 || !$firstTokens || !$lastTokens) {
             return false;
         }
+        // En un Excel con nombre y apellido abreviados (dos palabras),
+        // admitir exclusivamente ortografías muy próximas cuando RRHH ya
+        // identificó una posición actual única. No usar esto para
+        // resolver la identidad de personas distintas por nombre.
+        if (count($source) === 2) {
+            foreach ($firstTokens as $registeredFirst) {
+                $firstDiff = levenshtein($source[0], $registeredFirst);
+                foreach ($lastTokens as $registeredLast) {
+                    $lastDiff = levenshtein($source[1], $registeredLast);
+                    $firstLong = min(strlen($source[0]), strlen($registeredFirst)) >= 5;
+                    $lastLong = min(strlen($source[1]), strlen($registeredLast)) >= 5;
+                    $sameSurname = $lastDiff === 0;
+                    if (
+                        ($firstDiff === 0 && $lastDiff === 0)
+                        || ($firstDiff === 0 && $lastDiff === 1 && $lastLong)
+                        || ($firstDiff === 1 && $sameSurname && $firstLong)
+                        || ($firstDiff === 1 && $lastDiff === 1 && $firstLong && $lastLong)
+                        || ($firstDiff === 2 && $sameSurname
+                            && min(strlen($source[0]), strlen($registeredFirst)) >= 7)
+                    ) {
+                        return true;
+                    }
+                }
+            }
+        }
+
         // Coincidencia estricta del primer nombre o, como máximo,
         // una errata de una letra SI el apellido del Excel coincide
         // exactamente con el apellido institucional y la posición
