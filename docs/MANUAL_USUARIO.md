@@ -106,6 +106,53 @@ completar el total.
 La prevalidación nunca escribe datos. No se modifican RRHH2029,
 existencias, movimientos ni históricos.
 
+## Validación manual de incidencias nominales en borradores P4
+
+Después de seleccionar un Excel en **Prevalidar y ver incidencias sin guardar**,
+cada fila bloqueada exclusivamente por **diferencia de nombres** y con
+funcionario RRHH de posición vigente inequívoca muestra **Validar**.
+
+El responsable del P4 pulsa **Validar**, contrasta el expediente RRHH y
+la cédula del destinatario real, introduce la cédula exacta y una
+justificación documentada de 20 caracteres o más, marca la confirmación
+de identidad y pulsa **Confirmar validación**. SINDESG vuelve a consultar
+RRHH2029 **solo lectura** y comprueba la cédula, el estado, la posición
+vigente y la talla activa. Si cualquiera cambió, **no se valida**.
+
+La decisión queda almacenada únicamente en `sindesg` con requisición,
+fila/nombre/talla original, hash SHA-256 del archivo XLSX, funcionario
+institucional, cédula confirmada, usuario responsable, justificación
+y fecha. La decisión no es una entrega ni actualiza inventario.
+La página mantiene la conciliación temporal en sesión durante una
+hora; la prevalidación inicial no inserta datos.
+
+Al volver a importar **exactamente el mismo Excel**, la validación se
+aplica solo a la misma requisición, producto y fila, siempre que no
+haya cambiado ningún dato clave del Excel ni la identificación/posición
+actual del funcionario en RRHH. Si el documento cambia, se requiere
+nueva conciliación. Las posiciones antiguas o ambiguas, estados
+excluidos, tallas inexistentes y duplicados contradictorios **no
+pueden validarse de este modo**.
+
+**Importante:** si Excel y RRHH corresponden a dos personas realmente
+distintas, **no pulse Validar**; corrija el documento de origen y
+prevalide de nuevo. El botón exige constancia de la identificación,
+no permite sobreescribir la identidad de RRHH.
+
+La cantidad documental declarada y el número de filas también son
+independientes: 723 declaradas frente a 722 nominales sigue
+impidiendo la importación total hasta reconciliarse. La opción
+de importación parcial mantiene su autorización expresa y nunca
+aprueba, descuenta ni entrega bienes.
+
+### Instalación en XAMPP
+
+Esta funcionalidad requiere la migración **019**:
+`database/schema/019_p4_nominal_validation.sql`. Primero cree un
+respaldo verificado de SINDESG y luego ejecute
+`php scripts/apply_p4_nominal_validation.php` (solo escribe en la
+base de datos `sindesg`). No ejecute esta migración sobre RRHH2029.
+
 ## Revisar coincidencias RRHH al importar 723 asignaciones nominales
 
 La opción **Solicitudes → Borrador P4 → Importar listado nominal por Excel**
