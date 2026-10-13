@@ -58,12 +58,17 @@ foreach (['dateLabel', 'loadLastDeliveries', 'last_delivery_status',
         throw new RuntimeException('Falta mostrar fecha en selección múltiple: ' . $token);
     }
 }
-foreach ([
-    'download-nominal-template', 'P4NominalXlsxTemplate', 'readfile',
-    'POSICIÓN', 'NOMBRE', 'APELLIDO', 'TALLA',
-] as $token) {
+foreach (['download-nominal-template', 'P4NominalXlsxTemplate', 'readfile'] as $token) {
     if (!str_contains($controller, $token)) {
-        throw new RuntimeException('Falta descarga de plantilla: ' . $token);
+        throw new RuntimeException('Falta descarga XLSX: ' . $token);
+    }
+}
+$xlsxGenerator = (string) file_get_contents(
+    $root . '/app/Services/P4NominalXlsxTemplate.php'
+);
+foreach (['POSICIÓN', 'NOMBRE', 'APELLIDO', 'TALLA'] as $token) {
+    if (!str_contains($xlsxGenerator, $token)) {
+        throw new RuntimeException('Falta columna Excel: ' . $token);
     }
 }
 
