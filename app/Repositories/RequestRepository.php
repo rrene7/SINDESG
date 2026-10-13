@@ -387,7 +387,7 @@ final class RequestRepository
      *
      * @param list<array<string,mixed>> $rows
      */
-    public function addNominalBatch(int $requestId, array $rows): int
+    public function addNominalBatch(int $requestId, array $rows, ?array $documentGap = null): int
     {
         if ($rows === [] || count($rows) > 1000) {
             throw new RuntimeException('Seleccione entre 1 y 1,000 beneficiarios.');
@@ -470,6 +470,28 @@ final class RequestRepository
                     'unit_name' => $line['organization_unit_name'],
                     'quantity' => '1.000',
                     'notes' => mb_substr((string) ($line['notes'] ?? ''), 0, 255),
+                ]);
+            }
+            if ($documentGap !== null) {
+                // Evidencia de diferencia del encabezado, dentro de LA
+                // MISMA transacción que las asignaciones nominales.
+                // No representa una unidad despachada ni almacenada.
+                (new AuditRepository($this->pdo))->log([
+                    'user_id' => $documentGap['user_id'],
+                    'user_label_snapshot' => $documentGap['user_label_snapshot'],
+                    'module_code' => 'requests',
+                    'action_code' => 'nominal_quantity_discrepancy_accepted',
+                    'record_type' => 'service_request',
+                    'record_id' => $requestId,
+                    'details' => [
+                        'requisition' => $documentGap['requisition'],
+                        'source_sha256' => $documentGap['source_sha256'],
+                        'declared_quantity' => $documentGap['declared_quantity'],
+                        'listed_quantity' => $documentGap['listed_quantity'],
+                        'nominal_imported' => count($rows),
+                        'not_assigned' => $documentGap['not_assigned'],
+                        'note' => 'Diferencia documental pendiente; NO es inventario ni dotación entregada.',
+                    ],
                 ]);
             }
             $this->pdo->commit();
