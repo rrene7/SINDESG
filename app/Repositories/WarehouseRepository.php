@@ -82,6 +82,37 @@ final class WarehouseRepository
         return $row ?: null;
     }
 
+    /**
+     * Últimas solicitudes de un P4 para presentar su seguimiento.
+     * Datos de SINDESG: no usa RRHH ni crea movimientos.
+     */
+    public function requestsForP4(int $warehouseId): array
+    {
+        $stmt = $this->pdo->prepare(<<<'SQL'
+            SELECT r.id, r.request_code, r.status, r.requested_at,
+                   r.submitted_at, r.reviewed_at,
+                   COUNT(i.id) AS nominal_count,
+                   COALESCE(SUM(i.quantity_requested), 0) AS requested_total,
+                   COALESCE(SUM(i.quantity_approved), 0) AS approved_total,
+                   COALESCE(SUM(i.quantity_dispatched), 0) AS dispatched_total,
+                   COALESCE(SUM(i.quantity_received), 0) AS received_total,
+                   COALESCE(SUM(i.quantity_delivered), 0) AS delivered_total,
+                   (
+                       SELECT d.status FROM distributions d
+                       WHERE d.request_id = r.id AND d.status <> 'cancelled'
+                       ORDER BY d.id DESC LIMIT 1
+                   ) AS last_transfer_status
+            FROM service_requests r
+            LEFT JOIN service_request_items i ON i.request_id = r.id
+            WHERE r.p4_warehouse_id = :p4_warehouse_id
+            GROUP BY r.id
+            ORDER BY r.id DESC
+            LIMIT 15
+        SQL);
+        $stmt->execute(['p4_warehouse_id' => $warehouseId]);
+        return $stmt->fetchAll();
+    }
+
     public function stock(int $warehouseId): array
     {
         $statement = $this->pdo->prepare(<<<'SQL'

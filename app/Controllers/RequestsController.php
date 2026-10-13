@@ -6,6 +6,8 @@ namespace App\Controllers;
 use App\Repositories\RequestRepository;
 use App\Repositories\P4NominalValidationRepository;
 use App\Services\RequestService;
+use App\Services\CentralRequestReview;
+use App\Services\P4RequestTracking;
 use App\Services\SpreadsheetReader;
 use App\Services\BootsP4WorkbookPreview;
 use App\Services\NominalBulkRequestService;
@@ -118,6 +120,33 @@ final class RequestsController
             ];
         }
 
+        if ($action === 'central-review') {
+            $requestId = (int) ($query['id'] ?? 0);
+            $request = $this->repository->find($requestId);
+            if ($request === null) {
+                throw new InvalidArgumentException('La solicitud no existe.');
+            }
+            $items = $this->repository->items($requestId);
+            $groups = CentralRequestReview::groups($items);
+            return [
+                'view' => SINDESG_ROOT . '/app/Views/requests/central-review.php',
+                'title' => 'Revisión Central · ' . $request['request_code'],
+                'data' => [
+                    'serviceRequest' => $request,
+                    'variantGroups' => $groups,
+                    'reviewTotal' => array_sum(array_map(
+                        static fn (array $g): float => (float) $g['requested'], $groups
+                    )),
+                    'employeeSearchUrl' => sindesg_url('public/api/employees.php'),
+                    'tracking' => P4RequestTracking::build(
+                        $request,
+                        $this->requestProgressQuantities($requestId, $items),
+                        $this->repository->transferProgress($requestId)
+                    ),
+                ],
+            ];
+        }
+
         if ($action === 'show') {
             $requestId = (int) ($query['id'] ?? 0);
             $request = $this->repository->find($requestId);
@@ -125,14 +154,20 @@ final class RequestsController
             if ($request === null) {
                 throw new InvalidArgumentException('La solicitud solicitada no existe.');
             }
+            $requestItems = $this->repository->items($requestId);
 
             return [
                 'view' => SINDESG_ROOT . '/app/Views/requests/show.php',
                 'title' => (string) $request['request_code'],
                 'data' => [
                     'serviceRequest' => $request,
-                    'requestItems' => $this->repository->items($requestId),
+                    'requestItems' => $requestItems,
                     'requestCommitmentEvidence' => $this->repository->commitmentEvidence($requestId),
+                    'requestTracking' => P4RequestTracking::build(
+                        $request,
+                        $this->requestProgressQuantities($requestId, $requestItems),
+                        $this->repository->transferProgress($requestId)
+                    ),
                     'variantOptions' => $this->repository->variantOptions(),
                     'nominalProducts' => $this->repository->nominalProducts(),
                     'employeeSearchUrl' => sindesg_url('public/api/employees.php'),
@@ -498,6 +533,19 @@ final class RequestsController
         }
 
         throw new InvalidArgumentException('La operación solicitada no es válida.');
+    }
+
+    /** @param list<array<string,mixed>> $items
+     *  @return array<string,float>
+     */
+    private function requestProgressQuantities(int $requestId, array $items): array
+    {
+        $quantities = $this->repository->commitmentEvidence($requestId);
+        $quantities['delivered'] = array_sum(array_map(
+            static fn (array $row): float => (float) ($row['quantity_delivered'] ?? 0),
+            $items
+        ));
+        return $quantities;
     }
 
     private function redirect(string $path): never

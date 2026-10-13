@@ -93,6 +93,9 @@ jobs:
       - name: Requests logic test
         run: php tests/requests_logic_test.php
 
+      - name: Central P4 review and tracking test
+        run: php tests/central_p4_review_tracking_test.php
+
       - name: Requests stock reservation test
         run: php tests/requests_stock_test.php
 

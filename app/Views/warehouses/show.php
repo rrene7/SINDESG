@@ -126,6 +126,66 @@ $heroLabel = $isCentral ? 'ALMACÉN CENTRAL' : ($isTransit ? 'INVENTARIO EN TRÁ
     <?php endif; ?>
 </section>
 
+<?php if ($isP4): ?>
+<section class="warehouse-panel" id="solicitudes-p4">
+    <div class="warehouse-section-head">
+        <div>
+            <span class="eyebrow">SEGUIMIENTO DEL P4</span>
+            <h2>¿En qué etapa están nuestras solicitudes?</h2>
+            <p>Estado basado en los registros reales del Central, transferencias y entregas. Sin ubicación GPS.</p>
+        </div>
+        <a class="secondary-button" href="<?= e(sindesg_url('?module=requests')) ?>">Ver todas las solicitudes</a>
+    </div>
+    <?php if (empty($p4RequestTracking)): ?>
+        <div class="warehouse-empty compact">
+            <p>Este P4 todavía no registra solicitudes. Cuando las envíe al Central aparecerán aquí.</p>
+        </div>
+    <?php else: ?>
+        <div class="responsive-table">
+            <table class="p4-tracking-table">
+                <thead><tr>
+                    <th>Solicitud</th><th>Fecha</th><th>Nominales</th>
+                    <th>Solicitado</th><th>Aprobado</th><th>Recibido P4</th>
+                    <th>Entregado</th><th>Etapa actual</th><th>Detalle</th>
+                </tr></thead>
+                <tbody>
+                <?php foreach ($p4RequestTracking as $requestRow): ?>
+                    <?php
+                    $stage = match (true) {
+                        (string) $requestRow['status'] === 'draft' => 'Borrador del P4',
+                        (string) $requestRow['status'] === 'submitted' => 'Enviada al Central',
+                        (string) $requestRow['status'] === 'in_review' => 'En revisión del Central',
+                        (string) $requestRow['status'] === 'rejected' => 'Rechazada por Central',
+                        (float) $requestRow['delivered_total'] > 0 => 'Entregas individuales registradas',
+                        (float) $requestRow['received_total'] > 0 => 'Recepción confirmada en P4',
+                        (float) $requestRow['dispatched_total'] > 0 => 'Despachada / en tránsito',
+                        (string) ($requestRow['last_transfer_status'] ?? '') === 'authorized'
+                            => 'Transferencia autorizada',
+                        (string) ($requestRow['last_transfer_status'] ?? '') === 'prepared'
+                            => 'En preparación del despacho',
+                        (float) $requestRow['approved_total'] > 0 => 'Aprobada por Central',
+                        default => 'Pendiente de gestión del Central',
+                    };
+                    ?>
+                    <tr>
+                        <td><strong><?= e($requestRow['request_code']) ?></strong></td>
+                        <td><?= e(date('d/m/Y', strtotime((string) $requestRow['requested_at']))) ?></td>
+                        <td><?= (int) $requestRow['nominal_count'] ?></td>
+                        <td><?= e(number_format((float) $requestRow['requested_total'], 0, '.', ',')) ?></td>
+                        <td><?= e(number_format((float) $requestRow['approved_total'], 0, '.', ',')) ?></td>
+                        <td><?= e(number_format((float) $requestRow['received_total'], 0, '.', ',')) ?></td>
+                        <td><?= e(number_format((float) $requestRow['delivered_total'], 0, '.', ',')) ?></td>
+                        <td><strong><?= e($stage) ?></strong></td>
+                        <td><a class="warehouse-link" href="<?= e(sindesg_url('?module=requests&action=show&id=' . (int) $requestRow['id'] . '#seguimiento-p4')) ?>">Ver seguimiento →</a></td>
+                    </tr>
+                <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+    <?php endif; ?>
+</section>
+<?php endif; ?>
+
 <div class="warehouse-bottom-actions">
     <a class="secondary-button" href="<?= e(sindesg_url('?module=warehouses')) ?>">← Almacenes y P4</a>
     <a class="secondary-button" href="<?= e(sindesg_url('?module=inventory')) ?>">Inventario</a>

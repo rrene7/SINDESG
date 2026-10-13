@@ -132,15 +132,48 @@ final class RequestRepository
         $statement->execute(['request_id' => $requestId]);
 
         $rows = $statement->fetchAll();
+        // Una requisición nominal puede tener >700 filas, pero ~17 tallas.
+        // Evitar una consulta de existencias por funcionario.
+        $freeByVariant = [];
         foreach ($rows as &$row) {
-            $row['available_to_approve'] = $this->availableToApprove(
-                (int) $row['product_variant_id'],
-                $requestId
-            );
+            $variantId = (int) $row['product_variant_id'];
+            if (!array_key_exists($variantId, $freeByVariant)) {
+                $freeByVariant[$variantId] = $this->availableToApprove($variantId, $requestId);
+            }
+            $row['available_to_approve'] = $freeByVariant[$variantId];
         }
         unset($row);
 
         return $rows;
+    }
+
+    /**
+     * Seguimiento exclusivamente de transferencias reales de esta
+     * requisición. No presume ubicación GPS ni registra movimiento.
+     *
+     * @return array<string,mixed>
+     */
+    public function transferProgress(int $requestId): array
+    {
+        $stmt = $this->pdo->prepare(<<<'SQL'
+            SELECT
+                COUNT(*) AS transfer_count,
+                SUM(CASE WHEN status IN ('prepared','authorized','dispatched','received')
+                    THEN 1 ELSE 0 END) AS prepared_count,
+                SUM(CASE WHEN status IN ('authorized','dispatched','received')
+                    THEN 1 ELSE 0 END) AS authorized_count,
+                SUM(CASE WHEN status IN ('dispatched','received')
+                    THEN 1 ELSE 0 END) AS dispatched_count,
+                SUM(CASE WHEN status = 'received' THEN 1 ELSE 0 END) AS received_count,
+                MAX(CASE WHEN status <> 'cancelled' THEN prepared_at END) AS last_prepared_at,
+                MAX(CASE WHEN status IN ('dispatched','received')
+                    THEN dispatched_at END) AS last_dispatched_at,
+                MAX(CASE WHEN status = 'received' THEN received_at END) AS last_received_at
+            FROM distributions
+            WHERE request_id = :request_id
+        SQL);
+        $stmt->execute(['request_id' => $requestId]);
+        return $stmt->fetch() ?: [];
     }
 
     public function commitmentEvidence(int $requestId): array

@@ -108,6 +108,9 @@ final class WarehousesController
                 'data' => [
                     'warehouse' => $warehouse,
                     'warehouseStock' => $this->warehouses->stock($warehouseId),
+                    'p4RequestTracking' => $warehouse['warehouse_type'] === 'P4'
+                        ? $this->warehouses->requestsForP4($warehouseId)
+                        : [],
                     'currentUnit' => $currentUnit,
                     'currentResponsible' => $currentResponsible,
                 ],
