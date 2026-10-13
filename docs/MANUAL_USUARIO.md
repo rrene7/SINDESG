@@ -482,6 +482,39 @@ Flujo general:
 
 Una solicitud no mueve inventario por sí sola. El movimiento ocurre en los procesos logísticos posteriores.
 
+### Revisión agrupada del Almacén Central y seguimiento del P4
+
+Después de importar y conciliar el listado nominal (por ejemplo,
+**722 beneficiarios** para el P4 de Colón una vez retirado el duplicado),
+la solicitud permanece en **borrador** hasta que el P4 la **envía**.
+La carga del Excel no equivale a recepción, aprobación ni entrega.
+
+**Pantalla del Central.** En `Solicitudes → abrir solicitud →
+Revisión Central por tallas` se ven los totales agrupados por
+artículo, variante y talla, junto con cantidades solicitadas,
+funcionarios, stock Central real y cantidad comprometible.
+El funcionario se consulta desplegando «Ver destinatarios», sin
+necesidad de leer 722 filas a simple vista. Con estado
+`submitted` el Central puede iniciar la revisión. Con estado
+`in_review` asigna cantidades por talla mediante «Aplicar a grupo»
+y puede ajustar individualmente los renglones desplegados antes
+de **Registrar decisión**. El backend conserva el control
+transaccional de stock `RequestRepository::decide`. Si Central
+tiene cero existencias, no se puede aprobar stock inexistente:
+debe registrarse recepción o saldo inicial autorizado.
+
+**Tracking visible en cada P4.** Al abrir un almacén de tipo P4
+se muestra su lista de solicitudes con etapa actual y enlace
+«Ver seguimiento». Dentro de la solicitud existe una línea de
+tiempo de 8 hitos verificables: preparación P4, envío, revisión
+Central, aprobación, preparación de transferencia, despacho a
+tránsito, recepción confirmada por P4 y entrega individual.
+Las fechas y cantidades proceden de `service_requests`,
+`distributions` y `service_request_items`; no se infieren
+despachos, stock ni entregas. En caso parcial muestra cantidades
+parciales, sin indicar que terminó todo el trabajo. No implica GPS
+ni ubicación exacta de vehículos.
+
 ## 11. Distribución Central → P4
 
 Use **Distribución** para transferir inventario del Almacén Central hacia un P4.
