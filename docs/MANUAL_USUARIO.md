@@ -4,6 +4,48 @@
 
 Versión documental: Fase 14C
 
+## Revisar coincidencias RRHH al importar 723 asignaciones nominales
+
+La opción **Solicitudes → Borrador P4 → Importar listado nominal por Excel**
+incluye el botón **Prevalidar y ver incidencias sin guardar**.
+
+La prevalidación no crea renglones de solicitud ni cambia inventario.
+Muestra el total de funcionarios, cuántos son verificables y cuántos
+requieren revisión; además, presenta por fila:
+posición escrita en Excel, nombre Excel, nombre del funcionario resuelto
+en RRHH2029, talla y razón de la observación.
+
+El reconocimiento se hace primero por **posición actual exacta**.
+Una posición ambigua que pertenezca a dos funcionarios distintos,
+inexistente o inactiva NO se vincula automáticamente por similitud de
+nombres. Varias filas técnicas del mismo funcionario/posición en RRHH
+no se consideran funcionarios diferentes.
+
+La comparación del nombre contempla nombres y apellidos distribuidos
+en distintos campos, tildes y componentes adicionales. Exige al menos
+dos coincidencias de palabras válidas: si los nombres siguen sin
+coincidir suficientemente, la fila continúa pendiente de revisión.
+
+La diferencia de total entre encabezado y listado genera una
+**advertencia documental** que debe revisarse, pero no atribuye una
+identidad distinta a un funcionario verificado. En el archivo original
+de Colón hubo una diferencia 688 vs. 723; no se asume que un encabezado
+equivocado cambie las asignaciones nominales verificadas.
+
+La importación por defecto **no guarda nada** si hay filas bloqueadas.
+Para avanzar con un subconjunto hay que volver a seleccionar el archivo
+y autorizar explícitamente la importación parcial; las filas no
+verificadas permanecen **sin cargar**, no se asignan a otro funcionario.
+Las decisiones corresponden al P4 una vez conciliado RRHH.
+
+Si una búsqueda manual por un número Excel presenta un expediente con
+**otra posición actual** en RRHH, no modifique automáticamente la
+posición del Excel ni fuerce una asociación. Revise el expediente y
+solicite la referencia actual correcta a la unidad de RRHH.
+
+No se modifica la base RRHH2029, el kardex, los históricos ni las
+existencias operativas.
+
 ## P4: búsqueda institucional y fecha de última dotación
 
 En **Solicitudes → Borrador P4 → Asignar dotación a varios funcionarios**
