@@ -154,17 +154,18 @@ final class RequestsController
             if ($request === null) {
                 throw new InvalidArgumentException('La solicitud solicitada no existe.');
             }
+            $requestItems = $this->repository->items($requestId);
 
             return [
                 'view' => SINDESG_ROOT . '/app/Views/requests/show.php',
                 'title' => (string) $request['request_code'],
                 'data' => [
                     'serviceRequest' => $request,
-                    'requestItems' => $this->repository->items($requestId),
+                    'requestItems' => $requestItems,
                     'requestCommitmentEvidence' => $this->repository->commitmentEvidence($requestId),
                     'requestTracking' => P4RequestTracking::build(
                         $request,
-                        $this->requestProgressQuantities($requestId, $this->repository->items($requestId)),
+                        $this->requestProgressQuantities($requestId, $requestItems),
                         $this->repository->transferProgress($requestId)
                     ),
                     'variantOptions' => $this->repository->variantOptions(),
