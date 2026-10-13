@@ -184,7 +184,7 @@ final class RequestsController
                 throw new InvalidArgumentException('La prevalidación venció. Adjunte de nuevo el Excel.');
             }
             if ((string) ($post['confirm_identity'] ?? '') !== '1') {
-                throw new InvalidArgumentException('Debe confirmar la identidad y cédula verificadas en RRHH.');
+                throw new InvalidArgumentException('El P4 debe confirmar que asume la validación de identidad indicada en RRHH.');
             }
             $preview = $session['report'];
             $row = (int) ($post['excel_row'] ?? 0);
@@ -196,7 +196,6 @@ final class RequestsController
                 $preview,
                 $row,
                 (int) ($post['employee_id'] ?? 0),
-                (string) ($post['document_number'] ?? ''),
                 (string) ($post['justification'] ?? ''),
                 $user
             );
@@ -270,11 +269,17 @@ final class RequestsController
                 $path,
                 $ext,
                 $filename,
-                (string) ($post['allow_partial'] ?? '') === '1'
+                (string) ($post['allow_partial'] ?? '') === '1',
+                (string) ($post['accept_document_gap'] ?? '') === '1',
+                sindesg_user()
             );
             flash('success', 'Requisición ' . $report['requisition'] . ': '
                 . $report['added'] . ' asignaciones agregadas a borrador; '
-                . $report['skipped'] . ' pendientes de corrección. Ningún movimiento de inventario.');
+                . $report['skipped'] . ' pendientes de corrección. Ningún movimiento de inventario.'
+                . ((int) ($report['document_gap'] ?? 0) > 0
+                    ? ' Diferencia documental aceptada y auditada: '
+                      . (int) $report['document_gap'] . ' unidad(es) SIN destinatario ni stock.'
+                    : ''));
             if ($report['issues'] !== []) {
                 flash('error', 'Observaciones: ' . implode(' | ', array_slice($report['issues'], 0, 8)));
             }
