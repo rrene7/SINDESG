@@ -430,3 +430,37 @@
     }
 
 })();
+
+
+/* Prevalidación P4: seleccionar varias incidencias para una sola validación. */
+(() => {
+    const init = () => {
+        const form = document.getElementById('p4-bulk-review-form');
+        if (!form) return;
+        const boxes = Array.from(document.querySelectorAll('[data-p4-review-row]'));
+        const selectAll = form.querySelector('[data-p4-review-select-all]');
+        const counter = form.querySelector('[data-p4-review-counter]');
+        const submit = form.querySelector('[data-p4-review-submit]');
+        const sync = () => {
+            const selected = boxes.filter(input => input.checked).length;
+            if (counter) counter.textContent = selected + ' seleccionada(s) de ' + boxes.length;
+            if (submit) submit.disabled = selected === 0;
+            if (selectAll) {
+                selectAll.textContent = selected === boxes.length
+                    ? 'Quitar selección' : 'Seleccionar todas las incidencias';
+            }
+        };
+        if (selectAll) selectAll.addEventListener('click', () => {
+            const allSelected = boxes.every(input => input.checked);
+            boxes.forEach(input => { input.checked = !allSelected; });
+            sync();
+        });
+        boxes.forEach(input => input.addEventListener('change', sync));
+        sync();
+    };
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init, { once: true });
+    } else {
+        init();
+    }
+})();
