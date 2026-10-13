@@ -280,7 +280,7 @@ foreach ($nominalProducts ?? [] as $product) {
 
     <form method="post"
           action="<?= e(sindesg_url('?module=requests&action=add-nominal-bulk')) ?>"
-          data-bulk-nominal-picker data-search-url="<?= e($employeeSearchUrl) ?>"
+          data-bulk-nominal-picker data-search-url="<?= e(sindesg_url('public/api/employees.php?scope=p4')) ?>"
           data-last-delivery-url="<?= e(sindesg_url('public/api/last-nominal-delivery.php')) ?>">
         <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
         <input type="hidden" name="request_id" value="<?= (int) $serviceRequest['id'] ?>">
