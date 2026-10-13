@@ -290,7 +290,7 @@ final class NominalBulkRequestService
         }
 
         foreach ((array) ($book['issues'] ?? []) as $issue) {
-            if (in_array($issue['type'] ?? '', ['quantity', 'summary', 'size_summary'], true)) {
+            if (in_array($issue['type'] ?? '', ['quantity', 'summary', 'size_summary', 'size_format'], true)) {
                 $issues[] = [
                     'excel_row' => 0,
                     'position' => '',
@@ -305,6 +305,7 @@ final class NominalBulkRequestService
 
         return [
             'requisition' => $requisition,
+            'declared_quantity' => $book['document']['declared_quantity'] ?? null,
             'filename' => basename($filename),
             'total' => count($nominal),
             'valid_count' => count($batch),
