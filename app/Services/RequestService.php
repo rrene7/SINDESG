@@ -60,7 +60,7 @@ final class RequestService
 
         $beneficiary = null;
         if ($beneficiaryId > 0) {
-            $beneficiary = $this->employees->findEligibleEmployee($beneficiaryId);
+            $beneficiary = $this->employees->findP4Nominee($beneficiaryId);
             if ($beneficiary === null) {
                 throw new InvalidArgumentException('El beneficiario seleccionado no está disponible en RRHH2029.');
             }
