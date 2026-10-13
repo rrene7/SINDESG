@@ -53,7 +53,7 @@ if (!str_contains($controller, "'preview-nominal-file'")
     || !str_contains($view, 'Prevalidar y ver incidencias sin guardar')
     || !str_contains($view, "['rrhh_name']")
     || !str_contains($view, "['excel_name']")
-    || !str_contains($view, 'No se guardaron funcionarios ni movimientos de inventario.')) {
+    || !str_contains($view, 'No se importaron funcionarios ni se movió inventario.')) {
     throw new RuntimeException('La pantalla de prevalidación por posición no está integrada.');
 }
 if (preg_match('/\b(?:UPDATE\s+rrhh|INSERT\s+INTO\s+inventory_movements|TRUNCATE)\b/i', $service)) {
