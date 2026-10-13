@@ -305,11 +305,18 @@ final class NominalBulkRequestService
             if (in_array($issue['type'] ?? '', ['quantity', 'summary', 'size_summary', 'size_format'], true)) {
                 $excelRow = (int) ($issue['excel_row'] ?? 0);
                 $origin = $sourceRows[$excelRow] ?? [];
+                $position = (int) ($origin['position'] ?? 0);
+                $candidates = array_values($byPosition[$position] ?? []);
+                $person = count($candidates) === 1 ? $candidates[0] : null;
                 $issues[] = [
                     'excel_row' => $excelRow,
                     'position' => (string) ($origin['position'] ?? ''),
                     'excel_name' => (string) ($origin['name'] ?? ''),
-                    'rrhh_name' => null,
+                    'rrhh_name' => $person !== null
+                        ? trim((string) $person['first_name'] . ' ' . (string) $person['last_name'])
+                        : null,
+                    'position_source' => (string) ($person['position_source'] ?? ''),
+                    'rrhh_status' => (string) ($person['status_name'] ?? ''),
                     'size' => (string) ($origin['raw_size'] ?? ''),
                     'severity' => 'notice',
                     'message' => (string) $issue['message'],
