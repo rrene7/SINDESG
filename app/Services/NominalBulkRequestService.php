@@ -64,7 +64,6 @@ final class NominalBulkRequestService
         array $preview,
         int $excelRow,
         int $employeeId,
-        string $document,
         string $reason,
         array $user
     ): int {
@@ -114,12 +113,16 @@ final class NominalBulkRequestService
             || trim((string) ($person['document_number'] ?? '')) === '') {
             throw new InvalidArgumentException('La identidad, la posición o el estado RRHH cambió. Prevalide otra vez.');
         }
-        $document = trim($document);
-        if ($document === ''
-            || !hash_equals((string) $person['document_number'], $document)
-            || !hash_equals((string) ($issue['candidate_document'] ?? ''), $document)) {
+        // El P4 NO necesita volver a escribir la cédula. La validación
+        // vincula exclusivamente al candidato institucional seleccionado
+        // en la vista previa y vuelve a contrastar en servidor la cédula
+        // obtenida mediante SELECT de RRHH2029.
+        if (!hash_equals(
+            (string) ($issue['candidate_document'] ?? ''),
+            (string) $person['document_number']
+        )) {
             throw new InvalidArgumentException(
-                'La cédula no coincide exactamente con el expediente RRHH. No se validó.'
+                'La identidad RRHH cambió desde la prevalidación. Vuelva a prevalorar el Excel.'
             );
         }
         $size = (string) ($issue['normalized_size'] ?? '');
@@ -138,7 +141,7 @@ final class NominalBulkRequestService
             'excel_row' => $excelRow,
             'excel_position' => (string) $issue['position'],
             'excel_name' => (string) $issue['excel_name'],
-            'excel_size' => $size,
+            'excel_size' => (string) ($issue['size'] ?? ''),
             'rrhh_employee_id' => $employeeId,
             'rrhh_document_snapshot' => (string) $person['document_number'],
             'rrhh_position_snapshot' => (string) $person['position_number'],
@@ -178,6 +181,15 @@ final class NominalBulkRequestService
             && (string) ($saved['excel_size'] ?? '') === (string) ($row['raw_size'] ?? '')
             && in_array((string) ($person['position_source'] ?? ''), ['current','assignment'], true)
             && !empty($person['is_rrhh_eligible']);
+    }
+
+    /**
+     * Diferencia exclusivamente documental; NO crea existencias ni
+     * destinatarios. Null significa encabezado sin cantidad declarada.
+     */
+    public static function documentGap(?int $declared, int $listed): int
+    {
+        return $declared === null ? 0 : $declared - $listed;
     }
 
     /** Solo discrepancias nominales con candidato RRHH inequívoco y vigente. */
@@ -229,17 +241,38 @@ final class NominalBulkRequestService
         string $path,
         string $extension,
         string $filename,
-        bool $allowPartial
+        bool $allowPartial,
+        bool $acceptDocumentGap = false,
+        ?array $approvingUser = null
     ): array {
         $report = $this->reconcileWorkbook($requestId, $productId, $path, $extension, $filename);
         $blockers = $report['blocked_count'];
         $declared = $report['declared_quantity'] ?? null;
-        if (!$allowPartial && $declared !== null && (int) $declared !== (int) $report['total']) {
-            throw new InvalidArgumentException(
-                'La requisición declara ' . (int) $declared . ' unidades, pero el Excel contiene '
-                . (int) $report['total'] . ' filas nominales. '
-                . 'Revise la fila faltante o el total antes de importar toda la solicitud.'
-            );
+        $gap = self::documentGap(
+            $declared === null ? null : (int) $declared,
+            (int) $report['total']
+        );
+        $fullyVerified = $blockers === 0
+            && count($report['_batch']) + (int) $report['duplicate_count'] === (int) $report['total'];
+        // El exceso declarado NO corresponde a un beneficiario ni se
+        // debe crear como pedido o existencias. Permitir cargar todas
+        // las filas nominales verificadas, con declaración expresa y
+        // registro auditable del remanente documental.
+        if ($gap !== 0 && (!$allowPartial || $fullyVerified)) {
+            if ($gap < 0) {
+                throw new InvalidArgumentException(
+                    'El listado contiene más destinatarios que unidades declaradas. '
+                    . 'Corrija el documento antes de cargar todas las filas.'
+                );
+            }
+            if (!$acceptDocumentGap) {
+                throw new InvalidArgumentException(
+                    'La requisición declara ' . (int) $declared . ' unidades, '
+                    . 'pero tiene ' . (int) $report['total'] . ' destinatarios. '
+                    . 'Marque la autorización para registrar la diferencia de '
+                    . $gap . ' unidad(es) pendiente(s) SIN asignarlas.'
+                );
+            }
         }
         if ($blockers > 0 && !$allowPartial) {
             throw new InvalidArgumentException(
@@ -251,10 +284,26 @@ final class NominalBulkRequestService
         if ($report['_batch'] === []) {
             throw new InvalidArgumentException('No se encontró ningún destinatario seguro para agregar.');
         }
-        $added = $this->requests->addNominalBatch($requestId, $report['_batch']);
+        $gapEvidence = null;
+        if ($gap > 0 && $fullyVerified && $acceptDocumentGap) {
+            if ((int) ($approvingUser['id'] ?? 0) <= 0) {
+                throw new InvalidArgumentException('Se requiere usuario P4 autenticado para registrar el descuadre.');
+            }
+            $gapEvidence = [
+                'user_id' => (int) $approvingUser['id'],
+                'user_label_snapshot' => (string) ($approvingUser['display_name'] ?? 'P4'),
+                'requisition' => (string) $report['requisition'],
+                'source_sha256' => (string) $report['source_sha256'],
+                'declared_quantity' => (int) $declared,
+                'listed_quantity' => (int) $report['total'],
+                'not_assigned' => $gap,
+            ];
+        }
+        $added = $this->requests->addNominalBatch($requestId, $report['_batch'], $gapEvidence);
         return [
             'added' => $added,
             'skipped' => $blockers,
+            'document_gap' => $gapEvidence !== null ? $gap : 0,
             'issues' => array_map(
                 static fn (array $issue): string => 'Fila ' . $issue['excel_row']
                     . ' / posición ' . ($issue['position'] ?: '—') . ': ' . $issue['message'],

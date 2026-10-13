@@ -52,6 +52,19 @@ if ($method->invoke($nominal, 'Juan Perez', 'CARLOS', 'PEREZ')) {
     throw new RuntimeException('La comparación nominal no detecta nombres discordantes.');
 }
 
+// No se importan 723 personas si solo aparecen 722: la cantidad
+// adicional queda como discrepancia documental, nunca una dotación.
+foreach ([
+    [723, 722, 1],
+    [722, 722, 0],
+    [700, 722, -22],
+    [null, 722, 0],
+] as [$declared,$listed,$expectedGap]) {
+    if (NominalBulkRequestService::documentGap($declared,$listed) !== $expectedGap) {
+        throw new RuntimeException('El descuadre no se interpreta correctamente.');
+    }
+}
+
 $svc = (string) file_get_contents(dirname(__DIR__) . '/app/Services/NominalBulkRequestService.php');
 $repo = (string) file_get_contents(dirname(__DIR__) . '/app/Repositories/RequestRepository.php');
 $directory = (string) file_get_contents(dirname(__DIR__) . '/app/Services/RrhhEmployeeDirectory.php');
