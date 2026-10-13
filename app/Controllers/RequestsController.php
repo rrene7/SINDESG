@@ -161,7 +161,7 @@ final class RequestsController
             $this->redirect('?module=requests&action=show&id=' . $requestId);
         }
 
-        if ($action === 'import-nominal-file') {
+        if ($action === 'import-nominal-file' || $action === 'preview-nominal-file') {
             $requestId = (int) ($post['request_id'] ?? 0);
             $file = $_FILES['nominal_workbook'] ?? null;
             if (!is_array($file) || (int) ($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
@@ -177,6 +177,19 @@ final class RequestsController
             if ($path === '' || !is_uploaded_file($path)) {
                 throw new InvalidArgumentException('La carga no es un archivo HTTP válido.');
             }
+            if ($action === 'preview-nominal-file') {
+                $report = $this->bulk->previewWorkbook(
+                    $requestId,
+                    (int) ($post['product_id'] ?? 0),
+                    $path,
+                    $ext,
+                    $filename
+                );
+                $page = $this->handleGet('show', ['id' => $requestId]);
+                $page['data']['nominalPreview'] = $report;
+                return $page;
+            }
+
             $report = $this->bulk->importWorkbook(
                 $requestId,
                 (int) ($post['product_id'] ?? 0),

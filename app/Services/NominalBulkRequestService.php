@@ -42,8 +42,28 @@ final class NominalBulkRequestService
     }
 
     /**
-     * Carga desde plantilla XLSX/CSV: un destinatario por fila y talla.
-     * Exige confirmar expresamente saltar las filas con incidencias.
+     * Revisión previa, íntegramente solo lectura. El P4 ve las diferencias
+     * de posición/nombre antes de decidir si corrige el Excel o autoriza
+     * una importación parcial de filas realmente verificables.
+     *
+     * @return array<string,mixed>
+     */
+    public function previewWorkbook(
+        int $requestId,
+        int $productId,
+        string $path,
+        string $extension,
+        string $filename
+    ): array {
+        $report = $this->reconcileWorkbook($requestId, $productId, $path, $extension, $filename);
+        unset($report['_batch']);
+        return $report;
+    }
+
+    /**
+     * Importa únicamente destinatarios sin bloqueos; no crea movimientos.
+     * Advertencias documentales (totales) se muestran sin invalidar
+     * por sí solas a un funcionario inequívocamente identificado.
      *
      * @return array{added:int,skipped:int,issues:list<string>,requisition:string}
      */
@@ -55,9 +75,44 @@ final class NominalBulkRequestService
         string $filename,
         bool $allowPartial
     ): array {
+        $report = $this->reconcileWorkbook($requestId, $productId, $path, $extension, $filename);
+        $blockers = $report['blocked_count'];
+        if ($blockers > 0 && !$allowPartial) {
+            throw new InvalidArgumentException(
+                'La solicitud NO se importó: ' . $blockers . ' funcionarios requieren revisión. '
+                . 'Use "Prevalidar y ver incidencias" para consultar cada fila del Excel frente a RRHH. '
+                . 'Corrija posiciones o nombres discrepantes; la importación parcial solo incluye registros comprobados.'
+            );
+        }
+        if ($report['_batch'] === []) {
+            throw new InvalidArgumentException('No se encontró ningún destinatario seguro para agregar.');
+        }
+        $added = $this->requests->addNominalBatch($requestId, $report['_batch']);
+        return [
+            'added' => $added,
+            'skipped' => $blockers,
+            'issues' => array_map(
+                static fn (array $issue): string => 'Fila ' . $issue['excel_row']
+                    . ' / posición ' . ($issue['position'] ?: '—') . ': ' . $issue['message'],
+                $report['issues']
+            ),
+            'requisition' => $report['requisition'],
+        ];
+    }
+
+    /**
+     * @return array<string,mixed>
+     */
+    private function reconcileWorkbook(
+        int $requestId,
+        int $productId,
+        string $path,
+        string $extension,
+        string $filename
+    ): array {
         $this->editableRequest($requestId);
         if ($productId <= 0) {
-            throw new InvalidArgumentException('Seleccione el producto de botas del catálogo.');
+            throw new InvalidArgumentException('Seleccione el artículo del catálogo.');
         }
         $variants = $this->requests->sizeVariantsForProduct($productId);
         if ($variants === []) {
@@ -69,97 +124,132 @@ final class NominalBulkRequestService
         );
         $nominal = (array) ($book['nominal'] ?? []);
         if (count($nominal) > 1000) {
-            throw new InvalidArgumentException('Máximo de 1,000 destinatarios por archivo.');
+            throw new InvalidArgumentException('Máximo 1,000 destinatarios por archivo.');
         }
-        $requisition = (string) ($book['document']['requisition'] ?? '');
+        $requisition = trim((string) ($book['document']['requisition'] ?? ''));
         if ($requisition === '') {
-            throw new InvalidArgumentException('El archivo no contiene un número de requisición verificable.');
+            throw new InvalidArgumentException('El archivo no contiene una requisición verificable.');
         }
+
         $positions = [];
         $occurrences = [];
         foreach ($nominal as $row) {
-            $position = trim((string) ($row['position'] ?? ''));
-            if (ctype_digit($position) && (int) $position > 0) {
-                $positions[(int) $position] = (int) $position;
-                $occurrences[(int) $position] = ($occurrences[(int) $position] ?? 0) + 1;
+            $value = trim((string) ($row['position'] ?? ''));
+            if (ctype_digit($value) && (int) $value > 0) {
+                $position = (int) $value;
+                $positions[$position] = $position;
+                $occurrences[$position] = ($occurrences[$position] ?? 0) + 1;
             }
         }
-        $resolved = $this->employees->resolveBulk('position_number', array_values($positions));
+
         $byPosition = [];
-        foreach ($resolved as $employee) {
-            $position = (int) ($employee['position_number'] ?? 0);
-            $byPosition[$position][] = $employee;
+        $employees = $this->employees->resolveBulk('position_number', array_values($positions));
+        foreach ($employees as $person) {
+            $position = (int) ($person['position_number'] ?? 0);
+            $id = (int) ($person['employee_id'] ?? 0);
+            if ($position > 0 && $id > 0) {
+                // La consulta RRHH puede repetir filas por adscripciones
+                // concurrentes del MISMO funcionario. No confundir con dos
+                // funcionarios diferentes ocupando una misma posición.
+                $byPosition[$position][$id] = $person;
+            }
         }
         $already = $this->requests->nominalEmployeeIdsForProduct($requestId, $productId);
+        $seenEmployees = [];
+        $rows = [];
         $issues = [];
         $batch = [];
-        $skipped = 0;
+        $blocked = 0;
         $sourceHash = hash_file('sha256', $path);
         if (!is_string($sourceHash)) {
-            throw new RuntimeException('No fue posible verificar la huella SHA del archivo.');
+            throw new RuntimeException('No se pudo verificar el archivo de origen.');
         }
 
         foreach ($nominal as $row) {
-            $position = (int) ($row['position'] ?? 0);
-            $size = $row['size'] ?? null;
+            $rawPosition = trim((string) ($row['position'] ?? ''));
+            $position = ctype_digit($rawPosition) ? (int) $rawPosition : 0;
             $excelRow = (int) ($row['excel_row'] ?? 0);
+            $size = $row['size'] ?? null;
+            $matches = array_values($byPosition[$position] ?? []);
+            $person = count($matches) === 1 ? $matches[0] : null;
             $cause = null;
-
             if ($position <= 0) {
-                $cause = 'posición ausente o inválida';
+                $cause = 'Posición faltante o inválida.';
             } elseif (($occurrences[$position] ?? 0) > 1) {
-                $cause = 'posición repetida en el documento';
+                $cause = 'Posición repetida dentro del Excel; verifique a quién corresponde cada talla.';
+            } elseif (count($matches) === 0) {
+                $cause = 'Posición no encontrada como asignación actual de funcionario elegible en RRHH2029. No se puede identificar automáticamente.';
+            } elseif (count($matches) > 1) {
+                $cause = 'La posición corresponde a varios funcionarios distintos en RRHH2029; requiere aclaración.';
             } elseif (!is_string($size) || !isset($variants[$size])) {
-                $cause = 'talla no reconocida o sin variante activa de producto';
-            } elseif (count($byPosition[$position] ?? []) !== 1) {
-                $cause = 'posición no encontrada o ambigua en RRHH2029';
-            } elseif (isset($already[(int) $byPosition[$position][0]['employee_id']])) {
-                $cause = 'funcionario ya incluido en esta solicitud para el producto';
-            } else {
-                $person = $byPosition[$position][0];
-                if (!$this->namesCompatible(
-                    (string) $row['name'],
-                    (string) $person['first_name'],
-                    (string) $person['last_name']
-                )) {
-                    $cause = 'nombre Excel no coincide suficientemente con RRHH';
-                } else {
-                    $notes = 'REQ ' . $requisition . ' · ' . basename($filename)
-                        . ' · Fila ' . $excelRow . ' · SHA256 ' . $sourceHash;
-                    $batch[] = $this->nominalLine($person, (int) $variants[$size], $notes);
-                }
+                $cause = 'Talla no válida o sin variante activa para este artículo.';
+            } elseif (isset($already[(int) $person['employee_id']])) {
+                $cause = 'Este funcionario y artículo ya figuran en la solicitud.';
+            } elseif (isset($seenEmployees[(int) $person['employee_id']])) {
+                $cause = 'El funcionario aparece dos veces en el archivo, posiblemente con otra posición.';
+            } elseif (!$this->namesCompatible(
+                (string) ($row['name'] ?? ''),
+                (string) $person['first_name'],
+                (string) $person['last_name']
+            )) {
+                $cause = 'Nombres del Excel y del expediente RRHH no coinciden suficientemente. Revisar antes de asociar.';
             }
-
             if ($cause !== null) {
-                $issues[] = 'Fila ' . $excelRow . ' / posición ' . ($position ?: '—') . ': ' . $cause;
-                $skipped++;
+                $blocked++;
+                $issues[] = [
+                    'excel_row' => $excelRow,
+                    'position' => $rawPosition,
+                    'excel_name' => (string) ($row['name'] ?? ''),
+                    'rrhh_name' => $person !== null
+                        ? trim((string) $person['first_name'] . ' ' . (string) $person['last_name'])
+                        : null,
+                    'size' => (string) ($row['raw_size'] ?? ''),
+                    'severity' => 'blocking',
+                    'message' => $cause,
+                ];
+            } else {
+                $seenEmployees[(int) $person['employee_id']] = true;
+                $notes = 'REQ ' . $requisition . ' · ' . basename($filename)
+                    . ' · Fila ' . $excelRow . ' · SHA256 ' . $sourceHash;
+                $batch[] = $this->nominalLine($person, (int) $variants[$size], $notes);
             }
+            $rows[] = [
+                'excel_row' => $excelRow,
+                'position' => $rawPosition,
+                'excel_name' => (string) ($row['name'] ?? ''),
+                'rrhh_name' => $person !== null
+                    ? trim((string) $person['first_name'] . ' ' . (string) $person['last_name'])
+                    : null,
+                'size' => (string) ($row['raw_size'] ?? ''),
+                'status' => $cause === null ? 'verified' : 'review',
+                'reason' => $cause ?? '',
+            ];
         }
+
         foreach ((array) ($book['issues'] ?? []) as $issue) {
             if (in_array($issue['type'] ?? '', ['quantity', 'summary', 'size_summary'], true)) {
-                $issues[] = (string) $issue['message'];
+                $issues[] = [
+                    'excel_row' => 0,
+                    'position' => '',
+                    'excel_name' => '',
+                    'rrhh_name' => null,
+                    'size' => '',
+                    'severity' => 'notice',
+                    'message' => (string) $issue['message'],
+                ];
             }
         }
-        if ($issues !== [] && !$allowPartial) {
-            throw new InvalidArgumentException(
-                'El Excel requiere conciliación; no se importó nada. '
-                . count($issues) . ' observaciones. '
-                . implode(' | ', array_slice($issues, 0, 5))
-                . '. Para cargar solo destinatarios verificables, marque la autorización de importación parcial.'
-            );
-        }
-        if ($batch === []) {
-            throw new InvalidArgumentException('No hay destinatarios verificables para agregar.');
-        }
-
-        // Todo o nada por transacción, incluso con confirmación de importación parcial.
-        $added = $this->requests->addNominalBatch($requestId, $batch);
 
         return [
-            'added' => $added,
-            'skipped' => $skipped,
-            'issues' => $issues,
             'requisition' => $requisition,
+            'filename' => basename($filename),
+            'total' => count($nominal),
+            'valid_count' => count($batch),
+            'blocked_count' => $blocked,
+            'issues' => $issues,
+            'rows' => $rows,
+            'status' => 'preview_only',
+            '_batch' => $batch,
         ];
     }
 
@@ -228,21 +318,39 @@ final class NominalBulkRequestService
 
     private function namesCompatible(string $excelName, string $first, string $last): bool
     {
-        $normalize = static function (string $v): array {
-            $v = mb_strtoupper($v, 'UTF-8');
-            $v = strtr($v, [
-                'Á'=>'A','É'=>'E','Í'=>'I','Ó'=>'O','Ú'=>'U','Ü'=>'U','Ñ'=>'N',
+        // RRHH puede separar el segundo nombre/apellido en campos distintos
+        // al Excel. No obligar que el primer apellido esté en last_name.
+        // La posición numérica debe coincidir de forma exacta y única ANTES
+        // de usar esta comparación de identidad auxiliar.
+        $normalize = static function (string $value): array {
+            $value = mb_strtoupper($value, 'UTF-8');
+            $value = strtr($value, [
+                'Á'=>'A', 'É'=>'E', 'Í'=>'I', 'Ó'=>'O', 'Ú'=>'U', 'Ü'=>'U', 'Ñ'=>'N',
             ]);
-            $v = preg_replace('/[^A-Z ]/', ' ', $v) ?? '';
-            return array_values(array_filter(preg_split('/\s+/', trim($v)) ?: []));
+            $value = preg_replace('/[^A-Z ]/u', ' ', $value) ?? '';
+            $parts = preg_split('/\s+/', trim($value)) ?: [];
+            return array_values(array_filter(
+                $parts,
+                static fn (string $part): bool => strlen($part) >= 2
+                    && !in_array($part, ['DE','DEL','LA','LAS','LOS'], true)
+            ));
         };
         $source = $normalize($excelName);
-        $firstTokens = $normalize($first);
-        $lastTokens = $normalize($last);
-        if (!$source || !$firstTokens || !$lastTokens) {
+        $reference = $normalize(trim($first . ' ' . $last));
+        if (count($source) < 2 || count($reference) < 2) {
             return false;
         }
-        return in_array($firstTokens[0], $source, true)
-            && in_array($lastTokens[0], $source, true);
+        $remaining = array_count_values($reference);
+        $matched = 0;
+        foreach ($source as $token) {
+            if (($remaining[$token] ?? 0) > 0) {
+                $remaining[$token]--;
+                $matched++;
+            }
+        }
+        // Se exigen al menos dos nombres o apellidos compartidos.
+        // Nombres realmente distintos siguen pendientes de revisión.
+        return $matched >= max(2, (int) ceil(count($source) * 0.6));
     }
+
 }
