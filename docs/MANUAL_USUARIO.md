@@ -106,6 +106,37 @@ completar el total.
 La prevalidación nunca escribe datos. No se modifican RRHH2029,
 existencias, movimientos ni históricos.
 
+## Cargar al sistema después de Prevalidar: sin volver a adjuntar el Excel
+
+Al pulsar **«Prevalidar y ver incidencias sin guardar»**, SINDESG
+conserva una copia temporal **privada fuera de htdocs** del archivo
+original durante **una hora** y verifica la huella **SHA-256**.
+El informe de conciliación muestra **«Cargar al sistema»**.
+
+El P4 puede marcar y aprobar las discrepancias nominales mediante
+**«Validar seleccionados»** y luego pulsar **«Cargar al sistema»**
+**sin volver a escoger el archivo Excel**. El botón reutiliza la copia
+temporal verificada, pero en el momento de importar **vuelve a
+leer el Excel y consultar RRHH2029**, y reconoce únicamente
+decisiones registradas y todavía válidas, ligadas a la requisición,
+producto, archivo, fila, documento y posición actual.
+
+El archivo privado se elimina después de importarse correctamente,
+y una sesión vencida, otra cuenta de usuario, una copia alterada
+o un archivo distinto no permiten la carga. Ante un error de
+validación el P4 puede corregir las incidencias y reintentar
+durante la hora vigente, sin que se importe parcialmente por
+accidente. Si queda alguna incidencia, la carga íntegra mantiene
+el bloqueo salvo autorización explícita para importar solo los
+verificados. La autorización del exceso documental (por ejemplo,
+723 declaradas y 722 nominales) sigue siendo independiente y
+no inventa funcionarios o existencias.
+
+**Una única excepción después de actualizar el programa:** si
+el archivo fue prevalidado **antes** de instalar esta versión,
+no existe su copia temporal privada. Debe volver a adjuntarse
+**una última vez** para activar el nuevo flujo sin re-subidas.
+
 ## Conciliación rápida P4: «Validar seleccionados»
 
 En **Prevalidar y ver incidencias sin guardar**, las diferencias de
