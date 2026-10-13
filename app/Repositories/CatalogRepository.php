@@ -304,13 +304,13 @@ final class CatalogRepository
             $findCategory->execute(['slug' => 'calzado', 'name' => 'CALZADO']);
             $categories = $findCategory->fetchAll();
             if (count($categories) > 1) {
-                throw new RuntimeException(
+                throw new \InvalidArgumentException(
                     'Hay múltiples categorías llamadas Calzado. Concílielas antes de continuar.'
                 );
             }
             if ($categories !== []) {
                 if ((int) $categories[0]['is_active'] !== 1) {
-                    throw new RuntimeException('La categoría Calzado existente está inactiva.');
+                    throw new \InvalidArgumentException('La categoría Calzado existente está inactiva.');
                 }
                 $categoryId = (int) $categories[0]['id'];
             } else {
@@ -358,13 +358,13 @@ final class CatalogRepository
                 $findProduct->execute(['name' => $name]);
                 $matches = $findProduct->fetchAll();
                 if (count($matches) > 1) {
-                    throw new RuntimeException(
+                    throw new \InvalidArgumentException(
                         "Hay más de un artículo llamado {$name}. Debe conciliar los duplicados."
                     );
                 }
                 if ($matches !== []) {
                     if ($matches[0]['status'] !== 'active') {
-                        throw new RuntimeException(
+                        throw new \InvalidArgumentException(
                             "El artículo {$name} existe, pero está inactivo. Revíselo."
                         );
                     }
@@ -404,7 +404,7 @@ final class CatalogRepository
     public function addNumericSizesBulk(int $productId, array $sizes): array
     {
         if ($productId <= 0 || $sizes === [] || count($sizes) > 40) {
-            throw new RuntimeException('Seleccione un producto y de 1 a 40 tallas.');
+            throw new \InvalidArgumentException('Seleccione un producto y de 1 a 40 tallas.');
         }
 
         $this->pdo->beginTransaction();
@@ -415,7 +415,7 @@ final class CatalogRepository
             $productQuery->execute(['id' => $productId]);
             $product = $productQuery->fetch();
             if (!$product || $product['status'] !== 'active') {
-                throw new RuntimeException('El artículo no existe o no está activo.');
+                throw new \InvalidArgumentException('El artículo no existe o no está activo.');
             }
 
             $existingQuery = $this->pdo->prepare(
@@ -435,12 +435,12 @@ final class CatalogRepository
             }
             foreach ($existing as $key => $found) {
                 if (count($found) > 1) {
-                    throw new RuntimeException(
+                    throw new \InvalidArgumentException(
                         "La talla {$key} ya tiene variantes duplicadas en el producto. Revise el catálogo."
                     );
                 }
                 if ($found[0]['status'] !== 'active') {
-                    throw new RuntimeException(
+                    throw new \InvalidArgumentException(
                         "La talla {$key} existe inactiva. Debe revisarse antes de crear otra."
                     );
                 }
@@ -465,7 +465,7 @@ final class CatalogRepository
                 }
                 $sizeId = $this->findOrCreateSize($size);
                 if ($sizeId === null) {
-                    throw new RuntimeException('No se pudo registrar talla ' . $size);
+                    throw new \InvalidArgumentException('No se pudo registrar talla ' . $size);
                 }
                 $insert->execute(['product_id' => $productId, 'size_id' => $sizeId]);
                 $variantId = (int) $this->pdo->lastInsertId();
