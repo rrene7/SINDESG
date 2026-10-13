@@ -172,6 +172,11 @@ final class CatalogService
      */
     public function parseNumericSizes(string $input): array
     {
+        if (preg_match('/\d,\d/u', $input)) {
+            throw new InvalidArgumentException(
+                'Talla con coma ambigua. Escriba 8.5 para media talla o separe con espacios.'
+            );
+        }
         $raw = preg_split('/[\s,;]+/u', trim($input), -1, PREG_SPLIT_NO_EMPTY);
         if (!$raw || count($raw) > 40) {
             throw new InvalidArgumentException('Indique entre 1 y 40 tallas, sin usar coma decimal.');
