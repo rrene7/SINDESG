@@ -479,9 +479,9 @@ final class NominalBulkRequestService
                 $lastTokens
             )) >= 1;
             $oneLetterNameDifference = false;
-            if (strlen($source[0]) >= 6 && $surnameConfirmed) {
+            if (strlen($source[0]) >= 5 && $surnameConfirmed) {
                 foreach ($firstTokens as $firstToken) {
-                    if (strlen($firstToken) >= 6
+                    if (strlen($firstToken) >= 5
                         && abs(strlen($source[0]) - strlen($firstToken)) <= 1
                         && levenshtein($source[0], $firstToken) === 1) {
                         $oneLetterNameDifference = true;
@@ -510,13 +510,13 @@ final class NominalBulkRequestService
                 $exact++;
                 continue;
             }
-            if ($fuzzy >= 1 || strlen($token) < 5) {
+            if ($fuzzy >= 1 || strlen($token) < 4) {
                 continue;
             }
             // Se exige al menos una diferencia real de un carácter en
             // una palabra larga; nunca se utiliza para cambiar posición.
             foreach ($remaining as $i => $referenceToken) {
-                if (strlen($referenceToken) >= 5
+                if (strlen($referenceToken) >= 4
                     && abs(strlen($token) - strlen($referenceToken)) <= 1
                     && levenshtein($token, $referenceToken) === 1) {
                     unset($remaining[$i]);
