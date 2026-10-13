@@ -89,13 +89,19 @@ foreach ([
     }
 }
 foreach ([
-    'Confirmar validación','name="document_number"','name="justification"',
+    'Confirmar validación','name="justification"',
     'name="confirm_identity"','name="employee_id"',
     'isManuallyValidatable($issue)','csrf_token()'
 ] as $part) {
     if (!str_contains($view,$part)) {
         throw new RuntimeException('Falta formulario de conciliación P4: ' . $part);
     }
+}
+if (str_contains($view, 'name="document_number"')
+    || str_contains($controller, "(string) (\$post['document_number'] ?? '')")
+    || !str_contains($bulk, "hash_equals(")
+    || !str_contains($view, "SINDESG consulta y comprueba la cédula directamente en RRHH2029")) {
+    throw new RuntimeException('El P4 no debe digitar la cédula: debe consultarse y verificarse en el servidor.');
 }
 if (!str_contains($sql,'p4_nominal_validation_decisions')
     || !str_contains($sql,'source_sha256 CHAR(64)')
@@ -105,4 +111,4 @@ if (!str_contains($sql,'p4_nominal_validation_decisions')
     || preg_match('/\b(?:UPDATE|DELETE)\s+(?:rrhh|p4_nominal_validation_decisions)\b/i', $repository)) {
     throw new RuntimeException('El historial auditable no es solo aditivo o no está aislado.');
 }
-echo "[OK] Validación P4 individual: cédula, justificación, fuente SHA y revalidación RRHH sin modificar kardex.\n";
+echo "[OK] Validación P4 individual: cédula cotejada en servidor, justificación, fuente SHA y revalidación RRHH sin modificar kardex.\n";
