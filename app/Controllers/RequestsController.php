@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace App\Controllers;
 
 use App\Repositories\RequestRepository;
+use App\Repositories\P4NominalValidationRepository;
 use App\Services\RequestService;
 use App\Services\SpreadsheetReader;
 use App\Services\BootsP4WorkbookPreview;
@@ -26,7 +27,11 @@ final class RequestsController
         $this->repository = new RequestRepository($database->connection('sindesg'));
         $directory = new RrhhEmployeeDirectory($database);
         $this->service = new RequestService($this->repository, $directory);
-        $this->bulk = new NominalBulkRequestService($this->repository, $directory);
+        $this->bulk = new NominalBulkRequestService(
+            $this->repository,
+            $directory,
+            new P4NominalValidationRepository($database->connection('sindesg'))
+        );
     }
 
     public function handle(
@@ -130,6 +135,11 @@ final class RequestsController
                     'variantOptions' => $this->repository->variantOptions(),
                     'nominalProducts' => $this->repository->nominalProducts(),
                     'employeeSearchUrl' => sindesg_url('public/api/employees.php'),
+                    'nominalPreview' => (
+                        isset($_SESSION['p4_nominal_review']['report'])
+                        && (int) ($_SESSION['p4_nominal_review']['report']['request_id'] ?? 0) === $requestId
+                        && (int) ($_SESSION['p4_nominal_review']['at'] ?? 0) >= time() - 3600
+                    ) ? $_SESSION['p4_nominal_review']['report'] : null,
                 ],
             ];
         }
@@ -161,6 +171,64 @@ final class RequestsController
             $this->redirect('?module=requests&action=show&id=' . $requestId);
         }
 
+        if ($action === 'validate-nominal-row') {
+            if (!sindesg_can('requests.manage')) {
+                throw new InvalidArgumentException('No tiene permiso para validar filas nominales P4.');
+            }
+            $requestId = (int) ($post['request_id'] ?? 0);
+            $session = $_SESSION['p4_nominal_review'] ?? null;
+            if (!is_array($session)
+                || (int) ($session['at'] ?? 0) < time() - 3600
+                || !is_array($session['report'] ?? null)
+                || (int) ($session['report']['request_id'] ?? 0) !== $requestId) {
+                throw new InvalidArgumentException('La prevalidación venció. Adjunte de nuevo el Excel.');
+            }
+            if ((string) ($post['confirm_identity'] ?? '') !== '1') {
+                throw new InvalidArgumentException('Debe confirmar la identidad y cédula verificadas en RRHH.');
+            }
+            $preview = $session['report'];
+            $row = (int) ($post['excel_row'] ?? 0);
+            $user = sindesg_user();
+            if ($user === null) {
+                throw new InvalidArgumentException('Su sesión de usuario no está activa.');
+            }
+            $evidenceId = $this->bulk->validatePendingRow(
+                $preview,
+                $row,
+                (int) ($post['employee_id'] ?? 0),
+                (string) ($post['document_number'] ?? ''),
+                (string) ($post['justification'] ?? ''),
+                $user
+            );
+            // Actualizar solamente el informe temporal mostrado. El
+            // próximo Excel se revalida COMPLETO contra RRHH y evidencias.
+            foreach ($preview['issues'] as $index => $issue) {
+                if ((int) ($issue['excel_row'] ?? 0) === $row
+                    && (string) ($issue['severity'] ?? '') === 'blocking') {
+                    unset($preview['issues'][$index]);
+                    $preview['valid_count']++;
+                    $preview['blocked_count']--;
+                    break;
+                }
+            }
+            $preview['issues'] = array_values($preview['issues']);
+            foreach ($preview['rows'] as &$line) {
+                if ((int) ($line['excel_row'] ?? 0) === $row) {
+                    $line['status'] = 'validated_manually';
+                    $line['reason'] = 'Confirmado por P4 · Evidencia #' . $evidenceId;
+                    break;
+                }
+            }
+            unset($line);
+            $_SESSION['p4_nominal_review'] = ['at' => time(), 'report' => $preview];
+            $page = $this->handleGet('show', ['id' => $requestId]);
+            $page['data']['nominalPreview'] = $preview;
+            $page['data']['nominalPreviewSuccess'] =
+                'Fila ' . $row . ' validada con evidencia #' . $evidenceId
+                . '. No se importó ni entregó ninguna unidad.';
+            return $page;
+        }
+
         if ($action === 'import-nominal-file' || $action === 'preview-nominal-file') {
             $requestId = (int) ($post['request_id'] ?? 0);
             $file = $_FILES['nominal_workbook'] ?? null;
@@ -185,6 +253,12 @@ final class RequestsController
                     $ext,
                     $filename
                 );
+                // Prevalidación en memoria de sesión, SIN escritura a BD.
+                // Solamente la acción humana «Validar» guarda una decisión.
+                $_SESSION['p4_nominal_review'] = [
+                    'at' => time(),
+                    'report' => $report,
+                ];
                 $page = $this->handleGet('show', ['id' => $requestId]);
                 $page['data']['nominalPreview'] = $report;
                 return $page;
