@@ -5,6 +5,7 @@ namespace App\Services;
 
 use App\Repositories\RequestRepository;
 use InvalidArgumentException;
+use App\Repositories\P4NominalValidationRepository;
 use RuntimeException;
 
 /**
@@ -15,7 +16,8 @@ final class NominalBulkRequestService
 {
     public function __construct(
         private RequestRepository $requests,
-        private RrhhEmployeeDirectory $employees
+        private RrhhEmployeeDirectory $employees,
+        private ?P4NominalValidationRepository $validations = null
     ) {
     }
 
@@ -47,6 +49,121 @@ final class NominalBulkRequestService
             $rows[] = $this->nominalLine($employee, $variantId, 'Selección múltiple P4');
         }
         return $this->requests->addNominalBatch($requestId, $rows);
+    }
+
+    /**
+     * Decisión EXPRESA de un P4 para una diferencia de nombres, no la
+     * aprobación de una entrega. Solo para la fila previamente mostrada.
+     * El servidor vuelve a comprobar cédula, posición y estado RRHH.
+     *
+     * @param array<string,mixed> $preview
+     * @param array<string,mixed> $user
+     * @return int Número de evidencia de validación en SINDESG.
+     */
+    public function validatePendingRow(
+        array $preview,
+        int $excelRow,
+        int $employeeId,
+        string $document,
+        string $reason,
+        array $user
+    ): int {
+        $requestId = (int) ($preview['request_id'] ?? 0);
+        $productId = (int) ($preview['product_id'] ?? 0);
+        $hash = (string) ($preview['source_sha256'] ?? '');
+        $this->editableRequest($requestId);
+        if ($this->validations === null
+            || !preg_match('/^[a-f0-9]{64}$/', $hash)
+            || $productId <= 0 || $excelRow <= 0 || $employeeId <= 0
+            || (int) ($user['id'] ?? 0) <= 0) {
+            throw new InvalidArgumentException('La sesión de conciliación no es válida. Prevalide de nuevo.');
+        }
+        $reason = trim($reason);
+        if (mb_strlen($reason) < 20 || mb_strlen($reason) > 1000) {
+            throw new InvalidArgumentException('Explique la validación en 20 a 1000 caracteres.');
+        }
+
+        $issue = null;
+        foreach ((array) ($preview['issues'] ?? []) as $item) {
+            if ((int) ($item['excel_row'] ?? 0) === $excelRow
+                && (string) ($item['severity'] ?? '') === 'blocking') {
+                $issue = $item;
+                break;
+            }
+        }
+        if ($issue === null
+            || !self::isManuallyValidatable($issue)
+            || $employeeId !== (int) ($issue['candidate_employee_id'] ?? 0)) {
+            throw new InvalidArgumentException(
+                'Esta incidencia requiere corregir el archivo o consultar RRHH: no se puede validar desde aquí.'
+            );
+        }
+
+        $matches = $this->employees->resolveBulk('employee_id', [$employeeId]);
+        $people = [];
+        foreach ($matches as $candidate) {
+            if ((int) ($candidate['employee_id'] ?? 0) === $employeeId) {
+                $people[$employeeId] = $candidate;
+            }
+        }
+        $person = $people[$employeeId] ?? null;
+        if ($person === null
+            || empty($person['is_rrhh_eligible'])
+            || !in_array((string) ($person['position_source'] ?? ''), ['current','assignment'], true)
+            || (string) ($person['position_number'] ?? '') !== (string) ($issue['position'] ?? '')
+            || trim((string) ($person['document_number'] ?? '')) === '') {
+            throw new InvalidArgumentException('La identidad, la posición o el estado RRHH cambió. Prevalide otra vez.');
+        }
+        $document = trim($document);
+        if ($document === ''
+            || !hash_equals((string) $person['document_number'], $document)
+            || !hash_equals((string) ($issue['candidate_document'] ?? ''), $document)) {
+            throw new InvalidArgumentException(
+                'La cédula no coincide exactamente con el expediente RRHH. No se validó.'
+            );
+        }
+        $size = (string) ($issue['size'] ?? '');
+        if (!isset($this->requests->sizeVariantsForProduct($productId)[str_replace(',', '.', trim($size))])) {
+            throw new InvalidArgumentException('Talla inválida o variante no disponible. Corrija el archivo.');
+        }
+        if (isset($this->requests->nominalEmployeeIdsForProduct($requestId, $productId)[$employeeId])) {
+            throw new InvalidArgumentException('El funcionario ya figura en el borrador para este producto.');
+        }
+
+        return $this->validations->record([
+            'request_id' => $requestId,
+            'product_id' => $productId,
+            'source_sha256' => $hash,
+            'requisition' => (string) $preview['requisition'],
+            'excel_row' => $excelRow,
+            'excel_position' => (string) $issue['position'],
+            'excel_name' => (string) $issue['excel_name'],
+            'excel_size' => $size,
+            'rrhh_employee_id' => $employeeId,
+            'rrhh_document_snapshot' => (string) $person['document_number'],
+            'rrhh_position_snapshot' => (string) $person['position_number'],
+            'rrhh_name_snapshot' => trim((string) $person['first_name'] . ' ' . (string) $person['last_name']),
+            'justification' => $reason,
+            'validated_by_user_id' => (int) $user['id'],
+            'validated_by_label_snapshot' => (string) ($user['display_name'] ?? 'P4'),
+        ]);
+    }
+
+    /** Solo discrepancias nominales con candidato RRHH inequívoco y vigente. */
+    public static function isManuallyValidatable(array $issue): bool
+    {
+        return (string) ($issue['severity'] ?? '') === 'blocking'
+            && str_starts_with(
+                (string) ($issue['message'] ?? ''),
+                'Nombres del Excel y del expediente RRHH no coinciden'
+            )
+            && (int) ($issue['candidate_employee_id'] ?? 0) > 0
+            && (string) ($issue['candidate_document'] ?? '') !== ''
+            && in_array(
+                (string) ($issue['position_source'] ?? ''),
+                ['current','assignment'],
+                true
+            );
     }
 
     /**
@@ -185,6 +302,9 @@ final class NominalBulkRequestService
         if (!is_string($sourceHash)) {
             throw new RuntimeException('No se pudo verificar el archivo de origen.');
         }
+        $savedValidations = $this->validations !== null
+            ? $this->validations->byFile($requestId, $productId, $sourceHash)
+            : [];
 
         foreach ($nominal as $row) {
             $rawPosition = trim((string) ($row['position'] ?? ''));
@@ -193,6 +313,17 @@ final class NominalBulkRequestService
             $size = $row['size'] ?? null;
             $matches = array_values($byPosition[$position] ?? []);
             $person = count($matches) === 1 ? $matches[0] : null;
+            $saved = $savedValidations[$excelRow] ?? null;
+            $manualApproved = $person !== null
+                && $saved !== null
+                && (int) $saved['rrhh_employee_id'] === (int) $person['employee_id']
+                && hash_equals((string) $saved['rrhh_document_snapshot'], (string) $person['document_number'])
+                && (string) $saved['rrhh_position_snapshot'] === (string) $person['position_number']
+                && (string) $saved['excel_position'] === $rawPosition
+                && (string) $saved['excel_name'] === (string) ($row['name'] ?? '')
+                && (string) $saved['excel_size'] === (string) ($row['raw_size'] ?? '')
+                && in_array((string) ($person['position_source'] ?? ''), ['current','assignment'], true)
+                && !empty($person['is_rrhh_eligible']);
             $redundantFirstRow = $duplicates['redundant'][$excelRow] ?? null;
             if ($redundantFirstRow !== null) {
                 $issues[] = [
@@ -247,7 +378,7 @@ final class NominalBulkRequestService
                 $cause = 'Este funcionario y artículo ya figuran en la solicitud.';
             } elseif (isset($seenEmployees[(int) $person['employee_id']])) {
                 $cause = 'El funcionario aparece dos veces en el archivo, posiblemente con otra posición.';
-            } elseif (!$this->namesCompatible(
+            } elseif (!$manualApproved && !$this->namesCompatible(
                 (string) ($row['name'] ?? ''),
                 (string) $person['first_name'],
                 (string) $person['last_name']
@@ -272,6 +403,8 @@ final class NominalBulkRequestService
                             : null),
                     'position_source' => (string) ($person['position_source'] ?? ''),
                     'rrhh_status' => (string) ($person['status_name'] ?? ''),
+                    'candidate_employee_id' => (int) ($person['employee_id'] ?? 0),
+                    'candidate_document' => (string) ($person['document_number'] ?? ''),
                     'size' => (string) ($row['raw_size'] ?? ''),
                     'severity' => 'blocking',
                     'message' => $cause,
@@ -280,6 +413,9 @@ final class NominalBulkRequestService
                 $seenEmployees[(int) $person['employee_id']] = true;
                 $notes = 'REQ ' . $requisition . ' · ' . basename($filename)
                     . ' · Fila ' . $excelRow . ' · SHA256 ' . $sourceHash;
+                if ($manualApproved) {
+                    $notes .= ' · Validación P4 #' . (int) $saved['id'];
+                }
                 $batch[] = $this->nominalLine($person, (int) $variants[$size], $notes);
             }
             $rows[] = [
@@ -292,7 +428,9 @@ final class NominalBulkRequestService
                 'position_source' => (string) ($person['position_source'] ?? ''),
                 'rrhh_status' => (string) ($person['status_name'] ?? ''),
                 'size' => (string) ($row['raw_size'] ?? ''),
-                'status' => $cause === null ? 'verified' : 'review',
+                'status' => $cause === null
+                    ? ($manualApproved ? 'validated_manually' : 'verified')
+                    : 'review',
                 'reason' => $cause ?? '',
             ];
         }
@@ -325,6 +463,9 @@ final class NominalBulkRequestService
         }
 
         return [
+            'request_id' => $requestId,
+            'product_id' => $productId,
+            'source_sha256' => $sourceHash,
             'requisition' => $requisition,
             'declared_quantity' => $book['document']['declared_quantity'] ?? null,
             'filename' => basename($filename),
