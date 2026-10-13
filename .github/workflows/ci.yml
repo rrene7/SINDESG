@@ -162,6 +162,9 @@ jobs:
       - name: Security permissions test
         run: php tests/security_permissions_test.php
 
+      - name: Role workflow boundaries test
+        run: php tests/role_operation_boundaries_test.php
+
       - name: Historical import schema test
         run: php tests/historical_import_schema_test.php
 

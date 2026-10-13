@@ -183,7 +183,8 @@ if ($currentModule !== 'dashboard' && !isset($modules[$currentModule])) {
 }
 
 $requiredPermission = sindesg_permission_for($currentModule, $currentAction, $currentMethod);
-if ($requiredPermission !== null && !$authService->can($requiredPermission)) {
+if (($requiredPermission !== null && !$authService->can($requiredPermission))
+    || !sindesg_role_action_allowed($currentModule, $currentAction, $currentMethod, (array) sindesg_user())) {
     http_response_code(403);
     $pageTitle = 'Acceso denegado';
     $contentView = dirname(__DIR__) . '/app/Views/auth/forbidden.php';

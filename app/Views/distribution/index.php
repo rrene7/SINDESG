@@ -37,11 +37,13 @@ $statusLabels = [
     <?php else: ?>
         <div class="distribution-ready-grid">
             <?php foreach ($readyRequests as $request): ?>
+                <?php if (sindesg_role_action_allowed('distribution', 'new', 'GET', (array) sindesg_user())): ?>
                 <a href="<?= e(sindesg_url('?module=distribution&action=new&request_id=' . (int) $request['id'])) ?>">
                     <span><strong><?= e($request['request_code']) ?></strong><small><?= e($request['p4_code'] . ' · ' . ($request['p4_name'] ?: 'P4')) ?></small></span>
                     <span><strong><?= e(number_format((float) $request['remaining_quantity'], 3, '.', ',')) ?></strong><small><?= e((int) $request['remaining_lines']) ?> renglones pendientes</small></span>
                     <b>Preparar →</b>
                 </a>
+                <?php endif; ?>
             <?php endforeach; ?>
         </div>
     <?php endif; ?>

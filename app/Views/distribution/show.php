@@ -42,7 +42,7 @@ $totalQuantity = array_sum(array_map(static fn (array $row): float => (float) $r
         <span class="eyebrow">FLUJO</span>
         <h2><?= e($statusLabels[$distribution['status']] ?? $distribution['status']) ?></h2>
 
-        <?php if ($distribution['status'] === 'prepared'): ?>
+        <?php if ($distribution['status'] === 'prepared' && sindesg_role_action_allowed('distribution', 'authorize', 'POST', (array) sindesg_user())): ?>
             <p>Autorice la transferencia después de verificar cantidades y stock del Almacén Central.</p>
             <form method="post" action="<?= e(sindesg_url('?module=distribution&action=authorize')) ?>">
                 <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
@@ -59,7 +59,7 @@ $totalQuantity = array_sum(array_map(static fn (array $row): float => (float) $r
                 <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>"><input type="hidden" name="distribution_id" value="<?= e($distribution['id']) ?>">
                 <button class="distribution-danger-button" type="submit">Cancelar transferencia</button>
             </form>
-        <?php elseif ($distribution['status'] === 'authorized'): ?>
+        <?php elseif ($distribution['status'] === 'authorized' && sindesg_role_action_allowed('distribution', 'dispatch', 'POST', (array) sindesg_user())): ?>
             <p>Al despachar, el stock saldrá del Central e ingresará al inventario en tránsito.</p>
             <form method="post" action="<?= e(sindesg_url('?module=distribution&action=dispatch')) ?>">
                 <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>"><input type="hidden" name="distribution_id" value="<?= e($distribution['id']) ?>">
@@ -74,7 +74,7 @@ $totalQuantity = array_sum(array_map(static fn (array $row): float => (float) $r
                 <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>"><input type="hidden" name="distribution_id" value="<?= e($distribution['id']) ?>">
                 <button class="distribution-danger-button" type="submit">Cancelar transferencia</button>
             </form>
-        <?php elseif ($distribution['status'] === 'dispatched'): ?>
+        <?php elseif ($distribution['status'] === 'dispatched' && sindesg_role_action_allowed('distribution', 'receive', 'POST', (array) sindesg_user())): ?>
             <p>Los artículos están contabilizados en <strong>Inventario en tránsito</strong>. El P4 debe confirmar la recepción.</p>
             <form method="post" action="<?= e(sindesg_url('?module=distribution&action=receive')) ?>">
                 <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>"><input type="hidden" name="distribution_id" value="<?= e($distribution['id']) ?>">

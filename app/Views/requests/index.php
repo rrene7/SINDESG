@@ -93,7 +93,7 @@ foreach ($serviceRequests as $candidate) {
                         <td><span class="request-status <?= e($row['status']) ?>"><?= e($statusLabels[$row['status']] ?? $row['status']) ?></span></td>
                         <td>
                             <a class="request-link" href="<?= e(sindesg_url('?module=requests&action=show&id=' . (int) $row['id'] . '#seguimiento-p4')) ?>">Ver estado →</a>
-                            <?php if (in_array($row['status'], ['submitted', 'in_review'], true)): ?>
+                            <?php if (in_array($row['status'], ['submitted', 'in_review'], true) && sindesg_role_action_allowed('requests', 'central-review', 'GET', (array) sindesg_user())): ?>
                                 <small class="request-cell-sub"><a href="<?= e(sindesg_url('?module=requests&action=central-review&id=' . (int) $row['id'])) ?>">Revisión Central</a></small>
                             <?php endif; ?>
                         </td>
