@@ -22,6 +22,38 @@ try {
     if (!is_string($xml)) {
         throw new RuntimeException('La plantilla no tiene hoja Excel.');
     }
+
+    // El importador interno interpreta XML con flexibilidad, pero Microsoft
+    // Excel requiere el orden estricto de hijos del CT_Worksheet. Esta
+    // regresión evita el diálogo "Encontramos un problema con el contenido".
+    $sheetDocument = new DOMDocument();
+    if (!@$sheetDocument->loadXML($xml, LIBXML_NONET | LIBXML_COMPACT)) {
+        throw new RuntimeException('sheet1.xml está mal formado.');
+    }
+    $actualOrder = [];
+    foreach ($sheetDocument->documentElement->childNodes as $node) {
+        if ($node instanceof DOMElement) {
+            $actualOrder[] = $node->localName;
+        }
+    }
+    $expectedOrder = [
+        'dimension', 'sheetViews', 'sheetFormatPr', 'cols',
+        'sheetData', 'autoFilter', 'mergeCells', 'pageMargins',
+    ];
+    if ($actualOrder !== $expectedOrder) {
+        throw new RuntimeException(
+            'Orden SpreadsheetML inválido: ' . implode(', ', $actualOrder)
+        );
+    }
+    foreach (['xl/workbook.xml', 'xl/_rels/workbook.xml.rels', 'xl/styles.xml'] as $part) {
+        $partXml = $zip->getFromName($part);
+        $dom = new DOMDocument();
+        if (!is_string($partXml)
+            || !@$dom->loadXML($partXml, LIBXML_NONET | LIBXML_COMPACT)) {
+            throw new RuntimeException('Parte XLSX inválida: ' . $part);
+        }
+    }
+
     // Simulamos que RRHH llenó dos filas SIN completar el N° automático,
     // como suele pasar al pegar varias posiciones desde otros listados.
     $filled = [

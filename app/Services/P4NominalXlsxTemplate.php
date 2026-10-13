@@ -161,8 +161,12 @@ XML,
             . '<col min="6" max="6" width="15" customWidth="1"/>'
             . '<col min="7" max="7" width="24" customWidth="1"/>'
             . '</cols><sheetData>' . implode('', $rows) . '</sheetData>'
-            . '<mergeCells count="2"><mergeCell ref="A1:G1"/><mergeCell ref="A6:G6"/></mergeCells>'
+            // SpreadsheetML (ISO/IEC 29500 CT_Worksheet) requires the
+            // autoFilter element BEFORE mergeCells. Reversing these two
+            // elements made Excel report "problem with some content", even
+            // though our permissive XLSX reader could parse the file.
             . '<autoFilter ref="A7:G1007"/>'
+            . '<mergeCells count="2"><mergeCell ref="A1:G1"/><mergeCell ref="A6:G6"/></mergeCells>'
             . '<pageMargins left="0.5" right="0.5" top="0.7" bottom="0.7" header="0.3" footer="0.3"/>'
             . '</worksheet>';
     }
