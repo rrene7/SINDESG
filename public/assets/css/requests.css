@@ -168,3 +168,48 @@ form[action*='import-nominal-file'] label:has(input[type='checkbox']){display:fl
         width:100%;
     }
 }
+
+/* Solicitudes P4: seguimiento por estados contables reales. */
+.request-tracking-panel {scroll-margin-top:92px}
+.request-tracking-kind {font-size:.77rem;color:#8ecafa}
+.request-tracking-steps {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));list-style:none;padding:0;gap:10px;margin:18px 0}
+.request-tracking-step {display:flex;gap:10px;min-height:95px;padding:12px;border:1px solid rgba(82,149,204,.32);border-radius:12px;background:rgba(2,21,42,.45)}
+.request-tracking-step.completed {border-color:rgba(58,178,240,.65);background:rgba(8,57,91,.52)}
+.request-tracking-dot {width:25px;height:25px;display:grid;place-items:center;border-radius:50%;border:1px solid #4b86ad;flex:0 0 auto;color:#9ccfeb;font-weight:700}
+.request-tracking-step.completed .request-tracking-dot {background:#147de0;color:#fff;border-color:#23bfff}
+.request-tracking-step strong,.request-tracking-step small,.request-tracking-step time {display:block}
+.request-tracking-step strong {font-size:.88rem;line-height:1.3}
+.request-tracking-step small {font-size:.76rem;color:#bad6ef;margin-top:5px}
+.request-tracking-step time {font-size:.72rem;color:#79bde4;margin-top:6px}
+.request-central-review-link {display:block;text-align:center;margin-bottom:18px}
+
+/* Almacén Central: necesidades consolidadas por modelo y talla. */
+.central-overview .request-verification-summary {display:flex;flex-wrap:wrap;gap:10px}
+.central-review-panel {overflow:hidden}
+.central-size-table {width:100%;min-width:870px}
+.central-size-table th {white-space:nowrap}
+.central-size-table td {vertical-align:middle}
+.central-size-table strong {font-size:.87rem}
+.central-zero-stock {color:#ffc080;font-weight:700}
+.central-warning {padding:14px;border:1px solid rgba(244,173,72,.48);border-radius:10px;color:#f4cd9a;background:rgba(86,53,16,.25);line-height:1.6}
+.central-warning a {color:#70d4ff}
+.central-detail-row td {padding:0 12px 12px}
+.central-group-detail summary {cursor:pointer;color:#85d3ff;padding:10px 0;font-size:.85rem}
+.central-nominees {display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:8px;max-height:320px;overflow:auto;padding:12px;border:1px solid rgba(66,149,222,.3);border-radius:9px}
+.central-nominee {display:grid;gap:5px;padding:9px;background:rgba(1,23,48,.57);border-radius:9px}
+.central-nominee span {font-size:.84rem}
+.central-nominee small {font-size:.73rem;color:#87bcde}
+.central-nominee input {width:100%;max-width:130px}
+.central-decision {display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.central-decision input {width:90px}
+.central-decision button {padding:8px}
+.central-decision small {display:block;color:#92cff0;width:100%;font-size:.72rem}
+.central-review-message {font-weight:600;color:#9edbff}
+.central-review-submit {display:grid;gap:16px}
+@media(max-width:1000px){.request-tracking-steps{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:620px){
+ .request-tracking-steps{grid-template-columns:1fr}
+ .request-tracking-kind{margin-top:8px}
+ .central-nominees{grid-template-columns:1fr}
+ .central-overview .request-verification-summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+}
