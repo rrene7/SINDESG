@@ -80,6 +80,7 @@ $required = [
     'app/Services/BootsP4WorkbookPreview.php',
     'app/Services/P4NominalXlsxTemplate.php',
     'app/Services/NominalBulkRequestService.php',
+    'app/Services/P4NominalStagedFile.php',
     'app/Repositories/P4NominalValidationRepository.php',
     'app/Services/P4NominalStatusPolicy.php',
     'app/Services/HistoricalImportService.php',
