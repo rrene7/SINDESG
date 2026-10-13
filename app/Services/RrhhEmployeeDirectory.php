@@ -74,6 +74,117 @@ final class RrhhEmployeeDirectory
         return array_map([$this, 'normalize'], $rows);
     }
 
+    /**
+     * Búsqueda específica de NOMINACIONES P4, no de entregas físicas.
+     * Admite licencias, permisos y otros estados administrativos, excepto
+     * jubilación en vacaciones e inactivos. No afecta search() general.
+     */
+    public function searchForP4(string $query, int $limit = 20): array
+    {
+        $query = trim($query);
+        if (mb_strlen($query) < 2) {
+            return [];
+        }
+        $limit = max(1, min($limit, 30));
+        $term = '%' . $query . '%';
+        $sql = '
+            SELECT e.id AS employee_id,
+                   e.document_number,
+                   COALESCE(
+                       NULLIF(TRIM(CONCAT_WS(" ",
+                           NULLIF(e.first_name_1, ""), NULLIF(e.first_name_2, ""))), ""),
+                       e.first_name
+                   ) AS first_name,
+                   COALESCE(
+                       NULLIF(TRIM(CONCAT_WS(" ",
+                           NULLIF(e.last_name_1, ""), NULLIF(e.last_name_2, ""))), ""),
+                       e.last_name
+                   ) AS last_name,
+                   e.legacy_position,
+                   pa.position_number AS assignment_position,
+                   r.name AS rank_name,
+                   s.name AS status_name,
+                   s.legacy_code AS status_legacy_code,
+                   COALESCE(s.is_active, 1) AS status_is_active,
+                   COALESCE(s.is_inactive, 0) AS status_is_inactive,
+                   ou.id AS organization_unit_id,
+                   ou.official_name AS organization_unit_name,
+                   ou.unit_type, ou.hierarchy_path
+            FROM employees e
+            LEFT JOIN ranks r ON r.id = e.rank_id
+            LEFT JOIN statuses s ON s.id = e.status_id
+            LEFT JOIN employee_position_assignments pa
+                ON pa.employee_id = e.id AND pa.end_date IS NULL
+            LEFT JOIN employee_unit_assignments ua
+                ON ua.employee_id = e.id AND ua.is_primary = 1
+               AND ua.status = "active" AND ua.end_date IS NULL
+            LEFT JOIN organization_units_current ou
+                ON ou.id = ua.organization_unit_id
+            WHERE (
+                e.document_number LIKE :document_term
+                OR e.first_name LIKE :first_term
+                OR e.last_name LIKE :last_term
+                OR CONCAT_WS(" ", e.first_name, e.last_name) LIKE :full_term
+                OR CAST(e.legacy_position AS CHAR) LIKE :position_term
+                OR CAST(pa.position_number AS CHAR) LIKE :assignment_term
+            )
+            ORDER BY e.last_name, e.first_name, e.id
+            LIMIT 150';
+        $rows = $this->withOrganizationContext($this->database->rrhhRead($sql, [
+            'document_term' => $term,
+            'first_term' => $term,
+            'last_term' => $term,
+            'full_term' => $term,
+            'position_term' => $term,
+            'assignment_term' => $term,
+        ]));
+        $found = [];
+        foreach ($rows as $row) {
+            $current = (int) ($row['legacy_position'] ?? 0);
+            $assigned = (int) ($row['assignment_position'] ?? 0);
+            $row['position_number'] = $current ?: ($assigned ?: null);
+            $row['position_source'] = $current ? 'current' : ($assigned ? 'assignment' : 'missing');
+            if (!self::isP4NomineeEligible($row) || !$row['position_number']) {
+                continue;
+            }
+            $row['is_rrhh_eligible'] = true;
+            $found[(int) $row['employee_id']] = $this->normalize($row);
+            if (count($found) >= $limit) {
+                break;
+            }
+        }
+        return array_values($found);
+    }
+
+    /** Beneficiario P4 sin modificar requisitos de solicitantes/revisores. */
+    public function findP4Nominee(int $employeeId): ?array
+    {
+        if ($employeeId <= 0) {
+            return null;
+        }
+        $people = $this->resolveBulk('employee_id', [$employeeId]);
+        $byId = [];
+        foreach ($people as $person) {
+            if ((int) ($person['employee_id'] ?? 0) === $employeeId) {
+                $byId[$employeeId] = $person;
+            }
+        }
+        $person = $byId[$employeeId] ?? null;
+        if ($person === null
+            || empty($person['is_rrhh_eligible'])
+            || !in_array((string) ($person['position_source'] ?? ''), ['current', 'assignment'], true)) {
+            return null;
+        }
+        return $person;
+    }
+
+    /** @param array<string,mixed> $row */
+    private static function isP4NomineeEligible(array $row): bool
+    {
+        return trim((string) ($row['document_number'] ?? '')) !== ''
+            && P4NominalStatusPolicy::isAllowed($row);
+    }
+
     public function findEligibleEmployee(int $employeeId): ?array
     {
         if ($employeeId <= 0) {
@@ -196,8 +307,10 @@ final class RrhhEmployeeDirectory
                        pa.position_number AS assignment_position,
                        r.name AS rank_name,
                        s.name AS status_name,
+                       s.legacy_code AS status_legacy_code,
                        COALESCE(s.blocks_actions, 0) AS blocks_actions,
                        COALESCE(s.is_active, 1) AS status_is_active,
+                       COALESCE(s.is_inactive, 0) AS status_is_inactive,
                        ou.id AS organization_unit_id,
                        ou.official_name AS organization_unit_name,
                        ou.unit_type, ou.hierarchy_path
@@ -219,9 +332,12 @@ final class RrhhEmployeeDirectory
                 $current = (int) ($row['legacy_position'] ?? 0);
                 $assigned = (int) ($row['assignment_position'] ?? 0);
                 $previous = (int) ($row['last_position_number'] ?? 0);
-                $eligible = trim((string) ($row['document_number'] ?? '')) !== ''
-                    && (int) ($row['blocks_actions'] ?? 0) === 0
-                    && (int) ($row['status_is_active'] ?? 1) === 1;
+                $eligible = self::isP4NomineeEligible($row);
+                $reason = P4NominalStatusPolicy::rejectionReason($row);
+                if ($reason === null && trim((string) ($row['document_number'] ?? '')) === '') {
+                    $reason = 'El funcionario no tiene documento de identidad verificable.';
+                }
+                $row['p4_rejection_reason'] = $reason;
 
                 if ($field === 'employee_id') {
                     $position = $current ?: $assigned;
@@ -410,6 +526,7 @@ final class RrhhEmployeeDirectory
             'position_number' => $row['position_number'] !== null ? (string) $row['position_number'] : null,
             'position_source' => (string) ($row['position_source'] ?? 'current'),
             'is_rrhh_eligible' => (bool) ($row['is_rrhh_eligible'] ?? true),
+            'p4_rejection_reason' => $row['p4_rejection_reason'] ?? null,
             'rank_name' => $rank !== '' ? $rank : null,
             'status_name' => (string) ($row['status_name'] ?? ''),
             'organization_unit_id' => $row['organization_unit_id'] !== null
