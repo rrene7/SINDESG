@@ -232,18 +232,7 @@ final class RrhhEmployeeDirectory
                     continue;
                 }
 
-                $sources = [];
-                if ($current > 0 && isset($ids[$current])) {
-                    $sources[$current] = 'current';
-                }
-                if ($assigned > 0 && isset($ids[$assigned]) && !isset($sources[$assigned])) {
-                    // RRHH's current dossier position has priority. An open
-                    // assignment pointing somewhere else is not auto-verified.
-                    $sources[$assigned] = $current > 0 ? 'assignment_conflict' : 'assignment';
-                }
-                if ($previous > 0 && isset($ids[$previous]) && !isset($sources[$previous])) {
-                    $sources[$previous] = 'historical';
-                }
+                $sources = self::positionSources($current, $assigned, $previous, $ids);
                 foreach ($sources as $position => $source) {
                     $match = $row;
                     $match['position_number'] = (string) $position;
@@ -254,6 +243,33 @@ final class RrhhEmployeeDirectory
             }
         }
         return $result;
+    }
+
+
+    /**
+     * Prioriza la posición del expediente RRHH. Una posición anterior es
+     * solamente una coincidencia para revisión, nunca una aprobación.
+     *
+     * @param array<int,bool> $requested
+     * @return array<int,string>
+     */
+    private static function positionSources(
+        int $current,
+        int $assigned,
+        int $previous,
+        array $requested
+    ): array {
+        $sources = [];
+        if ($current > 0 && isset($requested[$current])) {
+            $sources[$current] = 'current';
+        }
+        if ($assigned > 0 && isset($requested[$assigned]) && !isset($sources[$assigned])) {
+            $sources[$assigned] = $current > 0 ? 'assignment_conflict' : 'assignment';
+        }
+        if ($previous > 0 && isset($requested[$previous]) && !isset($sources[$previous])) {
+            $sources[$previous] = 'historical';
+        }
+        return $sources;
     }
 
     public function belongsToOrganizationUnit(int $employeeId, int $organizationUnitId): bool
