@@ -9,6 +9,12 @@ $compare = new ReflectionMethod(NominalBulkRequestService::class, 'namesCompatib
 $cases = [
     ['ANTHONY BETHANCOURT', 'ANTONY FERNANDO', 'BETHANCOURTT', true],
     ['JEANPAUL ABREGO', 'JEANPOL JAFET', 'ABREGO BARRIA', true],
+    // Exactamente dos letras del primer nombre intercambiadas, apellido
+    // confirmado. Posición vigente y única se verifica ANTES en el servicio.
+    ['ELMER TAMAYO', 'ERMEL', 'TAMAYO CEDENO', true],
+    ['AZALE TYLER', 'AZAEL LEE', 'TYLER LAM', true],
+    ['JHONS RODRIGUEZ', 'JOHNS JUNIOR', 'RODRIGUEZ PEREZ', true],
+    ['AZALE WHITE', 'AZAEL LEE', 'TYLER LAM', false],
     ['OBETH WHITE', 'OBED ABDIAS', 'WHITE RODRIGUEZ', false],
     ['BERNANDIMO PANEZO', 'BERNARDINO', 'PANESO ZABUGARA', false],
     ['CARLOS LARA', 'OMAR', 'BARRERA MARTINEZ', false],
@@ -17,6 +23,21 @@ $cases = [
 foreach ($cases as [$excel, $first, $last, $expected]) {
     if ($compare->invoke($service, $excel, $first, $last) !== $expected) {
         throw new RuntimeException('Coincidencia inesperada: ' . $excel);
+    }
+}
+$transpose = new ReflectionMethod(NominalBulkRequestService::class, 'isSingleTransposition');
+foreach ([
+    ['ELMER', 'ERMEL', true],
+    ['AZALE', 'AZAEL', true],
+    ['JHONS', 'JOHNS', true],
+    ['CARLOS', 'OMAR', false],
+    ['EVERT', 'MANUEL', false],
+    ['LUIS', 'LUIS', false],
+    ['OBETH', 'OBED', false],
+    ['AZALE', 'AZAELS', false],
+] as [$left, $right, $expected]) {
+    if ($transpose->invoke(null, $left, $right) !== $expected) {
+        throw new RuntimeException('Intercambio ortográfico inseguro: ' . $left . ' / ' . $right);
     }
 }
 $preview = (new BootsP4WorkbookPreview())->analyze([[

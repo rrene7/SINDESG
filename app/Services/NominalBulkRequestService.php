@@ -467,6 +467,33 @@ final class NominalBulkRequestService
         return $unique;
     }
 
+    /**
+     * Exactamente dos letras intercambiadas, sin inserciones ni cambios
+     * adicionales. Pueden estar separadas (ELMER / ERMEL); la posición
+     * vigente y el apellido deben validarse aparte.
+     */
+    private static function isSingleTransposition(string $source, string $reference): bool
+    {
+        if (strlen($source) < 5 || strlen($source) !== strlen($reference)) {
+            return false;
+        }
+        $differences = [];
+        for ($i = 0, $length = strlen($source); $i < $length; $i++) {
+            if ($source[$i] !== $reference[$i]) {
+                $differences[] = $i;
+                if (count($differences) > 2) {
+                    return false;
+                }
+            }
+        }
+        if (count($differences) !== 2) {
+            return false;
+        }
+        [$i, $j] = $differences;
+        return $source[$i] === $reference[$j]
+            && $source[$j] === $reference[$i];
+    }
+
     private function namesCompatible(string $excelName, string $first, string $last): bool
     {
         // No identifica personas por similitud: la posición RRHH debe ser
@@ -504,6 +531,14 @@ final class NominalBulkRequestService
                     $firstLong = min(strlen($source[0]), strlen($registeredFirst)) >= 5;
                     $lastLong = min(strlen($source[1]), strlen($registeredLast)) >= 5;
                     $sameSurname = $lastDiff === 0;
+                    // Letras intercambiadas una sola vez; no es
+                    // similitud abierta. Es obligatorio el apellido
+                    // institucional EXACTO, más la posición única
+                    // y vigente validada previamente por RRHH.
+                    if ($sameSurname && $firstLong
+                        && self::isSingleTransposition($source[0], $registeredFirst)) {
+                        return true;
+                    }
                     if (
                         ($firstDiff === 0 && $lastDiff === 0)
                         || ($firstDiff === 0 && $lastDiff === 1 && $lastLong)
