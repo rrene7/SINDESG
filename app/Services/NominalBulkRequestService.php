@@ -141,7 +141,7 @@ final class NominalBulkRequestService
             'excel_row' => $excelRow,
             'excel_position' => (string) $issue['position'],
             'excel_name' => (string) $issue['excel_name'],
-            'excel_size' => $size,
+            'excel_size' => (string) ($issue['size'] ?? ''),
             'rrhh_employee_id' => $employeeId,
             'rrhh_document_snapshot' => (string) $person['document_number'],
             'rrhh_position_snapshot' => (string) $person['position_number'],
@@ -252,11 +252,13 @@ final class NominalBulkRequestService
             $declared === null ? null : (int) $declared,
             (int) $report['total']
         );
+        $fullyVerified = $blockers === 0
+            && count($report['_batch']) + (int) $report['duplicate_count'] === (int) $report['total'];
         // El exceso declarado NO corresponde a un beneficiario ni se
         // debe crear como pedido o existencias. Permitir cargar todas
         // las filas nominales verificadas, con declaración expresa y
         // registro auditable del remanente documental.
-        if ($gap !== 0 && !$allowPartial) {
+        if ($gap !== 0 && (!$allowPartial || $fullyVerified)) {
             if ($gap < 0) {
                 throw new InvalidArgumentException(
                     'El listado contiene más destinatarios que unidades declaradas. '
@@ -283,10 +285,7 @@ final class NominalBulkRequestService
             throw new InvalidArgumentException('No se encontró ningún destinatario seguro para agregar.');
         }
         $gapEvidence = null;
-        if ($gap > 0 && !$allowPartial && $acceptDocumentGap) {
-            if ($blockers !== 0 || count($report['_batch']) + (int) $report['duplicate_count'] !== (int) $report['total']) {
-                throw new InvalidArgumentException('La lista contiene filas sin verificar. Primero resuelva las incidencias.');
-            }
+        if ($gap > 0 && $fullyVerified && $acceptDocumentGap) {
             if ((int) ($approvingUser['id'] ?? 0) <= 0) {
                 throw new InvalidArgumentException('Se requiere usuario P4 autenticado para registrar el descuadre.');
             }
