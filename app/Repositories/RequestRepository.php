@@ -94,6 +94,17 @@ final class RequestRepository
         $statement = $this->pdo->prepare(<<<'SQL'
             SELECT
                 i.*,
+                (
+                    SELECT MAX(previous.delivered_at)
+                    FROM individual_deliveries previous
+                    INNER JOIN individual_delivery_items previous_item
+                        ON previous_item.delivery_id = previous.id
+                    INNER JOIN product_variants previous_variant
+                        ON previous_variant.id = previous_item.product_variant_id
+                    WHERE previous.recipient_employee_id = i.beneficiary_employee_id
+                      AND previous.status = 'confirmed'
+                      AND previous_variant.product_id = pv.product_id
+                ) AS last_delivered_same_product_at,
                 pv.internal_code AS variant_code,
                 pv.institutional_code,
                 p.id AS product_id,
