@@ -108,3 +108,30 @@ form[action*='import-nominal-file'] label:has(input[type='checkbox']){display:fl
     color:#eaf8ff;
     font-size:.83rem;
 }
+
+/* Confirmación puntual P4, sin alterar la captura masiva ni el diseño general. */
+.p4-validate-row summary {
+    cursor: pointer;
+    white-space: nowrap;
+    list-style: none;
+}
+.p4-validate-row summary::-webkit-details-marker { display: none; }
+.p4-validate-row[open] {
+    min-width: min(340px, 70vw);
+}
+.p4-validate-row form {
+    display: grid;
+    gap: .7rem;
+    margin-top: .7rem;
+}
+.p4-validate-row form label {
+    display: grid;
+    gap: .35rem;
+    font-size: .85rem;
+}
+.p4-validate-row form input[type="text"],
+.p4-validate-row form textarea {
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+}
