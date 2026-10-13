@@ -35,6 +35,13 @@ final class NominalBulkRequestService
         $rows = [];
         foreach ($ids as $id) {
             $employee = $people[$id];
+            if (empty($employee['is_rrhh_eligible'])
+                || !in_array((string) ($employee['position_source'] ?? ''), ['current', 'assignment'], true)) {
+                throw new InvalidArgumentException(
+                    'Funcionario RRHH #' . $id
+                    . ' no tiene una identidad activa y posición vigente verificables.'
+                );
+            }
             // Personal prestado puede ser atendido por el P4 responsable, sin bloqueo por adscripción.
             $rows[] = $this->nominalLine($employee, $variantId, 'Selección múltiple P4');
         }
@@ -181,6 +188,12 @@ final class NominalBulkRequestService
                 $cause = 'Posición no encontrada como asignación actual de funcionario elegible en RRHH2029. No se puede identificar automáticamente.';
             } elseif (count($matches) > 1) {
                 $cause = 'La posición corresponde a varios funcionarios distintos en RRHH2029; requiere aclaración.';
+            } elseif (!in_array((string) ($person['position_source'] ?? ''), ['current', 'assignment'], true)) {
+                $cause = (string) ($person['position_source'] ?? '') === 'historical'
+                    ? 'RRHH reconoce esta posición como anterior, no vigente. Confirme la posición actual antes de asignar.'
+                    : 'La asignación abierta difiere de la posición actual del expediente RRHH; conciliar antes de asignar.';
+            } elseif (empty($person['is_rrhh_eligible'])) {
+                $cause = 'El expediente RRHH no cumple el estado/documento requeridos para asignación automática; verifique su situación.';
             } elseif (!is_string($size) || !isset($variants[$size])) {
                 $cause = 'Talla no válida o sin variante activa para este artículo.';
             } elseif (isset($already[(int) $person['employee_id']])) {
@@ -202,7 +215,16 @@ final class NominalBulkRequestService
                     'excel_name' => (string) ($row['name'] ?? ''),
                     'rrhh_name' => $person !== null
                         ? trim((string) $person['first_name'] . ' ' . (string) $person['last_name'])
-                        : null,
+                        : (count($matches) > 1
+                            ? implode(' | ', array_map(
+                                static fn (array $candidate): string => trim(
+                                    (string) $candidate['first_name'] . ' ' . (string) $candidate['last_name']
+                                ),
+                                array_slice($matches, 0, 3)
+                            ))
+                            : null),
+                    'position_source' => (string) ($person['position_source'] ?? ''),
+                    'rrhh_status' => (string) ($person['status_name'] ?? ''),
                     'size' => (string) ($row['raw_size'] ?? ''),
                     'severity' => 'blocking',
                     'message' => $cause,
@@ -220,6 +242,8 @@ final class NominalBulkRequestService
                 'rrhh_name' => $person !== null
                     ? trim((string) $person['first_name'] . ' ' . (string) $person['last_name'])
                     : null,
+                'position_source' => (string) ($person['position_source'] ?? ''),
+                'rrhh_status' => (string) ($person['status_name'] ?? ''),
                 'size' => (string) ($row['raw_size'] ?? ''),
                 'status' => $cause === null ? 'verified' : 'review',
                 'reason' => $cause ?? '',
@@ -301,8 +325,11 @@ final class NominalBulkRequestService
     {
         $matches = [];
         foreach ($resolved as $item) {
-            $key = (int) $item[$field];
-            $matches[$key][] = $item;
+            $key = (int) ($item[$field] ?? 0);
+            $employeeId = (int) ($item['employee_id'] ?? 0);
+            if ($key > 0 && $employeeId > 0) {
+                $matches[$key][$employeeId] = $item;
+            }
         }
         $unique = [];
         foreach ($values as $id) {
@@ -311,45 +338,76 @@ final class NominalBulkRequestService
                     'Funcionario #' . $id . ' no encontrado o ambiguo en RRHH.'
                 );
             }
-            $unique[$id] = $matches[$id][0];
+            $unique[$id] = array_values($matches[$id])[0];
         }
         return $unique;
     }
 
     private function namesCompatible(string $excelName, string $first, string $last): bool
     {
-        // RRHH puede separar el segundo nombre/apellido en campos distintos
-        // al Excel. No obligar que el primer apellido esté en last_name.
-        // La posición numérica debe coincidir de forma exacta y única ANTES
-        // de usar esta comparación de identidad auxiliar.
+        // No identifica personas por similitud: la posición RRHH debe ser
+        // exacta, vigente y única antes de llegar a este comparador.
+        // Se admiten nombre/apellido abreviados y UNA errata menor en
+        // un apellido largo (p. ej. VILLAREAL / VILLARREAL).
         $normalize = static function (string $value): array {
-            $value = mb_strtoupper($value, 'UTF-8');
+            $value = mb_strtoupper(trim($value), 'UTF-8');
             $value = strtr($value, [
                 'Á'=>'A', 'É'=>'E', 'Í'=>'I', 'Ó'=>'O', 'Ú'=>'U', 'Ü'=>'U', 'Ñ'=>'N',
             ]);
             $value = preg_replace('/[^A-Z ]/u', ' ', $value) ?? '';
-            $parts = preg_split('/\s+/', trim($value)) ?: [];
             return array_values(array_filter(
-                $parts,
-                static fn (string $part): bool => strlen($part) >= 2
-                    && !in_array($part, ['DE','DEL','LA','LAS','LOS'], true)
+                preg_split('/\s+/', trim($value)) ?: [],
+                static fn (string $piece): bool => strlen($piece) >= 2
+                    && !in_array($piece, ['DE', 'DEL', 'LA', 'LAS', 'LOS'], true)
             ));
         };
         $source = $normalize($excelName);
-        $reference = $normalize(trim($first . ' ' . $last));
-        if (count($source) < 2 || count($reference) < 2) {
+        $firstTokens = $normalize($first);
+        $lastTokens = $normalize($last);
+        $reference = array_merge($firstTokens, $lastTokens);
+        if (count($source) < 2 || !$firstTokens || !$lastTokens) {
             return false;
         }
-        $remaining = array_count_values($reference);
-        $matched = 0;
+        // Como mínimo el primer nombre debe coincidir sin aproximaciones.
+        if (!in_array($source[0], $firstTokens, true)) {
+            return false;
+        }
+
+        $remaining = $reference;
+        $exact = 0;
+        $fuzzy = 0;
         foreach ($source as $token) {
-            if (($remaining[$token] ?? 0) > 0) {
-                $remaining[$token]--;
-                $matched++;
+            $matchedIndex = null;
+            foreach ($remaining as $i => $referenceToken) {
+                if ($token === $referenceToken) {
+                    $matchedIndex = $i;
+                    break;
+                }
+            }
+            if ($matchedIndex !== null) {
+                unset($remaining[$matchedIndex]);
+                $exact++;
+                continue;
+            }
+            if ($fuzzy >= 1 || strlen($token) < 5) {
+                continue;
+            }
+            // Se exige al menos una diferencia real de un carácter en
+            // una palabra larga; nunca se utiliza para cambiar posición.
+            foreach ($remaining as $i => $referenceToken) {
+                if (strlen($referenceToken) >= 5
+                    && abs(strlen($token) - strlen($referenceToken)) <= 1
+                    && levenshtein($token, $referenceToken) === 1) {
+                    unset($remaining[$i]);
+                    $fuzzy++;
+                    break;
+                }
             }
         }
-        // Se exigen al menos dos nombres o apellidos compartidos.
-        // Nombres realmente distintos siguen pendientes de revisión.
+        $matched = $exact + $fuzzy;
+        // Para una persona con solo dos tokens en Excel, ambos han de
+        // coincidir (exacta o una errata de apellido), siempre con
+        // posición vigente verificada de manera independiente.
         return $matched >= max(2, (int) ceil(count($source) * 0.6));
     }
 
