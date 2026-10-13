@@ -73,6 +73,9 @@ $central = (string) file_get_contents($root.'/app/Views/requests/central-review.
 $index = (string) file_get_contents($root.'/app/Views/requests/index.php');
 $tracking = (string) file_get_contents($root.'/app/Views/requests/tracking.php');
 $js = (string) file_get_contents($root.'/public/assets/js/requests.js');
+$warehouseController = (string) file_get_contents($root.'/app/Controllers/WarehousesController.php');
+$warehouseRepository = (string) file_get_contents($root.'/app/Repositories/WarehouseRepository.php');
+$warehouseView = (string) file_get_contents($root.'/app/Views/warehouses/show.php');
 
 foreach ([
     "public function transferProgress(",
@@ -97,7 +100,11 @@ if (!str_contains($ctl,"if (\$action === 'central-review')")
     || !str_contains($show,"tracking.php")
     || !str_contains($index,"#seguimiento-p4")
     || !str_contains($tracking,"Seguimiento del trámite, no ubicación GPS")
-    || !str_contains($js,"data-central-apply")) {
+    || !str_contains($js,"data-central-apply")
+    || !str_contains($warehouseRepository,"public function requestsForP4(")
+    || !str_contains($warehouseController,"'p4RequestTracking' =>")
+    || !str_contains($warehouseView,"#seguimiento-p4")
+    || !str_contains($warehouseView,"Recepción confirmada en P4")) {
     throw new RuntimeException('Vista Central, aprobación segura o tracking no están conectados.');
 }
 if (preg_match('/(?:INSERT|UPDATE|DELETE)\s+(?:rrhh|inventory_movements)/i',$repo.$ctl.$central.$tracking)) {
