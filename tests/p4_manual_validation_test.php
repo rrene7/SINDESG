@@ -80,7 +80,7 @@ foreach ([
     }
 }
 foreach ([
-    "'validate-nominal-row'", "sindesg_can('requests.manage')",
+    "'validate-nominal-selected'", "'validate-nominal-row'", "sindesg_can('requests.manage')",
     "csrf_valid(", "confirm_identity",
     "p4_nominal_review", "time() - 3600",
 ] as $part) {
@@ -89,8 +89,7 @@ foreach ([
     }
 }
 foreach ([
-    'Confirmar validación','name="justification"',
-    'name="confirm_identity"','name="employee_id"',
+    'Validar seleccionados','name="review_rows[]"','name="confirm_bulk"',
     'isManuallyValidatable($issue)','csrf_token()'
 ] as $part) {
     if (!str_contains($view,$part)) {
@@ -100,7 +99,8 @@ foreach ([
 if (str_contains($view, 'name="document_number"')
     || str_contains($controller, "(string) (\$post['document_number'] ?? '')")
     || !str_contains($bulk, "hash_equals(")
-    || !str_contains($view, "SINDESG consulta y comprueba la cédula directamente en RRHH2029")) {
+    || str_contains($view, 'name="justification"')
+    || !str_contains($bulk, 'validateSelectedRows(')) {
     throw new RuntimeException('El P4 no debe digitar la cédula: debe consultarse y verificarse en el servidor.');
 }
 if (!str_contains($sql,'p4_nominal_validation_decisions')
@@ -108,6 +108,7 @@ if (!str_contains($sql,'p4_nominal_validation_decisions')
     || !str_contains($sql,'FOREIGN KEY (request_id)')
     || !str_contains($repository,'ORDER BY v.id DESC')
     || !str_contains($repository,'INSERT INTO p4_nominal_validation_decisions')
+    || !str_contains($repository,'public function recordBatch(')
     || preg_match('/\b(?:UPDATE|DELETE)\s+(?:rrhh|p4_nominal_validation_decisions)\b/i', $repository)) {
     throw new RuntimeException('El historial auditable no es solo aditivo o no está aislado.');
 }

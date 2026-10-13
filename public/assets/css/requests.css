@@ -109,29 +109,39 @@ form[action*='import-nominal-file'] label:has(input[type='checkbox']){display:fl
     font-size:.83rem;
 }
 
-/* Confirmación puntual P4, sin alterar la captura masiva ni el diseño general. */
-.p4-validate-row summary {
-    cursor: pointer;
+
+/* Prevalidación nominal P4: una barra compacta y casillas por fila. */
+.p4-bulk-review-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 16px;
+    padding: 12px;
+    margin: 10px 0 16px;
+    border: 1px solid rgba(37,196,255,.36);
+    border-radius: 12px;
+    background: rgba(10,40,74,.65);
+}
+.p4-bulk-review-toolbar .request-cell-sub {
+    flex-basis: 100%;
+    line-height: 1.55;
+}
+.p4-bulk-review-toolbar [data-p4-review-counter] {
+    font-weight: 600;
+}
+.p4-bulk-review-toolbar button:disabled {
+    opacity: .52;
+    cursor: not-allowed;
+}
+.p4-bulk-review-checkbox {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
     white-space: nowrap;
-    list-style: none;
+    cursor: pointer;
 }
-.p4-validate-row summary::-webkit-details-marker { display: none; }
-.p4-validate-row[open] {
-    min-width: min(340px, 70vw);
-}
-.p4-validate-row form {
-    display: grid;
-    gap: .7rem;
-    margin-top: .7rem;
-}
-.p4-validate-row form label {
-    display: grid;
-    gap: .35rem;
-    font-size: .85rem;
-}
-.p4-validate-row form input[type="text"],
-.p4-validate-row form textarea {
-    width: 100%;
-    min-width: 0;
-    box-sizing: border-box;
+.p4-bulk-review-checkbox input {
+    width: 18px;
+    height: 18px;
+    accent-color: #24b7ff;
 }

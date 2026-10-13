@@ -434,6 +434,37 @@ foreach ($nominalProducts ?? [] as $product) {
     <?php if ($nominalPreview['issues'] === []): ?>
         <p>Todos los registros pasaron la validación nominal preliminar.</p>
     <?php else: ?>
+        <?php
+        $approvableCount = 0;
+        foreach ($nominalPreview['issues'] as $reviewIssue) {
+            if (\App\Services\NominalBulkRequestService::isManuallyValidatable($reviewIssue)) {
+                $approvableCount++;
+            }
+        }
+        ?>
+        <?php if ($approvableCount > 0): ?>
+            <form id="p4-bulk-review-form" method="post"
+                  action="<?= e(sindesg_url('?module=requests&action=validate-nominal-selected')) ?>"
+                  class="p4-bulk-review-toolbar">
+                <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
+                <input type="hidden" name="request_id" value="<?= (int) $serviceRequest['id'] ?>">
+                <input type="hidden" name="confirm_bulk" value="1">
+                <button type="button" class="secondary-button" data-p4-review-select-all>
+                    Seleccionar todas las incidencias
+                </button>
+                <span data-p4-review-counter aria-live="polite">0 seleccionadas</span>
+                <button type="submit" class="primary-button" data-p4-review-submit>
+                    Validar seleccionados
+                </button>
+                <small class="request-cell-sub">
+                    Una sola confirmación, sin escribir cédulas ni motivos repetidos.
+                    Al pulsar «Validar seleccionados», el P4 acepta la responsabilidad
+                    de las identidades marcadas. Revise cuidadosamente los nombres:
+                    si Excel y RRHH representan personas diferentes, NO seleccione esa fila.
+                    Todas las decisiones quedan auditadas individualmente.
+                </small>
+            </form>
+        <?php endif; ?>
         <div class="responsive-table request-nominal-review-table">
             <table>
                 <thead>
@@ -470,39 +501,12 @@ foreach ($nominalProducts ?? [] as $product) {
                                 (int) ($issue['excel_row'] ?? 0) > 0
                                 && \App\Services\NominalBulkRequestService::isManuallyValidatable($issue)
                             ): ?>
-                                <details class="p4-validate-row">
-                                    <summary class="secondary-button">Validar</summary>
-                                    <p class="request-cell-sub">
-                                        Confirme que <?= e($issue['rrhh_name'] ?? 'el funcionario') ?>
-                                        es el destinatario real. Si es otra persona,
-                                        no valide: corrija el listado con RRHH.
-                                    </p>
-                                    <form method="post"
-                                          action="<?= e(sindesg_url('?module=requests&action=validate-nominal-row')) ?>">
-                                        <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
-                                        <input type="hidden" name="request_id" value="<?= (int) $serviceRequest['id'] ?>">
-                                        <input type="hidden" name="excel_row" value="<?= (int) $issue['excel_row'] ?>">
-                                        <input type="hidden" name="employee_id" value="<?= (int) $issue['candidate_employee_id'] ?>">
-                                        <p class="request-cell-sub">
-                                            SINDESG consulta y comprueba la cédula directamente en RRHH2029;
-                                            el P4 no necesita escribirla.
-                                        </p>
-                                        <label>
-                                            <span>Justificación y respaldo de la identidad *</span>
-                                            <textarea name="justification" required rows="3"
-                                                      minlength="20" maxlength="1000"
-                                                      placeholder="Indique cómo verificó que es el destinatario correcto..."></textarea>
-                                        </label>
-                                        <label class="request-cell-sub">
-                                            <input type="checkbox" name="confirm_identity" value="1" required>
-                                            Como P4, confirmo bajo mi responsabilidad que el expediente
-                                            RRHH mostrado corresponde al destinatario real de esta fila.
-                                        </label>
-                                        <button type="submit" class="primary-button">
-                                            Confirmar validación
-                                        </button>
-                                    </form>
-                                </details>
+                                <label class="p4-bulk-review-checkbox">
+                                    <input type="checkbox" name="review_rows[]"
+                                           form="p4-bulk-review-form" data-p4-review-row
+                                           value="<?= (int) $issue['excel_row'] ?>">
+                                    <span>Seleccionar</span>
+                                </label>
                             <?php else: ?>
                                 <small class="request-cell-sub">Requiere corregir Excel o RRHH</small>
                             <?php endif; ?>
@@ -514,10 +518,11 @@ foreach ($nominalProducts ?? [] as $product) {
         </div>
     <?php endif; ?>
     <p class="request-cell-sub">
-        Para nombres diferentes, use «Validar» solamente si comprobó con la
-        cédula y el expediente RRHH que se trata del destinatario real. Esa
-        decisión se registra en SINDESG y se aplica únicamente al mismo
-        archivo y fila. Si realmente son personas distintas, corrija el Excel.
+        Marque las diferencias de nombres que el P4 haya comprobado contra el
+        expediente institucional y pulse «Validar seleccionados» una sola vez.
+        SINDESG verifica nuevamente la cédula y la posición sin pedirle
+        escribirlas, y guarda una evidencia independiente para cada fila.
+        Si realmente son personas distintas, NO las valide: corrija el Excel.
         Después de resolver las incidencias, seleccione el mismo archivo
         para importar. Si declara 723 unidades y enumera 722 destinatarios,
         podrá cargar esos 722 siempre que todos estén verificados y marque

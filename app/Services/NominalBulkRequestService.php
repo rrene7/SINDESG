@@ -67,6 +67,72 @@ final class NominalBulkRequestService
         string $reason,
         array $user
     ): int {
+        if ($this->validations === null) {
+            throw new InvalidArgumentException('La conciliación P4 no está instalada.');
+        }
+        return $this->validations->record(
+            $this->prepareValidatedRow($preview, $excelRow, $employeeId, $reason, $user)
+        );
+    }
+
+    /**
+     * Validación masiva con UNA sola aceptación explícita del P4.
+     * Primero verifica todas las filas contra RRHH2029; después guarda
+     * las evidencias en una transacción: todo o nada.
+     *
+     * @param list<int> $excelRows
+     * @param array<string,mixed> $user
+     * @return array<int,int> filaExcel => evidenciaId
+     */
+    public function validateSelectedRows(array $preview, array $excelRows, array $user): array
+    {
+        if ($this->validations === null || count($excelRows) < 1 || count($excelRows) > 100) {
+            throw new InvalidArgumentException('Seleccione entre 1 y 100 incidencias nominales.');
+        }
+        $unique = [];
+        $employees = [];
+        $payloads = [];
+        foreach ($excelRows as $row) {
+            if (!is_int($row) || $row <= 0 || isset($unique[$row])) {
+                throw new InvalidArgumentException('La selección de filas contiene valores repetidos o inválidos.');
+            }
+            $unique[$row] = true;
+            $candidate = null;
+            foreach ((array) ($preview['issues'] ?? []) as $issue) {
+                if ((int) ($issue['excel_row'] ?? 0) === $row
+                    && self::isManuallyValidatable($issue)) {
+                    $candidate = $issue;
+                    break;
+                }
+            }
+            if ($candidate === null) {
+                throw new InvalidArgumentException('La fila ' . $row . ' no permite validación excepcional.');
+            }
+            $employee = (int) $candidate['candidate_employee_id'];
+            if (isset($employees[$employee])) {
+                throw new InvalidArgumentException(
+                    'Dos filas apuntan al mismo funcionario RRHH. Revise la nómina antes de validar.'
+                );
+            }
+            $employees[$employee] = true;
+            $reason = 'Confirmación colectiva P4: funcionario RRHH revisado y aprobado por '
+                . (string) ($user['display_name'] ?? 'P4') . ', fila original ' . $row
+                . ', requisición ' . (string) ($preview['requisition'] ?? '');
+            $payloads[$row] = $this->prepareValidatedRow(
+                $preview, $row, $employee, $reason, $user
+            );
+        }
+        return $this->validations->recordBatch($payloads);
+    }
+
+    /** @return array<string,mixed> Información de auditoría tras releer RRHH. */
+    private function prepareValidatedRow(
+        array $preview,
+        int $excelRow,
+        int $employeeId,
+        string $reason,
+        array $user
+    ): array {
         $requestId = (int) ($preview['request_id'] ?? 0);
         $productId = (int) ($preview['product_id'] ?? 0);
         $hash = (string) ($preview['source_sha256'] ?? '');
@@ -133,7 +199,7 @@ final class NominalBulkRequestService
             throw new InvalidArgumentException('El funcionario ya figura en el borrador para este producto.');
         }
 
-        return $this->validations->record([
+        return [
             'request_id' => $requestId,
             'product_id' => $productId,
             'source_sha256' => $hash,
@@ -149,7 +215,7 @@ final class NominalBulkRequestService
             'justification' => $reason,
             'validated_by_user_id' => (int) $user['id'],
             'validated_by_label_snapshot' => (string) ($user['display_name'] ?? 'P4'),
-        ]);
+        ];
     }
 
     /**

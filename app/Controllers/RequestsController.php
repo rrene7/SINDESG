@@ -171,6 +171,63 @@ final class RequestsController
             $this->redirect('?module=requests&action=show&id=' . $requestId);
         }
 
+        if ($action === 'validate-nominal-selected') {
+            if (!sindesg_can('requests.manage')) {
+                throw new InvalidArgumentException('No tiene permiso de aprobar incidencias P4.');
+            }
+            $requestId = (int) ($post['request_id'] ?? 0);
+            $session = $_SESSION['p4_nominal_review'] ?? null;
+            if (!is_array($session)
+                || (int) ($session['at'] ?? 0) < time() - 3600
+                || !is_array($session['report'] ?? null)
+                || (int) ($session['report']['request_id'] ?? 0) !== $requestId) {
+                throw new InvalidArgumentException('La prevalidación venció. Adjunte de nuevo el Excel.');
+            }
+            $selected = $post['review_rows'] ?? [];
+            if (!is_array($selected) || count($selected) < 1 || count($selected) > 100
+                || (string) ($post['confirm_bulk'] ?? '') !== '1') {
+                throw new InvalidArgumentException(
+                    'Seleccione las incidencias revisadas para confirmarlas bajo responsabilidad del P4.'
+                );
+            }
+            $rows = [];
+            foreach ($selected as $value) {
+                $value = (string) $value;
+                if (!ctype_digit($value) || (int) $value <= 0) {
+                    throw new InvalidArgumentException('Selección de filas inválida.');
+                }
+                $rows[] = (int) $value;
+            }
+            $user = sindesg_user();
+            if ($user === null) {
+                throw new InvalidArgumentException('Su sesión de usuario no está activa.');
+            }
+            $preview = $session['report'];
+            $approved = $this->bulk->validateSelectedRows($preview, $rows, $user);
+            $approvedRows = array_fill_keys(array_keys($approved), true);
+            $preview['issues'] = array_values(array_filter(
+                (array) $preview['issues'],
+                static fn (array $issue): bool => !isset($approvedRows[(int) ($issue['excel_row'] ?? 0)])
+            ));
+            foreach ($preview['rows'] as &$line) {
+                if (isset($approvedRows[(int) ($line['excel_row'] ?? 0)])) {
+                    $line['status'] = 'validated_manually';
+                    $line['reason'] = 'Confirmación colectiva del P4 · Evidencia #'
+                        . $approved[(int) $line['excel_row']];
+                }
+            }
+            unset($line);
+            $preview['valid_count'] += count($approved);
+            $preview['blocked_count'] -= count($approved);
+            $_SESSION['p4_nominal_review'] = ['at' => time(), 'report' => $preview];
+            $page = $this->handleGet('show', ['id' => $requestId]);
+            $page['data']['nominalPreview'] = $preview;
+            $page['data']['nominalPreviewSuccess'] = count($approved)
+                . ' incidencias validadas en una sola operación. '
+                . 'Decisiones individuales auditadas; sin importar funcionarios ni mover inventario.';
+            return $page;
+        }
+
         if ($action === 'validate-nominal-row') {
             if (!sindesg_can('requests.manage')) {
                 throw new InvalidArgumentException('No tiene permiso para validar filas nominales P4.');
