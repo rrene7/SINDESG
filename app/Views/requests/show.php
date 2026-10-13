@@ -359,9 +359,15 @@ foreach ($nominalProducts ?? [] as $product) {
             Autorizo cargar solo los funcionarios y tallas verificados; las filas
             con incidencias quedarán sin registrar, para su corrección posterior.
         </label>
-        <button type="submit" class="primary-button">
-            Validar RRHH e importar a esta solicitud en borrador
-        </button>
+        <div class="request-nominal-actions">
+            <button type="submit" class="secondary-button"
+                    formaction="<?= e(sindesg_url('?module=requests&action=preview-nominal-file')) ?>">
+                Prevalidar y ver incidencias sin guardar
+            </button>
+            <button type="submit" class="primary-button">
+                Importar solo las filas verificadas al borrador
+            </button>
+        </div>
         <p class="request-cell-sub">
             La importación NO aprueba ni transfiere existencias. Si encuentra
             diferencias sin autorización para importación parcial, no guardará ninguna fila.
@@ -369,6 +375,63 @@ foreach ($nominalProducts ?? [] as $product) {
         </p>
     </form>
 </section>
+
+<?php if (!empty($nominalPreview) && is_array($nominalPreview)): ?>
+<section class="request-panel" id="nominal-prevalidation">
+    <div class="request-section-head">
+        <div>
+            <span class="eyebrow">CONCILIACIÓN SOLO LECTURA · RRHH2029</span>
+            <h2>Resultado del listado nominal</h2>
+            <p>
+                Requisición <?= e($nominalPreview['requisition']) ?> ·
+                <?= e($nominalPreview['filename']) ?>.
+                No se guardaron funcionarios ni movimientos de inventario.
+            </p>
+        </div>
+    </div>
+    <div class="request-verification-summary">
+        <span><strong><?= (int) $nominalPreview['total'] ?></strong><small>Filas nominales</small></span>
+        <span><strong><?= (int) $nominalPreview['valid_count'] ?></strong><small>Verificables</small></span>
+        <span><strong><?= (int) $nominalPreview['blocked_count'] ?></strong><small>Pendientes de revisión</small></span>
+    </div>
+    <p class="request-cell-sub">
+        La posición debe coincidir con un funcionario identificable en RRHH.
+        Los nombres se comparan completos, aunque los campos de nombre y apellido
+        estén distribuidos de manera distinta. Si falta la posición o no coincide
+        la identidad, NO se asignará a nadie automáticamente.
+    </p>
+    <?php if ($nominalPreview['issues'] === []): ?>
+        <p>Todos los registros pasaron la validación nominal preliminar.</p>
+    <?php else: ?>
+        <div class="responsive-table request-nominal-review-table">
+            <table>
+                <thead>
+                <tr><th>Fila</th><th>Posición Excel</th><th>Nombre Excel</th>
+                    <th>Nombre encontrado RRHH</th><th>Talla</th><th>Resultado</th></tr>
+                </thead>
+                <tbody>
+                <?php foreach ($nominalPreview['issues'] as $issue): ?>
+                    <tr>
+                        <td><?= (int) $issue['excel_row'] ?: 'Documento' ?></td>
+                        <td><?= e($issue['position'] ?: '—') ?></td>
+                        <td><?= e($issue['excel_name'] ?: '—') ?></td>
+                        <td><?= e($issue['rrhh_name'] ?: 'No determinado') ?></td>
+                        <td><?= e($issue['size'] ?: '—') ?></td>
+                        <td><?= e($issue['message']) ?></td>
+                    </tr>
+                <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+    <?php endif; ?>
+    <p class="request-cell-sub">
+        Corrija el Excel según la posición actual confirmada en RRHH y vuelva
+        a prevalidar. Para importar parcialmente, vuelva a seleccionar el archivo,
+        marque la autorización correspondiente y use el botón de importación.
+        No cambie una posición basándose únicamente en una coincidencia de nombre.
+    </p>
+</section>
+<?php endif; ?>
 <?php endif; ?>
 
 <?php if ($serviceRequest['status'] === 'in_review' && $requestItems !== []): ?>
