@@ -9,6 +9,7 @@ use App\Services\RequestService;
 use App\Services\SpreadsheetReader;
 use App\Services\BootsP4WorkbookPreview;
 use App\Services\NominalBulkRequestService;
+use App\Services\P4NominalStagedFile;
 use App\Services\P4NominalXlsxTemplate;
 use App\Services\RrhhEmployeeDirectory;
 use App\Support\Database;
@@ -138,8 +139,15 @@ final class RequestsController
                     'nominalPreview' => (
                         isset($_SESSION['p4_nominal_review']['report'])
                         && (int) ($_SESSION['p4_nominal_review']['report']['request_id'] ?? 0) === $requestId
-                        && (int) ($_SESSION['p4_nominal_review']['at'] ?? 0) >= time() - 3600
+                        && (int) ($_SESSION['p4_nominal_review']['at'] ?? 0) >= time() - P4NominalStagedFile::TTL
+                        && (int) ($_SESSION['p4_nominal_review']['user_id'] ?? 0) === (int) (sindesg_user()['id'] ?? 0)
                     ) ? $_SESSION['p4_nominal_review']['report'] : null,
+                    'nominalReviewFileReady' => (
+                        !empty($_SESSION['p4_nominal_review']['file'])
+                        && (int) ($_SESSION['p4_nominal_review']['report']['request_id'] ?? 0) === $requestId
+                        && (int) ($_SESSION['p4_nominal_review']['at'] ?? 0) >= time() - P4NominalStagedFile::TTL
+                        && (int) ($_SESSION['p4_nominal_review']['user_id'] ?? 0) === (int) (sindesg_user()['id'] ?? 0)
+                    ),
                 ],
             ];
         }
@@ -180,7 +188,8 @@ final class RequestsController
             if (!is_array($session)
                 || (int) ($session['at'] ?? 0) < time() - 3600
                 || !is_array($session['report'] ?? null)
-                || (int) ($session['report']['request_id'] ?? 0) !== $requestId) {
+                || (int) ($session['report']['request_id'] ?? 0) !== $requestId
+                || (int) ($session['user_id'] ?? 0) !== (int) (sindesg_user()['id'] ?? 0)) {
                 throw new InvalidArgumentException('La prevalidación venció. Adjunte de nuevo el Excel.');
             }
             $selected = $post['review_rows'] ?? [];
@@ -219,7 +228,9 @@ final class RequestsController
             unset($line);
             $preview['valid_count'] += count($approved);
             $preview['blocked_count'] -= count($approved);
-            $_SESSION['p4_nominal_review'] = ['at' => time(), 'report' => $preview];
+            // Conservar la referencia privada al MISMO Excel tras validar.
+            $session['report'] = $preview;
+            $_SESSION['p4_nominal_review'] = $session;
             $page = $this->handleGet('show', ['id' => $requestId]);
             $page['data']['nominalPreview'] = $preview;
             $page['data']['nominalPreviewSuccess'] = count($approved)
@@ -237,7 +248,8 @@ final class RequestsController
             if (!is_array($session)
                 || (int) ($session['at'] ?? 0) < time() - 3600
                 || !is_array($session['report'] ?? null)
-                || (int) ($session['report']['request_id'] ?? 0) !== $requestId) {
+                || (int) ($session['report']['request_id'] ?? 0) !== $requestId
+                || (int) ($session['user_id'] ?? 0) !== (int) (sindesg_user()['id'] ?? 0)) {
                 throw new InvalidArgumentException('La prevalidación venció. Adjunte de nuevo el Excel.');
             }
             if ((string) ($post['confirm_identity'] ?? '') !== '1') {
@@ -276,13 +288,64 @@ final class RequestsController
                 }
             }
             unset($line);
-            $_SESSION['p4_nominal_review'] = ['at' => time(), 'report' => $preview];
+            // Conservar la referencia privada al MISMO Excel tras validar.
+            $session['report'] = $preview;
+            $_SESSION['p4_nominal_review'] = $session;
             $page = $this->handleGet('show', ['id' => $requestId]);
             $page['data']['nominalPreview'] = $preview;
             $page['data']['nominalPreviewSuccess'] =
                 'Fila ' . $row . ' validada con evidencia #' . $evidenceId
                 . '. No se importó ni entregó ninguna unidad.';
             return $page;
+        }
+
+        if ($action === 'import-from-nominal-preview') {
+            if (!sindesg_can('requests.manage')) {
+                throw new InvalidArgumentException('No tiene permiso para cargar la conciliación P4.');
+            }
+            $requestId = (int) ($post['request_id'] ?? 0);
+            $session = $_SESSION['p4_nominal_review'] ?? null;
+            $user = sindesg_user();
+            if (!is_array($session) || $user === null
+                || (int) ($session['user_id'] ?? 0) !== (int) ($user['id'] ?? 0)
+                || (int) ($session['at'] ?? 0) < time() - P4NominalStagedFile::TTL
+                || (int) ($session['report']['request_id'] ?? 0) !== $requestId
+                || !is_array($session['file'] ?? null)) {
+                throw new InvalidArgumentException(
+                    'La conciliación venció. Realice una nueva prevalidación con el Excel.'
+                );
+            }
+            $report = $session['report'];
+            $file = $session['file'];
+            $sourcePath = P4NominalStagedFile::resolve(
+                $file, (string) ($report['source_sha256'] ?? '')
+            );
+            if ((int) ($report['product_id'] ?? 0) <= 0
+                || (int) ($post['product_id'] ?? 0) !== (int) $report['product_id']) {
+                throw new InvalidArgumentException('Producto distinto del Excel conciliado.');
+            }
+            // Releer todo el XLSX y RRHH: NO usar contadores ni identidades
+            // potencialmente obsoletas de la sesión como prueba de importación.
+            $result = $this->bulk->importWorkbook(
+                $requestId,
+                (int) $report['product_id'],
+                $sourcePath,
+                (string) $file['extension'],
+                (string) $file['filename'],
+                (string) ($post['allow_partial'] ?? '') === '1',
+                (string) ($post['accept_document_gap'] ?? '') === '1',
+                $user
+            );
+            P4NominalStagedFile::delete($file);
+            unset($_SESSION['p4_nominal_review']);
+            flash('success', 'Cargados ' . $result['added']
+                . ' funcionarios al borrador, desde el Excel ya conciliado. '
+                . $result['skipped'] . ' pendientes; cero movimientos de inventario.'
+                . ((int) ($result['document_gap'] ?? 0) > 0
+                    ? ' Diferencia declarada de ' . (int) $result['document_gap']
+                      . ' unidad(es) registrada como pendiente documental.'
+                    : ''));
+            $this->redirect('?module=requests&action=show&id=' . $requestId);
         }
 
         if ($action === 'import-nominal-file' || $action === 'preview-nominal-file') {
@@ -309,12 +372,27 @@ final class RequestsController
                     $ext,
                     $filename
                 );
-                // Prevalidación en memoria de sesión, SIN escritura a BD.
-                // Solamente la acción humana «Validar» guarda una decisión.
+                // Se conserva una copia temporal PRIVADA (fuera de htdocs)
+                // durante máximo una hora. La prevalidación no escribe en BD.
+                // No aceptar rutas recibidas del navegador.
+                $savedFile = P4NominalStagedFile::stage($path, $filename);
+                if (!hash_equals(
+                    (string) ($report['source_sha256'] ?? ''),
+                    $savedFile['sha256']
+                )) {
+                    P4NominalStagedFile::delete($savedFile);
+                    throw new RuntimeException('El archivo cambió durante su prevalidación.');
+                }
+                $previous = $_SESSION['p4_nominal_review']['file'] ?? null;
                 $_SESSION['p4_nominal_review'] = [
                     'at' => time(),
+                    'user_id' => (int) (sindesg_user()['id'] ?? 0),
                     'report' => $report,
+                    'file' => $savedFile,
                 ];
+                if (is_array($previous)) {
+                    P4NominalStagedFile::delete($previous);
+                }
                 $page = $this->handleGet('show', ['id' => $requestId]);
                 $page['data']['nominalPreview'] = $report;
                 return $page;
