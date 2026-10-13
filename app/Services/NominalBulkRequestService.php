@@ -161,6 +161,11 @@ final class NominalBulkRequestService
                 $byPosition[$position][$id] = $person;
             }
         }
+        // Identificar duplicados por posición solo DESPUÉS de comprobar
+        // identidad, artículo y talla. Los duplicados plenamente idénticos
+        // se omiten con advertencia, no generan una segunda dotación.
+        // Si las filas difieren en talla o identidad, se bloquean TODAS.
+        $duplicates = $this->classifyNominalDuplicates($nominal, $byPosition, $variants);
         $already = $this->requests->nominalEmployeeIdsForProduct($requestId, $productId);
         $seenEmployees = [];
         $rows = [];
@@ -179,11 +184,43 @@ final class NominalBulkRequestService
             $size = $row['size'] ?? null;
             $matches = array_values($byPosition[$position] ?? []);
             $person = count($matches) === 1 ? $matches[0] : null;
+            $redundantFirstRow = $duplicates['redundant'][$excelRow] ?? null;
+            if ($redundantFirstRow !== null) {
+                $issues[] = [
+                    'excel_row' => $excelRow,
+                    'position' => $rawPosition,
+                    'excel_name' => (string) ($row['name'] ?? ''),
+                    'rrhh_name' => $person !== null
+                        ? trim((string) $person['first_name'] . ' ' . (string) $person['last_name'])
+                        : null,
+                    'position_source' => (string) ($person['position_source'] ?? ''),
+                    'rrhh_status' => (string) ($person['status_name'] ?? ''),
+                    'size' => (string) ($row['raw_size'] ?? ''),
+                    'severity' => 'notice',
+                    'message' => 'Renglón repetido del mismo funcionario, artículo y talla. Se usa solo fila '
+                        . $redundantFirstRow . '; esta fila NO se importará.',
+                ];
+                $rows[] = [
+                    'excel_row' => $excelRow,
+                    'position' => $rawPosition,
+                    'excel_name' => (string) ($row['name'] ?? ''),
+                    'rrhh_name' => $person !== null
+                        ? trim((string) $person['first_name'] . ' ' . (string) $person['last_name'])
+                        : null,
+                    'position_source' => (string) ($person['position_source'] ?? ''),
+                    'rrhh_status' => (string) ($person['status_name'] ?? ''),
+                    'size' => (string) ($row['raw_size'] ?? ''),
+                    'status' => 'duplicate_omitted',
+                    'reason' => 'Duplicado idéntico: no crea segunda asignación.',
+                ];
+                continue;
+            }
+
             $cause = null;
             if ($position <= 0) {
                 $cause = 'Posición faltante o inválida.';
-            } elseif (($occurrences[$position] ?? 0) > 1) {
-                $cause = 'Posición repetida dentro del Excel; verifique a quién corresponde cada talla.';
+            } elseif (isset($duplicates['conflicts'][$position])) {
+                $cause = $duplicates['conflicts'][$position];
             } elseif (count($matches) === 0) {
                 $cause = 'Posición no encontrada como asignación actual de funcionario elegible en RRHH2029. No se puede identificar automáticamente.';
             } elseif (count($matches) > 1) {
@@ -269,12 +306,75 @@ final class NominalBulkRequestService
             'filename' => basename($filename),
             'total' => count($nominal),
             'valid_count' => count($batch),
+            'duplicate_count' => count($duplicates['redundant']),
             'blocked_count' => $blocked,
             'issues' => $issues,
             'rows' => $rows,
             'status' => 'preview_only',
             '_batch' => $batch,
         ];
+    }
+
+    /**
+     * Solo omite copias completamente conciliadas al mismo funcionario,
+     * mismo producto/talla y posición vigente en RRHH. Nunca elige entre
+     * dos tallas distintas para la misma persona sin decisión del P4.
+     *
+     * @param list<array<string,mixed>> $nominal
+     * @param array<int,array<int,array<string,mixed>>> $byPosition
+     * @param array<string,int> $variants
+     * @return array{redundant:array<int,int>,conflicts:array<int,string>}
+     */
+    private function classifyNominalDuplicates(array $nominal, array $byPosition, array $variants): array
+    {
+        $groups = [];
+        foreach ($nominal as $row) {
+            $rawPosition = trim((string) ($row['position'] ?? ''));
+            if (ctype_digit($rawPosition) && (int) $rawPosition > 0) {
+                $groups[(int) $rawPosition][] = $row;
+            }
+        }
+        $redundant = [];
+        $conflicts = [];
+        foreach ($groups as $position => $group) {
+            if (count($group) < 2) {
+                continue;
+            }
+            $matches = array_values($byPosition[$position] ?? []);
+            $person = count($matches) === 1 ? $matches[0] : null;
+            $validIdentity = $person !== null
+                && !empty($person['is_rrhh_eligible'])
+                && in_array((string) ($person['position_source'] ?? ''), ['current', 'assignment'], true);
+            $variantId = null;
+            $samePersonAndVariant = $validIdentity;
+            foreach ($group as $row) {
+                $size = $row['size'] ?? null;
+                $candidateId = is_string($size) ? ($variants[$size] ?? null) : null;
+                if ($candidateId === null
+                    || !$this->namesCompatible(
+                        (string) ($row['name'] ?? ''),
+                        (string) ($person['first_name'] ?? ''),
+                        (string) ($person['last_name'] ?? '')
+                    )) {
+                    $samePersonAndVariant = false;
+                }
+                if ($variantId !== null && $variantId !== $candidateId) {
+                    $samePersonAndVariant = false;
+                }
+                $variantId = $candidateId;
+            }
+            if (!$samePersonAndVariant) {
+                $conflicts[$position] =
+                    'Posición repetida con discrepancias de talla, nombre o estado RRHH. '
+                    . 'Revise todas las filas antes de asignar; no se ha elegido ninguna.';
+                continue;
+            }
+            $firstRow = (int) ($group[0]['excel_row'] ?? 0);
+            foreach (array_slice($group, 1) as $row) {
+                $redundant[(int) ($row['excel_row'] ?? 0)] = $firstRow;
+            }
+        }
+        return ['redundant' => $redundant, 'conflicts' => $conflicts];
     }
 
     private function editableRequest(int $requestId): array
