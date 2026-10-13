@@ -4,6 +4,42 @@
 
 Versión documental: Fase 14C
 
+## Filas repetidas y coincidencias de nombre en solicitudes P4
+
+La prevalidación nominal cuenta por separado **filas del Excel**,
+**funcionarios únicos verificables**, **repetidos omitibles** y
+**registros bloqueados**. Una fila repetida no es una segunda dotación.
+
+Si varias filas del Excel comparten una posición RRHH vigente y
+única, el mismo artículo y la misma talla, y los nombres de todas
+ellas son compatibles con el expediente, se conserva **una sola
+asignación** en el borrador. El resto se informa como
+«Repetido: se omite», identificando la primera fila. Nunca se
+crean dos asignaciones para el mismo funcionario por ese motivo.
+La numeración repetida en la columna N° no basta para declarar
+dos funcionarios duplicados; se usa la **posición** y se valida
+también la identidad.
+
+Cuando una misma posición aparece con **tallas diferentes**, un
+nombre que no corresponde, posición no vigente/inactiva o identidad
+ambigua, se **bloquean todas las filas contradictorias**.
+No se elige al azar qué talla corresponde. El P4 debe aclararlas
+antes de importar el documento completo.
+
+Se aceptan ciertas diferencias menores de una letra en nombres o
+apellidos de longitud suficiente, exclusivamente después de
+resolver una posición RRHH vigente y única y manteniendo una
+coincidencia clara del nombre/apellido. Esto no convierte una
+**licencia con sueldo por estudio**, una baja o una **posición
+anterior** en estado automáticamente elegible: esos casos
+continúan pendientes de revisión conforme al estado RRHH.
+
+La cantidad declarada del documento (por ejemplo, 723) se mantiene
+intacta y el sistema informa las filas omitidas sin modificar el
+Excel original. Si hay bloqueos, la carga íntegra no se guarda;
+la importación parcial continúa exigiendo autorización expresa.
+No se generan existencias ni movimientos.
+
 ## Revisar coincidencias RRHH al importar 723 asignaciones nominales
 
 La opción **Solicitudes → Borrador P4 → Importar listado nominal por Excel**
