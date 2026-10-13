@@ -168,6 +168,9 @@ jobs:
       - name: Boots P4 import prevalidation test
         run: php tests/boots_p4_preview_test.php
 
+      - name: P4 native Excel template round-trip test
+        run: php tests/p4_nominal_xlsx_template_test.php
+
       - name: P4 nominal bulk capture test
         run: php tests/p4_nominal_bulk_test.php
 
