@@ -106,40 +106,48 @@ completar el total.
 La prevalidación nunca escribe datos. No se modifican RRHH2029,
 existencias, movimientos ni históricos.
 
-## Validación manual de incidencias nominales en borradores P4
+## Conciliación rápida P4: «Validar seleccionados»
 
-Después de seleccionar un Excel en **Prevalidar y ver incidencias sin guardar**,
-cada fila bloqueada exclusivamente por **diferencia de nombres** y con
-funcionario RRHH de posición vigente inequívoca muestra **Validar**.
+En **Prevalidar y ver incidencias sin guardar**, las diferencias de
+nombres que ya tengan un funcionario con posición vigente inequívoca
+en RRHH2029 muestran una **casilla Seleccionar** en la última columna.
+La barra superior ofrece **Seleccionar todas las incidencias**,
+un contador y un único botón **Validar seleccionados**.
 
-El responsable del P4 pulsa **Validar**, revisa el expediente RRHH y
-la identidad del destinatario real, introduce una justificación
-documentada de 20 caracteres o más, marca la confirmación de
-responsabilidad y pulsa **Confirmar validación**. **No tiene que escribir
-la cédula:** SINDESG la consulta y verifica internamente contra
-RRHH2029. La cédula no se altera ni se convierte en un campo editable. SINDESG vuelve a consultar
-RRHH2029 **solo lectura** y comprueba la cédula, el estado, la posición
-vigente y la talla activa. Si cualquiera cambió, **no se valida**.
+El P4 revisa las identidades mostradas en Excel y RRHH, marca únicamente
+las que puede confirmar (o usa Seleccionar todas después de revisar la
+lista) y pulsa **Validar seleccionados**. Esa pulsación expresa la
+responsabilidad del usuario institucional, sin escribir cédulas,
+formularios de justificación ni verificaciones por persona.
 
-La decisión queda almacenada únicamente en `sindesg` con requisición,
-fila/nombre/talla original, hash SHA-256 del archivo XLSX, funcionario
-institucional, cédula confirmada, usuario responsable, justificación
-y fecha. La decisión no es una entrega ni actualiza inventario.
-La página mantiene la conciliación temporal en sesión durante una
-hora; la prevalidación inicial no inserta datos.
+SINDESG registra automáticamente, para **cada fila marcada**, la
+requisición, SHA-256 exacto del Excel, funcionario institucional,
+cédula RRHH, posición, usuario responsable, fecha y constancia estándar
+de validación. El servidor **vuelve a consultar RRHH2029 mediante
+SELECT** y revisa identidad, posición actual, estado permitido,
+variante/talla y duplicados. Si alguna selección no cumple, el
+grupo completo se rechaza sin guardar un subconjunto. Las decisiones
+se almacenan en una transacción de la base `sindesg` y no generan
+movimientos, reservas ni entregas.
 
-Al volver a importar **exactamente el mismo Excel**, la validación se
-aplica solo a la misma requisición, producto y fila, siempre que no
-haya cambiado ningún dato clave del Excel ni la identificación/posición
-actual del funcionario en RRHH. Si el documento cambia, se requiere
-nueva conciliación. Las posiciones antiguas o ambiguas, estados
-excluidos, tallas inexistentes y duplicados contradictorios **no
-pueden validarse de este modo**.
+**Importante:** una posición no equivale a la identidad de su ocupante.
+Si Excel nombra a Carlos Lara y RRHH muestra a Omar Barrera, el P4
+**no debe seleccionar esa fila** a menos que haya comprobado
+documentalmente que el destinatario de la requisición es efectivamente
+el expediente RRHH mostrado. Si realmente corresponden a dos
+funcionarios distintos, debe corregir el Excel. Nunca se reemplaza
+silenciosamente el beneficiario ni se altera RRHH2029.
 
-**Importante:** si Excel y RRHH corresponden a dos personas realmente
-distintas, **no pulse Validar**; corrija el documento de origen y
-prevalide de nuevo. El botón exige constancia de la identificación,
-no permite sobreescribir la identidad de RRHH.
+Las posiciones anteriores, ambiguas, inactivos, vacaciones por
+jubilación, tallas inexistentes y duplicados incompatibles no
+ofrecen esta selección. La prevalidación inicial sigue siendo solo
+lectura y la lista temporal se conserva durante una hora. La
+confirmación colectiva sí almacena evidencias en `sindesg`.
+
+Al importar otra vez **exactamente el mismo archivo**, cada evidencia
+solo se aplica a esa requisición, producto y fila si siguen iguales
+la identidad y posición RRHH. Si el Excel o RRHH cambia, debe
+conciliarse nuevamente.
 
 La cantidad documental declarada y el número de filas siguen siendo
 **dos datos independientes**. Si la requisición declara **723** y
