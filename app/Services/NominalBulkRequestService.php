@@ -85,6 +85,14 @@ final class NominalBulkRequestService
     ): array {
         $report = $this->reconcileWorkbook($requestId, $productId, $path, $extension, $filename);
         $blockers = $report['blocked_count'];
+        $declared = $report['declared_quantity'] ?? null;
+        if (!$allowPartial && $declared !== null && (int) $declared !== (int) $report['total']) {
+            throw new InvalidArgumentException(
+                'La requisición declara ' . (int) $declared . ' unidades, pero el Excel contiene '
+                . (int) $report['total'] . ' filas nominales. '
+                . 'Revise la fila faltante o el total antes de importar toda la solicitud.'
+            );
+        }
         if ($blockers > 0 && !$allowPartial) {
             throw new InvalidArgumentException(
                 'La solicitud NO se importó: ' . $blockers . ' funcionarios requieren revisión. '
@@ -289,14 +297,20 @@ final class NominalBulkRequestService
             ];
         }
 
+        $sourceRows = [];
+        foreach ($nominal as $sourceRow) {
+            $sourceRows[(int) ($sourceRow['excel_row'] ?? 0)] = $sourceRow;
+        }
         foreach ((array) ($book['issues'] ?? []) as $issue) {
             if (in_array($issue['type'] ?? '', ['quantity', 'summary', 'size_summary', 'size_format'], true)) {
+                $excelRow = (int) ($issue['excel_row'] ?? 0);
+                $origin = $sourceRows[$excelRow] ?? [];
                 $issues[] = [
-                    'excel_row' => 0,
-                    'position' => '',
-                    'excel_name' => '',
+                    'excel_row' => $excelRow,
+                    'position' => (string) ($origin['position'] ?? ''),
+                    'excel_name' => (string) ($origin['name'] ?? ''),
                     'rrhh_name' => null,
-                    'size' => '',
+                    'size' => (string) ($origin['raw_size'] ?? ''),
                     'severity' => 'notice',
                     'message' => (string) $issue['message'],
                 ];
