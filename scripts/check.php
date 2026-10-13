@@ -34,6 +34,7 @@ $required = [
     'public/api/employees.php',
     'public/api/units.php',
     'public/api/delivery-history.php',
+    'public/api/last-nominal-delivery.php',
     'app/bootstrap.php',
     'app/Support/Database.php',
     'app/Controllers/InventoryController.php',
