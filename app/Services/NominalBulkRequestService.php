@@ -29,13 +29,13 @@ final class NominalBulkRequestService
             throw new InvalidArgumentException('Seleccione un artículo/talla válido.');
         }
         $ids = $this->ids($employeeIds);
-        $request = $this->editableRequest($requestId);
+        $this->editableRequest($requestId);
         $resolved = $this->employees->resolveBulk('employee_id', $ids);
         $people = $this->uniqueMatches($resolved, $ids, 'employee_id');
         $rows = [];
         foreach ($ids as $id) {
             $employee = $people[$id];
-            $this->requireP4Member($employee, $request);
+            // Personal prestado puede ser atendido por el P4 responsable, sin bloqueo por adscripción.
             $rows[] = $this->nominalLine($employee, $variantId, 'Selección múltiple P4');
         }
         return $this->requests->addNominalBatch($requestId, $rows);
@@ -55,7 +55,7 @@ final class NominalBulkRequestService
         string $filename,
         bool $allowPartial
     ): array {
-        $request = $this->editableRequest($requestId);
+        $this->editableRequest($requestId);
         if ($productId <= 0) {
             throw new InvalidArgumentException('Seleccione el producto de botas del catálogo.');
         }
@@ -117,9 +117,7 @@ final class NominalBulkRequestService
                 $cause = 'funcionario ya incluido en esta solicitud para el producto';
             } else {
                 $person = $byPosition[$position][0];
-                if (!$this->isP4Member($person, $request)) {
-                    $cause = 'funcionario fuera de la estructura del P4';
-                } elseif (!$this->namesCompatible(
+                if (!$this->namesCompatible(
                     (string) $row['name'],
                     (string) $person['first_name'],
                     (string) $person['last_name']
@@ -175,25 +173,6 @@ final class NominalBulkRequestService
             throw new InvalidArgumentException('El P4 debe estar vinculado a una unidad RRHH.');
         }
         return $request;
-    }
-
-    private function isP4Member(array $employee, array $request): bool
-    {
-        return in_array(
-            (int) $request['organization_unit_id'],
-            array_map('intval', (array) ($employee['unit_path_ids'] ?? [])),
-            true
-        );
-    }
-
-    private function requireP4Member(array $employee, array $request): void
-    {
-        if (!$this->isP4Member($employee, $request)) {
-            throw new InvalidArgumentException(
-                'Funcionario posición ' . ($employee['position_number'] ?? '—')
-                . ' no pertenece al P4 solicitante.'
-            );
-        }
     }
 
     private function nominalLine(array $employee, int $variantId, string $notes): array
