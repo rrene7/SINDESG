@@ -313,8 +313,9 @@ foreach ($nominalProducts ?? [] as $product) {
             Agregar selección al borrador
         </button>
         <p class="request-cell-sub">Máximo 500 por operación. Puede seleccionar personal de cualquier
-           zona o dirección, incluyendo personal prestado. La fecha de última
-           entrega es informativa: el P4 decide si corresponde solicitar.
+           zona o dirección, incluyendo personal prestado o en licencia.
+           Solo se excluyen Vacaciones por jubilación e Inactivo.
+           La fecha de última entrega es informativa: el P4 decide si corresponde solicitar.
            Se mantiene la validación de RRHH y de duplicados dentro de esta solicitud.
            Sin descontar inventario.</p>
     </form>
