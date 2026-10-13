@@ -66,6 +66,26 @@ final class RequestsController
 
     private function handleGet(string $action, array $query): array
     {
+        if ($action === 'download-nominal-template') {
+            header('Content-Type: text/csv; charset=utf-8');
+            header('Content-Disposition: attachment; filename="sindesg_plantilla_dotacion_p4.csv"');
+            header('Cache-Control: no-store');
+            $output = fopen('php://output', 'wb');
+            if ($output === false) {
+                throw new RuntimeException('No fue posible generar la plantilla.');
+            }
+            fwrite($output, "\xEF\xBB\xBF");
+            fputcsv($output, ['REQUISICION Nº (ESCRIBA EL NUMERO)', '', '', '', '', '', '']);
+            fputcsv($output, ['CONTRATO (SI CORRESPONDE)', '', '', '', '', '', '']);
+            fputcsv($output, ['CANTIDAD DE UNIDADES A DOTAR: (ESCRIBA EL TOTAL)', '', '', '', '', '', '']);
+            fputcsv($output, ['N°', 'RANGO', 'POSICIÓN', 'NOMBRE', 'APELLIDO', 'TALLA', 'FIRMA']);
+            for ($i = 0; $i < 15; $i++) {
+                fputcsv($output, ['', '', '', '', '', '', '']);
+            }
+            fclose($output);
+            exit;
+        }
+
         if ($action === 'import-boots') {
             return [
                 'view' => SINDESG_ROOT . '/app/Views/requests/boots-import.php',
