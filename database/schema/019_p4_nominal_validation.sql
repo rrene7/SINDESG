@@ -37,6 +37,10 @@ CREATE TABLE IF NOT EXISTS p4_nominal_validation_decisions (
         CHECK (CHAR_LENGTH(justification) >= 15)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+INSERT INTO system_settings (setting_key, setting_value)
+VALUES ('schema_version', '0.15.0-p4-val')
+ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value);
+
 INSERT INTO schema_migrations (migration)
 VALUES ('019_p4_nominal_validation')
 ON DUPLICATE KEY UPDATE migration = VALUES(migration);
