@@ -17,3 +17,11 @@ CREATE TABLE IF NOT EXISTS security_user_p4_scopes (
 
 -- No automatic assignments: admins must explicitly authorize each P4.
 -- No updates or deletes to requests, deliveries, stock, kardex or RRHH.
+
+INSERT INTO system_settings (setting_key, setting_value)
+VALUES ('schema_version', '0.16.0-p4-scope')
+ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value);
+
+INSERT INTO schema_migrations (migration)
+VALUES ('020_security_user_p4_scopes')
+ON DUPLICATE KEY UPDATE migration = VALUES(migration);
