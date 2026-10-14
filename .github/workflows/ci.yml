@@ -171,6 +171,9 @@ jobs:
       - name: Receipt draft quantity increase test
         run: php tests/receipt_draft_quantity_increase_test.php
 
+      - name: Receipt missing variant test
+        run: php tests/receipt_missing_variant_test.php
+
       - name: Historical import schema test
         run: php tests/historical_import_schema_test.php
 
