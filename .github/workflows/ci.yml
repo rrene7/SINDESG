@@ -238,6 +238,9 @@ jobs:
       - name: P4 two-unit SQL isolation integration test
         run: php tests/p4_two_unit_isolation_integration_test.php
 
+      - name: P4 controller Database dependency test
+        run: php tests/p4_controller_database_dependency_test.php
+
       - name: Footwear catalog & sizes test
         run: php tests/footwear_catalog_test.php
 

@@ -16,7 +16,7 @@ final class DistributionController
     private DistributionRepository $repository;
     private DistributionService $service;
 
-    public function __construct(Database $database)
+    public function __construct(private Database $database)
     {
         $this->repository = new DistributionRepository($database->connection('sindesg'));
         $this->service = new DistributionService(
