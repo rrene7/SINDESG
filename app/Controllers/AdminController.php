@@ -85,6 +85,8 @@ final class AdminController
                     'securityUser' => $user,
                     'securityRoles' => $security->roles(),
                     'selectedRoleCodes' => $security->roleCodesForUser((int) $user['id']),
+                    'p4WarehouseOptions' => $security->activeP4Warehouses(),
+                    'selectedP4Scopes' => $security->p4ScopesForUser((int) $user['id']),
                     'employeeSearchUrl' => sindesg_url('public/api/employees.php'),
                 ],
             ];
@@ -214,6 +216,31 @@ final class AdminController
             ]);
 
             flash('success', 'Usuario actualizado.');
+            $this->redirect('?module=admin&action=edit&id=' . $userId);
+        }
+
+        if ($action === 'save-p4-scopes') {
+            $userId = (int) ($post['user_id'] ?? 0);
+            $selected = $post['p4_warehouse_ids'] ?? [];
+            if (!is_array($selected)) {
+                throw new InvalidArgumentException('Selección P4 inválida.');
+            }
+            $before = $security->p4ScopesForUser($userId);
+            $security->setP4ScopesForUser($userId, $selected);
+            $after = $security->p4ScopesForUser($userId);
+            $audit->log([
+                'user_id' => $actor['id'],
+                'user_label_snapshot' => $actor['display_name'],
+                'module_code' => 'admin',
+                'action_code' => 'p4_scope_updated',
+                'record_type' => 'security_user',
+                'record_id' => (string) $userId,
+                'before' => ['p4_warehouses' => $before],
+                'after' => ['p4_warehouses' => $after],
+                'ip_address' => $_SERVER['REMOTE_ADDR'] ?? null,
+                'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? null,
+            ]);
+            flash('success', 'Unidades P4 autorizadas actualizadas.');
             $this->redirect('?module=admin&action=edit&id=' . $userId);
         }
 
