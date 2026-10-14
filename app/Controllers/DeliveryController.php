@@ -106,7 +106,7 @@ final class DeliveryController
                 'view' => SINDESG_ROOT . '/app/Views/deliveries/form.php',
                 'title' => 'Nuevo despacho individual',
                 'data' => [
-                    'activeP4s' => $this->repository->activeP4s(),
+                    'activeP4s' => \App\Services\P4WarehouseScope::filter($this->repository->activeP4s(), \App\Services\P4WarehouseScope::current($this->database), 'id'),
                     'pendingLine' => $pendingLine,
                     'recipientOutOfScope' => $recipientOutOfScope,
                     'pendingRecipientCurrent' => $pendingRecipientCurrent,
@@ -183,8 +183,8 @@ final class DeliveryController
             'title' => 'Despacho individual',
             'data' => [
                 'deliveryStats' => $this->repository->stats(),
-                'pendingNominalDeliveries' => $this->repository->pendingNominal(40),
-                'deliveries' => $this->repository->recent(60),
+                'pendingNominalDeliveries' => \App\Services\P4WarehouseScope::filter($this->repository->pendingNominal(100), \App\Services\P4WarehouseScope::current($this->database), 'p4_warehouse_id'),
+                'deliveries' => \App\Services\P4WarehouseScope::filter($this->repository->recent(100), \App\Services\P4WarehouseScope::current($this->database), 'p4_warehouse_id'),
             ],
         ];
     }
