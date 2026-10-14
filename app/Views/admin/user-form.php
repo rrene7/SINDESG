@@ -94,6 +94,28 @@ $isEdit = is_array($securityUser);
 </section>
 
 <section class="security-panel">
+    <div class="security-section-head">
+        <div><span class="eyebrow">ÁMBITO INSTITUCIONAL</span><h2>Unidades P4 autorizadas</h2>
+            <p>La asignación debe ser expresa. Sin P4 asignado, el usuario P4 no tendrá acceso a registros de ninguna unidad cuando se active el control integral.</p>
+        </div>
+    </div>
+    <form method="post" action="<?= e(sindesg_url('?module=admin&action=save-p4-scopes')) ?>">
+        <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
+        <input type="hidden" name="user_id" value="<?= e($securityUser['id']) ?>">
+        <div class="security-role-grid">
+            <?php foreach ($p4WarehouseOptions as $warehouse): ?>
+                <label><input type="checkbox" name="p4_warehouse_ids[]" value="<?= e($warehouse['id']) ?>"
+                    <?= in_array((int) $warehouse['id'], $selectedP4Scopes, true) ? 'checked' : '' ?>>
+                    <span><strong><?= e($warehouse['code']) ?></strong>
+                    <small><?= e($warehouse['organization_unit_name_snapshot'] ?: $warehouse['name']) ?></small></span>
+                </label>
+            <?php endforeach; ?>
+        </div>
+        <button type="submit" class="primary-button">Guardar unidades P4</button>
+    </form>
+</section>
+
+<section class="security-panel">
     <div class="security-section-head"><div><span class="eyebrow">CONTRASEÑA</span><h2>Restablecimiento administrativo</h2><p>La contraseña nunca se muestra ni se guarda en texto plano.</p></div></div>
     <form class="security-form-grid" method="post" action="<?= e(sindesg_url('?module=admin&action=reset-password')) ?>">
         <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">

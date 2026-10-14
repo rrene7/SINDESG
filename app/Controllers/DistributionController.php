@@ -125,8 +125,9 @@ final class DistributionController
             'title' => 'Distribución a P4',
             'data' => [
                 'distributionStats' => $this->repository->stats(),
-                'readyRequests' => $this->repository->readyRequests(),
-                'distributions' => $this->repository->recent(),
+                'distributionStatsRestricted' => !\App\Services\P4WarehouseScope::current($this->database)['unrestricted'],
+                'readyRequests' => \App\Services\P4WarehouseScope::current($this->database)['unrestricted'] ? $this->repository->readyRequests() : [],
+                'distributions' => $this->repository->recent(100, \App\Services\P4WarehouseScope::current($this->database)['unrestricted'] ? null : \App\Services\P4WarehouseScope::current($this->database)['warehouses']),
             ],
         ];
     }

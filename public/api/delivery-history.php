@@ -28,10 +28,11 @@ if ($employeeId <= 0) {
 
 try {
     $repository = new DeliveryRepository($database->connection('sindesg'));
+    $scope = \App\Services\P4WarehouseScope::current($database);
 
     echo json_encode([
         'ok' => true,
-        'items' => $repository->historySummaryForEmployee($employeeId, 12),
+        'items' => $repository->historySummaryForEmployee($employeeId, 12, $scope['unrestricted'] ? null : $scope['warehouses']),
     ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 } catch (Throwable $exception) {
     http_response_code(503);

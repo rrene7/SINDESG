@@ -17,6 +17,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.2'
+          extensions: pdo_sqlite, sqlite3
           coverage: none
 
       - name: PHP syntax
@@ -227,6 +228,15 @@ jobs:
 
       - name: P4 searchable catalog test
         run: php tests/p4_catalog_search_test.php
+
+      - name: P4 warehouse scope foundation test
+        run: php tests/p4_warehouse_scope_foundation_test.php
+
+      - name: P4 delivery SQL scope test
+        run: php tests/p4_delivery_sql_scope_test.php
+
+      - name: P4 two-unit SQL isolation integration test
+        run: php tests/p4_two_unit_isolation_integration_test.php
 
       - name: Footwear catalog & sizes test
         run: php tests/footwear_catalog_test.php

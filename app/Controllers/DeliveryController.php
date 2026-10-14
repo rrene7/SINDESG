@@ -106,14 +106,15 @@ final class DeliveryController
                 'view' => SINDESG_ROOT . '/app/Views/deliveries/form.php',
                 'title' => 'Nuevo despacho individual',
                 'data' => [
-                    'activeP4s' => $this->repository->activeP4s(),
+                    'activeP4s' => \App\Services\P4WarehouseScope::filter($this->repository->activeP4s(), \App\Services\P4WarehouseScope::current($this->database), 'id'),
                     'pendingLine' => $pendingLine,
                     'recipientOutOfScope' => $recipientOutOfScope,
                     'pendingRecipientCurrent' => $pendingRecipientCurrent,
                     'priorHistory' => $pendingLine
                         ? $this->repository->historySummaryForEmployee(
                             (int) $pendingLine['beneficiary_employee_id'],
-                            10
+                            10,
+                            (\App\Services\P4WarehouseScope::current($this->database)['unrestricted'] ? null : \App\Services\P4WarehouseScope::current($this->database)['warehouses'])
                         )
                         : [],
                     'employeeSearchUrl' => sindesg_url('public/api/employees.php'),
@@ -152,7 +153,8 @@ final class DeliveryController
                         : [],
                     'recipientHistory' => $this->repository->historyForEmployee(
                         (int) $delivery['recipient_employee_id'],
-                        20
+                        20,
+                        (\App\Services\P4WarehouseScope::current($this->database)['unrestricted'] ? null : \App\Services\P4WarehouseScope::current($this->database)['warehouses'])
                     ),
                 ],
             ];
@@ -164,7 +166,7 @@ final class DeliveryController
                 throw new InvalidArgumentException('Seleccione un funcionario.');
             }
 
-            $history = $this->repository->historyForEmployee($employeeId, 200);
+            $history = $this->repository->historyForEmployee($employeeId, 200, (\App\Services\P4WarehouseScope::current($this->database)['unrestricted'] ? null : \App\Services\P4WarehouseScope::current($this->database)['warehouses']));
             $employee = $this->employees->findEligibleEmployee($employeeId);
 
             return [
@@ -183,8 +185,9 @@ final class DeliveryController
             'title' => 'Despacho individual',
             'data' => [
                 'deliveryStats' => $this->repository->stats(),
-                'pendingNominalDeliveries' => $this->repository->pendingNominal(40),
-                'deliveries' => $this->repository->recent(60),
+                'deliveryStatsRestricted' => !\App\Services\P4WarehouseScope::current($this->database)['unrestricted'],
+                'pendingNominalDeliveries' => $this->repository->pendingNominal(100, \App\Services\P4WarehouseScope::current($this->database)['unrestricted'] ? null : \App\Services\P4WarehouseScope::current($this->database)['warehouses']),
+                'deliveries' => $this->repository->recent(100, \App\Services\P4WarehouseScope::current($this->database)['unrestricted'] ? null : \App\Services\P4WarehouseScope::current($this->database)['warehouses']),
             ],
         ];
     }

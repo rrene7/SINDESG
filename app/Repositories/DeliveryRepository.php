@@ -45,14 +45,33 @@ final class DeliveryRepository
         ];
     }
 
-    public function recent(int $limit = 50): array
+    /**
+     * Scope in SQL before LIMIT. Null means unrestricted; [] fails closed.
+     * Values are cast to integers to avoid dynamic SQL injection.
+     */
+    private function deliveryScopeClause(?array $warehouseIds, string $column): ?string
+    {
+        if ($warehouseIds === null) return '';
+        $ids = array_values(array_unique(array_filter(
+            array_map('intval', $warehouseIds),
+            static fn (int $id): bool => $id > 0
+        )));
+        if ($ids === []) return null;
+        return 'AND ' . $column . ' IN (' . implode(',', $ids) . ')';
+    }
+
+    public function recent(int $limit = 50, ?array $allowedP4Ids = null): array
     {
         $limit = max(1, min($limit, 100));
+
+        $scope = $this->deliveryScopeClause($allowedP4Ids, 'd.p4_warehouse_id');
+        if ($scope === null) return [];
 
         return $this->pdo->query('
             SELECT
                 d.id,
                 d.delivery_code,
+                d.p4_warehouse_id,
                 d.delivered_at,
                 d.status,
                 d.recipient_employee_id,
@@ -65,6 +84,7 @@ final class DeliveryRepository
             FROM individual_deliveries d
             INNER JOIN warehouses w ON w.id = d.p4_warehouse_id
             LEFT JOIN individual_delivery_items di ON di.delivery_id = d.id
+            WHERE 1 = 1 ' . $scope . '
             GROUP BY d.id
             ORDER BY d.delivered_at DESC, d.id DESC
             LIMIT ' . $limit)->fetchAll();
@@ -116,9 +136,12 @@ final class DeliveryRepository
         return $value === false || $value === null ? null : (int) $value;
     }
 
-    public function pendingNominal(int $limit = 40): array
+    public function pendingNominal(int $limit = 40, ?array $allowedP4Ids = null): array
     {
         $limit = max(1, min($limit, 100));
+
+        $scope = $this->deliveryScopeClause($allowedP4Ids, 'r.p4_warehouse_id');
+        if ($scope === null) return [];
 
         return $this->pdo->query('
             SELECT
@@ -164,6 +187,7 @@ final class DeliveryRepository
               AND r.status IN ("approved", "partially_approved", "fulfilled")
               AND w.warehouse_type = "P4"
               AND w.is_active = 1
+              ' . $scope . '
             ORDER BY r.requested_at, i.id
             LIMIT ' . $limit)->fetchAll();
     }
@@ -844,9 +868,15 @@ final class DeliveryRepository
         }
     }
 
-    public function historyForEmployee(int $employeeId, int $limit = 100): array
+    public function historyForEmployee(int $employeeId, int $limit = 100, ?array $allowedP4Ids = null): array
     {
         $limit = max(1, min($limit, 200));
+        if ($allowedP4Ids !== null && $allowedP4Ids === []) {
+            return [];
+        }
+        $ids = $allowedP4Ids === null ? [] : array_values(array_unique(array_map('intval', $allowedP4Ids)));
+        $ids = array_values(array_filter($ids, static fn (int $id): bool => $id > 0));
+        $scopeSql = $allowedP4Ids === null ? '' : ' AND d.p4_warehouse_id IN (' . implode(',', $ids) . ')';
 
         $statement = $this->pdo->prepare('
             SELECT
@@ -882,6 +912,7 @@ final class DeliveryRepository
             LEFT JOIN service_requests sr ON sr.id = sri.request_id
             WHERE d.recipient_employee_id = :employee_id
               AND d.status = "confirmed"
+            ' . $scopeSql . '
             ORDER BY d.delivered_at DESC, d.id DESC, di.id
             LIMIT ' . $limit
         );
@@ -898,7 +929,7 @@ final class DeliveryRepository
      * @param list<int> $employeeIds
      * @return array<int,string> employee_id => fecha DATETIME
      */
-    public function lastConfirmedDatesForProduct(int $productId, array $employeeIds): array
+    public function lastConfirmedDatesForProduct(int $productId, array $employeeIds, ?array $allowedP4Ids = null): array
     {
         if ($productId <= 0 || count($employeeIds) > 100) {
             throw new \InvalidArgumentException('Producto o lote de funcionarios no válido.');
@@ -914,6 +945,9 @@ final class DeliveryRepository
         if (!$ids) {
             return [];
         }
+
+        $p4SqlScope = $this->deliveryScopeClause($allowedP4Ids, 'd.p4_warehouse_id');
+        if ($p4SqlScope === null) return [];
 
         $bind = ['product_id' => $productId];
         $holders = [];
@@ -931,6 +965,7 @@ final class DeliveryRepository
             WHERE d.status = "confirmed"
               AND pv.product_id = :product_id
               AND d.recipient_employee_id IN (' . implode(', ', $holders) . ')
+            ' . $p4SqlScope . '
             GROUP BY d.recipient_employee_id';
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute($bind);
@@ -941,9 +976,9 @@ final class DeliveryRepository
         return $dates;
     }
 
-    public function historySummaryForEmployee(int $employeeId, int $limit = 12): array
+    public function historySummaryForEmployee(int $employeeId, int $limit = 12, ?array $allowedP4Ids = null): array
     {
-        $rows = $this->historyForEmployee($employeeId, $limit);
+        $rows = $this->historyForEmployee($employeeId, $limit, $allowedP4Ids);
 
         return array_map(
             static fn (array $row): array => [

@@ -82,6 +82,80 @@ final class SecurityRepository
         )->fetchAll();
     }
 
+    /** @return list<array<string, mixed>> */
+    public function activeP4Warehouses(): array
+    {
+        return $this->pdo->query(
+            "SELECT id, code, name, organization_unit_name_snapshot
+             FROM warehouses WHERE warehouse_type = 'P4' AND is_active = 1
+             ORDER BY organization_unit_name_snapshot, code"
+        )->fetchAll();
+    }
+
+    /** @return list<int> */
+    public function p4ScopesForUser(int $userId): array
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT warehouse_id FROM security_user_p4_scopes WHERE user_id = :user_id ORDER BY warehouse_id'
+        );
+        $stmt->execute(['user_id' => $userId]);
+        return array_map('intval', $stmt->fetchAll(PDO::FETCH_COLUMN));
+    }
+
+    public function setP4ScopesForUser(int $userId, array $warehouseIds, array $actor): void
+    {
+        if ($this->findUser($userId) === null) {
+            throw new RuntimeException('Usuario no encontrado.');
+        }
+        $roles = $this->roleCodesForUser($userId);
+        if ($warehouseIds !== [] && !in_array('P4', $roles, true)) {
+            throw new RuntimeException('Solo se asignan P4 a usuarios con rol P4.');
+        }
+        $before = $this->p4ScopesForUser($userId);
+        $ids = [];
+        foreach ($warehouseIds as $id) {
+            if (!is_scalar($id) || !ctype_digit((string) $id) || (int) $id <= 0) {
+                throw new RuntimeException('Identificador P4 inválido.');
+            }
+            $ids[(int) $id] = (int) $id;
+        }
+        $allowed = array_map('intval', array_column($this->activeP4Warehouses(), 'id'));
+        foreach ($ids as $id) {
+            if (!in_array($id, $allowed, true)) {
+                throw new RuntimeException('El P4 seleccionado no existe o no está activo.');
+            }
+        }
+        $this->pdo->beginTransaction();
+        try {
+            $delete = $this->pdo->prepare('DELETE FROM security_user_p4_scopes WHERE user_id = :id');
+            $delete->execute(['id' => $userId]);
+            $insert = $this->pdo->prepare(
+                'INSERT INTO security_user_p4_scopes (user_id,warehouse_id) VALUES (:user_id,:warehouse_id)'
+            );
+            foreach ($ids as $id) {
+                $insert->execute(['user_id' => $userId, 'warehouse_id' => $id]);
+            }
+            (new AuditRepository($this->pdo))->log([
+                'user_id' => (int) ($actor['id'] ?? 0),
+                'user_label_snapshot' => (string) ($actor['display_name'] ?? ''),
+                'module_code' => 'admin',
+                'action_code' => 'p4_scope_updated',
+                'record_type' => 'security_user',
+                'record_id' => (string) $userId,
+                'before' => ['p4_warehouses' => $before],
+                'after' => ['p4_warehouses' => array_values($ids)],
+                'ip_address' => $_SERVER['REMOTE_ADDR'] ?? null,
+                'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? null,
+            ]);
+            $this->pdo->commit();
+        } catch (\Throwable $e) {
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+            throw $e;
+        }
+    }
+
     public function roleCodesForUser(int $userId): array
     {
         $statement = $this->pdo->prepare(<<<'SQL'
@@ -193,6 +267,13 @@ final class SecurityRepository
         try {
             $userId = $this->insertUser($employee, $username, $passwordHash, 'active');
             $this->assignRoles($userId, $roleIds);
+            // Never retain a dormant unit grant after the P4 role is revoked.
+            if (!in_array('P4', $this->roleCodesForUser($userId), true)) {
+                $revoke = $this->pdo->prepare(
+                    'DELETE FROM security_user_p4_scopes WHERE user_id = :user_id'
+                );
+                $revoke->execute(['user_id' => $userId]);
+            }
             $this->pdo->commit();
 
             return $userId;

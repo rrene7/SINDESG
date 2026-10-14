@@ -113,7 +113,7 @@ final class RequestsController
                 'view' => SINDESG_ROOT . '/app/Views/requests/form.php',
                 'title' => 'Nueva solicitud',
                 'data' => [
-                    'activeP4s' => $this->repository->activeP4s(),
+                    'activeP4s' => \App\Services\P4WarehouseScope::filter($this->repository->activeP4s(), \App\Services\P4WarehouseScope::current($this->database), 'id'),
                     'employeeSearchUrl' => sindesg_url('public/api/employees.php'),
                     'defaultRequestedAt' => date('Y-m-d\TH:i'),
                 ],
@@ -192,7 +192,8 @@ final class RequestsController
             'title' => 'Solicitudes',
             'data' => [
                 'requestStats' => $this->repository->stats(),
-                'serviceRequests' => $this->repository->recent(60),
+                'requestStatsRestricted' => !\App\Services\P4WarehouseScope::current($this->database)['unrestricted'],
+                'serviceRequests' => $this->repository->recent(100, \App\Services\P4WarehouseScope::current($this->database)['unrestricted'] ? null : \App\Services\P4WarehouseScope::current($this->database)['warehouses']),
             ],
         ];
     }

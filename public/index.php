@@ -192,6 +192,60 @@ if (($requiredPermission !== null && !$authService->can($requiredPermission))
     exit;
 }
 
+// Enforce P4 record scope before controller dispatch (GET and POST).
+if (in_array($currentModule, ['requests', 'distribution', 'deliveries', 'warehouses'], true)) {
+    $scope = \App\Services\P4WarehouseScope::current($database);
+    if (!$scope['unrestricted']) {
+        $pdoScope = $database->connection('sindesg');
+        $inputScope = $currentMethod === 'POST' ? $_POST : $_GET;
+        $table = null;
+        $id = 0;
+        $sql = null;
+        if ($currentModule === 'requests') {
+            $id = (int) ($inputScope['request_id'] ?? $inputScope['id'] ?? 0);
+            $sql = 'SELECT p4_warehouse_id FROM service_requests WHERE id = :id';
+        } elseif ($currentModule === 'distribution') {
+            $id = (int) ($inputScope['distribution_id'] ?? $inputScope['id'] ?? 0);
+            $sql = 'SELECT destination_warehouse_id FROM distributions WHERE id = :id';
+        } elseif ($currentModule === 'warehouses') {
+            $id = (int) ($inputScope['warehouse_id'] ?? $inputScope['id'] ?? 0);
+            $sql = 'SELECT id FROM warehouses WHERE id = :id AND warehouse_type = "P4"';
+        } else {
+            $id = (int) ($inputScope['delivery_id'] ?? $inputScope['id'] ?? 0);
+            $sql = 'SELECT p4_warehouse_id FROM individual_deliveries WHERE id = :id';
+        }
+        if ($currentModule === 'deliveries' && $id === 0 && isset($inputScope['request_item_id'])) {
+            $id = (int) $inputScope['request_item_id'];
+            $sql = 'SELECT r.p4_warehouse_id FROM service_request_items i
+                    JOIN service_requests r ON r.id = i.request_id WHERE i.id = :id';
+        }
+        if ($id > 0) {
+            $stmtScope = $pdoScope->prepare($sql);
+            $stmtScope->execute(['id' => $id]);
+            $warehouseScope = (int) ($stmtScope->fetchColumn() ?: 0);
+            if (!\App\Services\P4WarehouseScope::authorized($scope['roles'], $scope['warehouses'], $warehouseScope)) {
+                http_response_code(403);
+                $pageTitle = 'Acceso denegado';
+                $contentView = dirname(__DIR__) . '/app/Views/auth/forbidden.php';
+                require dirname(__DIR__) . '/app/Views/layout.php';
+                exit;
+            }
+        }
+        if ($currentModule === 'requests' && $currentAction === 'save' && $currentMethod === 'POST') {
+            \App\Services\P4WarehouseScope::assertAuthorized(
+                $scope['roles'], $scope['warehouses'],
+                (int) ($_POST['p4_warehouse_id'] ?? 0)
+            );
+        }
+        if ($currentModule === 'deliveries' && $currentAction === 'save' && $currentMethod === 'POST') {
+            \App\Services\P4WarehouseScope::assertAuthorized(
+                $scope['roles'], $scope['warehouses'],
+                (int) ($_POST['p4_warehouse_id'] ?? 0)
+            );
+        }
+    }
+}
+
 if ($currentMethod === 'POST') {
     $authService->registerRequestAudit($currentModule, $currentAction, $_POST);
 }
@@ -244,7 +298,24 @@ if ($currentModule === 'dashboard') {
         }
     }
 
-    $contentView = dirname(__DIR__) . '/app/Views/dashboard.php';
+    $dashboardScope = \App\Services\P4WarehouseScope::current($database);
+    if (!$dashboardScope['unrestricted']) {
+        $p4DashboardRequests = \App\Services\P4WarehouseScope::filter(
+            (new \App\Repositories\RequestRepository($database->connection('sindesg')))->recent(100),
+            $dashboardScope, 'p4_warehouse_id'
+        );
+        $p4DashboardTransfers = \App\Services\P4WarehouseScope::filter(
+            (new \App\Repositories\DistributionRepository($database->connection('sindesg')))->recent(100),
+            $dashboardScope, 'destination_warehouse_id'
+        );
+        $p4DashboardDeliveries = \App\Services\P4WarehouseScope::filter(
+            (new \App\Repositories\DeliveryRepository($database->connection('sindesg')))->recent(100),
+            $dashboardScope, 'p4_warehouse_id'
+        );
+        $contentView = dirname(__DIR__) . '/app/Views/dashboard-p4.php';
+    } else {
+        $contentView = dirname(__DIR__) . '/app/Views/dashboard.php';
+    }
 } elseif ($currentModule === 'inventory') {
     if (!$health['sindesg']['ok']) {
         $pageTitle = 'Inventario';
