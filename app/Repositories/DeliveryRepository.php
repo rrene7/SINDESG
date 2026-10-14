@@ -845,9 +845,15 @@ final class DeliveryRepository
         }
     }
 
-    public function historyForEmployee(int $employeeId, int $limit = 100): array
+    public function historyForEmployee(int $employeeId, int $limit = 100, ?array $allowedP4Ids = null): array
     {
         $limit = max(1, min($limit, 200));
+        if ($allowedP4Ids !== null && $allowedP4Ids === []) {
+            return [];
+        }
+        $ids = $allowedP4Ids === null ? [] : array_values(array_unique(array_map('intval', $allowedP4Ids)));
+        $ids = array_values(array_filter($ids, static fn (int $id): bool => $id > 0));
+        $scopeSql = $allowedP4Ids === null ? '' : ' AND d.p4_warehouse_id IN (' . implode(',', $ids) . ')';
 
         $statement = $this->pdo->prepare('
             SELECT
@@ -883,6 +889,7 @@ final class DeliveryRepository
             LEFT JOIN service_requests sr ON sr.id = sri.request_id
             WHERE d.recipient_employee_id = :employee_id
               AND d.status = "confirmed"
+            ' . $scopeSql . '
             ORDER BY d.delivered_at DESC, d.id DESC, di.id
             LIMIT ' . $limit
         );
@@ -942,9 +949,9 @@ final class DeliveryRepository
         return $dates;
     }
 
-    public function historySummaryForEmployee(int $employeeId, int $limit = 12): array
+    public function historySummaryForEmployee(int $employeeId, int $limit = 12, ?array $allowedP4Ids = null): array
     {
-        $rows = $this->historyForEmployee($employeeId, $limit);
+        $rows = $this->historyForEmployee($employeeId, $limit, $allowedP4Ids);
 
         return array_map(
             static fn (array $row): array => [
