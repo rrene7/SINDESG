@@ -56,11 +56,13 @@ foreach ([
         throw new RuntimeException('Falta ruta o protección: ' . $phrase);
     }
 }
-if (!str_contains($listing, 'inventory.manage')
-    || !str_contains($listing, 'Preparar catálogo de calzado')
+if (str_contains($listing, 'catalog-footwear-panel')
+    || str_contains($listing, 'Preparar catálogo de calzado')
+    || !str_contains($listing, 'catalog-toolbar')
+    || !str_contains($listing, 'category-strip')
     || !str_contains($product, 'sizes_bulk')
     || !str_contains($product, 'save-sizes-bulk')) {
-    throw new RuntimeException('No se muestran las opciones seguras de calzado/tallas.');
+    throw new RuntimeException('El catálogo debe conservar tallas seguras sin mostrar el panel redundante de calzado.');
 }
 
 // Las operaciones de alta en catálogo nunca deben crear existencias operativas.
