@@ -9,7 +9,7 @@ $cases = [
     [['P4'], [12], 13, false],
     [['P4'], [], 12, false],
     [['P4'], [12], 0, false],
-    [['VIEWER'], [12], 12, false],
+    [['VIEWER'], [12], 12, true],
     [['CENTRAL'], [], 12, true],
     [['ADMIN'], [], 12, true],
 ];
