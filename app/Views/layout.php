@@ -174,6 +174,9 @@ window.SINDESG_SEARCH_ITEMS = <?= json_encode(array_merge(
 ), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
 </script>
 <script src="<?= e(sindesg_asset('js/app.js')) ?>"></script>
+<?php if ($currentModule === 'admin'): ?>
+    <script src="<?= e(sindesg_asset('js/security.js')) ?>"></script>
+<?php endif; ?>
 <?php if ($currentModule === 'receipts'): ?>
     <script src="<?= e(sindesg_asset('js/receipts.js')) ?>"></script>
 <?php endif; ?>
