@@ -211,13 +211,22 @@ function sindesg_role_action_allowed(string $module, string $action, string $met
         return true;
     }
 
-    // Reports and adjustments need row-level scope before P4 access can be enabled.
-    // Fail closed instead of exposing institution-wide history or stock adjustments.
-    if (in_array('P4', $roles, true) && in_array($module, ['reports', 'adjustments'], true)) {
+    $isWrite = strtoupper($method) === 'POST';
+    $isScopedP4 = in_array('P4', $roles, true) && !in_array('CENTRAL', $roles, true);
+    // These modules still expose institution-wide information. P4 staff must
+    // not inherit global visibility just because a role permission was edited.
+    if ($isScopedP4 && in_array($module, [
+        'reports', 'adjustments', 'inventory', 'receipts', 'production',
+        'migration', 'audit',
+    ], true)) {
         return false;
     }
-
-    $isWrite = strtoupper($method) === 'POST';
+    // A P4 operator may consult only assigned warehouses; never create or
+    // modify the network of warehouses through global management actions.
+    if ($isScopedP4 && $module === 'warehouses'
+        && ($isWrite || in_array($action, ['new', 'edit'], true))) {
+        return false;
+    }
     $centralOnly = $module === 'requests' && (
         ($isWrite && in_array($action, ['start-review', 'decide'], true))
         || (!$isWrite && $action === 'central-review')
