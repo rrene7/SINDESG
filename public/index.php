@@ -192,6 +192,48 @@ if (($requiredPermission !== null && !$authService->can($requiredPermission))
     exit;
 }
 
+// Enforce P4 record scope before controller dispatch (GET and POST).
+if (in_array($currentModule, ['requests', 'distribution', 'deliveries'], true)) {
+    $scope = \App\Services\P4WarehouseScope::current($database);
+    if (!$scope['unrestricted']) {
+        $pdoScope = $database->connection('sindesg');
+        $inputScope = $currentMethod === 'POST' ? $_POST : $_GET;
+        $table = null;
+        $id = 0;
+        $sql = null;
+        if ($currentModule === 'requests') {
+            $id = (int) ($inputScope['request_id'] ?? $inputScope['id'] ?? 0);
+            $sql = 'SELECT p4_warehouse_id FROM service_requests WHERE id = :id';
+        } elseif ($currentModule === 'distribution') {
+            $id = (int) ($inputScope['distribution_id'] ?? $inputScope['id'] ?? 0);
+            $sql = 'SELECT destination_warehouse_id FROM distributions WHERE id = :id';
+        } else {
+            $id = (int) ($inputScope['delivery_id'] ?? $inputScope['id'] ?? 0);
+            $sql = 'SELECT p4_warehouse_id FROM individual_deliveries WHERE id = :id';
+        }
+        if ($id > 0) {
+            $stmtScope = $pdoScope->prepare($sql);
+            $stmtScope->execute(['id' => $id]);
+            $warehouseScope = (int) ($stmtScope->fetchColumn() ?: 0);
+            \App\Services\P4WarehouseScope::assertAuthorized(
+                $scope['roles'], $scope['warehouses'], $warehouseScope
+            );
+        }
+        if ($currentModule === 'requests' && $currentAction === 'save' && $currentMethod === 'POST') {
+            \App\Services\P4WarehouseScope::assertAuthorized(
+                $scope['roles'], $scope['warehouses'],
+                (int) ($_POST['p4_warehouse_id'] ?? 0)
+            );
+        }
+        if ($currentModule === 'deliveries' && $currentAction === 'save' && $currentMethod === 'POST') {
+            \App\Services\P4WarehouseScope::assertAuthorized(
+                $scope['roles'], $scope['warehouses'],
+                (int) ($_POST['p4_warehouse_id'] ?? 0)
+            );
+        }
+    }
+}
+
 if ($currentMethod === 'POST') {
     $authService->registerRequestAudit($currentModule, $currentAction, $_POST);
 }
