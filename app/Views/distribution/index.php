@@ -17,12 +17,14 @@ $statusLabels = [
     </div>
 </section>
 
+<?php if (empty($distributionStatsRestricted)): ?>
 <section class="distribution-stats">
     <article><span>Preparadas</span><strong><?= e($distributionStats['prepared']) ?></strong></article>
     <article><span>Listas para retirar</span><strong><?= e($distributionStats['authorized']) ?></strong></article>
     <article><span>En tránsito</span><strong><?= e($distributionStats['in_transit']) ?></strong><small><?= e(number_format((float) $distributionStats['transit_stock'], 0, '.', ',')) ?> unidades</small></article>
     <article><span>Recibidas</span><strong><?= e($distributionStats['received']) ?></strong></article>
 </section>
+<?php endif; ?>
 
 <section class="distribution-panel">
     <div class="distribution-section-head">
