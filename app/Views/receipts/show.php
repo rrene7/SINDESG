@@ -46,6 +46,35 @@ $statusLabel = $receipt['status'] === 'confirmed' ? 'Confirmada' : ucfirst((stri
         <?php endif; ?>
     </article>
 
+    <?php if ($receipt['status'] === 'draft' && sindesg_can('admin.manage')): ?>
+    <article class="receipt-info-panel">
+        <span class="eyebrow">ADMINISTRACIÓN · BORRADOR</span>
+        <h2>Editar datos de recepción</h2>
+        <p>Corrija los datos documentales antes de confirmar el ingreso. Esta edición queda auditada y no altera cantidades ni kardex.</p>
+        <form method="post" action="<?= e(sindesg_url('?module=receipts&action=update-draft')) ?>" class="receipt-form">
+            <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
+            <input type="hidden" name="receipt_id" value="<?= e($receipt['id']) ?>">
+            <label><span>Procedencia</span>
+                <select name="source_type" required>
+                <?php foreach ($sourceTypes as $value => $label): ?>
+                    <option value="<?= e($value) ?>" <?= $receipt['source_type'] === $value ? 'selected' : '' ?>><?= e($label) ?></option>
+                <?php endforeach; ?>
+                </select>
+            </label>
+            <label><span>Proveedor / origen</span>
+                <input type="text" name="supplier_or_origin" maxlength="180" required value="<?= e($receipt['supplier_or_origin']) ?>">
+            </label>
+            <label><span>Documento soporte</span>
+                <input type="text" name="document_number" maxlength="120" value="<?= e($receipt['document_number'] ?? '') ?>">
+            </label>
+            <label><span>Observaciones</span>
+                <textarea name="notes" rows="3" maxlength="5000"><?= e($receipt['notes'] ?? '') ?></textarea>
+            </label>
+            <button class="primary-button" type="submit">Guardar correcciones del borrador</button>
+        </form>
+    </article>
+    <?php endif; ?>
+
     <aside class="receipt-confirm-panel">
         <?php if ($receipt['status'] === 'draft'): ?>
             <span class="eyebrow">PASO PENDIENTE</span>
@@ -152,6 +181,59 @@ $statusLabel = $receipt['status'] === 'confirmed' ? 'Confirmada' : ucfirst((stri
         </div>
         <span class="receipt-total-label"><?= e(count($receiptItems)) ?> renglones</span>
     </div>
+
+    <?php if ($receipt['status'] === 'draft' && sindesg_can('admin.manage')): ?>
+    <details class="receipt-info-panel">
+        <summary><strong>+ Agregar cantidad a una talla existente</strong></summary>
+        <p>Para corregir una cantidad omitida en este borrador. Se suma a la cantidad actual sin generar inventario todavía.</p>
+        <form method="post" action="<?= e(sindesg_url('?module=receipts&action=increase-draft-quantity')) ?>" class="receipt-form">
+            <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
+            <input type="hidden" name="receipt_id" value="<?= e($receipt['id']) ?>">
+            <label><span>Talla / variante del lote</span>
+                <select name="receipt_item_id" required>
+                    <option value="">Seleccione una talla...</option>
+                    <?php foreach ($receiptItems as $item): ?>
+                        <option value="<?= e($item['id']) ?>"><?= e($item['product_name'] . ' · ' . ($item['size_name'] ?: 'Sin talla') . ' · ' . $item['variant_code']) ?> — actual: <?= e(number_format((float) $item['quantity'], 3, '.', ',')) ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </label>
+            <label><span>Cantidad adicional omitida</span>
+                <input name="added_quantity" type="number" min="0.001" step="0.001" max="999999999.999" required>
+            </label>
+            <button class="primary-button" type="submit">Sumar cantidad al borrador</button>
+        </form>
+    </details>
+    <?php endif; ?>
+
+    <?php if ($receipt['status'] === 'draft' && sindesg_can('admin.manage')): ?>
+    <details class="receipt-info-panel">
+        <summary><strong>+ Agregar talla omitida del catálogo al lote</strong></summary>
+        <p>Para una talla que existe en SINDESG pero aún no se incluyó en esta recepción. No genera movimientos hasta confirmar el lote.</p>
+        <form method="post" action="<?= e(sindesg_url('?module=receipts&action=add-missing-variant')) ?>" class="receipt-form">
+            <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
+            <input type="hidden" name="receipt_id" value="<?= e($receipt['id']) ?>">
+            <label><span>Artículo y talla omitida</span>
+                <select name="variant_id" required>
+                    <option value="">Seleccione del catálogo...</option>
+                    <?php
+                    $existingVariantIds = array_map('intval', array_column($receiptItems, 'variant_id'));
+                    foreach ($variantOptions as $option):
+                        if (in_array((int) $option['id'], $existingVariantIds, true)) continue;
+                    ?>
+                        <option value="<?= e($option['id']) ?>"><?= e($option['product_name'] . ' · Talla ' . ($option['size_name'] ?: 'Sin talla') . ' · ' . $option['variant_code'] . ' · ' . ($option['brand_name'] ?: 'Sin marca')) ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </label>
+            <label><span>Cantidad de la talla omitida</span>
+                <input name="quantity" type="number" min="0.001" step="0.001" required>
+            </label>
+            <label><span>Observación (opcional)</span>
+                <input name="item_notes" maxlength="255" type="text" placeholder="Corrección de captura">
+            </label>
+            <button class="primary-button" type="submit">Agregar talla al borrador</button>
+        </form>
+    </details>
+    <?php endif; ?>
 
     <div class="responsive-table">
         <table>

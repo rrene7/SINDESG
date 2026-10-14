@@ -162,14 +162,20 @@ jobs:
       - name: Security permissions test
         run: php tests/security_permissions_test.php
 
+      - name: Admin employee picker wiring test
+        run: php tests/admin_employee_picker_wiring_test.php
+
       - name: Role workflow boundaries test
         run: php tests/role_operation_boundaries_test.php
 
-      - name: P4 warehouse scope foundation test
-        run: php tests/p4_warehouse_scope_foundation_test.php
+      - name: Receipt admin draft edit test
+        run: php tests/receipt_admin_draft_edit_test.php
 
-      - name: P4 delivery SQL scope test
-        run: php tests/p4_delivery_sql_scope_test.php
+      - name: Receipt draft quantity increase test
+        run: php tests/receipt_draft_quantity_increase_test.php
+
+      - name: Receipt missing variant test
+        run: php tests/receipt_missing_variant_test.php
 
       - name: Historical import schema test
         run: php tests/historical_import_schema_test.php
@@ -221,6 +227,12 @@ jobs:
 
       - name: P4 searchable catalog test
         run: php tests/p4_catalog_search_test.php
+
+      - name: P4 warehouse scope foundation test
+        run: php tests/p4_warehouse_scope_foundation_test.php
+
+      - name: P4 delivery SQL scope test
+        run: php tests/p4_delivery_sql_scope_test.php
 
       - name: Footwear catalog & sizes test
         run: php tests/footwear_catalog_test.php
