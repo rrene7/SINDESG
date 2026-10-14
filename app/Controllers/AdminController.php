@@ -199,8 +199,10 @@ final class AdminController
             }
 
             $beforeRoles = $security->roleCodesForUser($userId);
+            $beforeP4Scopes = $security->p4ScopesForUser($userId);
             $security->updateUser($userId, $status, $roleIds);
             $afterRoles = $security->roleCodesForUser($userId);
+            $afterP4Scopes = $security->p4ScopesForUser($userId);
 
             $audit->log([
                 'user_id' => $actor['id'],
@@ -209,8 +211,8 @@ final class AdminController
                 'action_code' => 'user_updated',
                 'record_type' => 'security_user',
                 'record_id' => (string) $userId,
-                'before' => ['status' => $before['status'], 'roles' => $beforeRoles],
-                'after' => ['status' => $status, 'roles' => $afterRoles],
+                'before' => ['status' => $before['status'], 'roles' => $beforeRoles, 'p4_warehouses' => $beforeP4Scopes],
+                'after' => ['status' => $status, 'roles' => $afterRoles, 'p4_warehouses' => $afterP4Scopes],
                 'ip_address' => $_SERVER['REMOTE_ADDR'] ?? null,
                 'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? null,
             ]);
