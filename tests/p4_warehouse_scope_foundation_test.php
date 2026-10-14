@@ -19,6 +19,10 @@ foreach ($cases as [$roles, $scopes, $warehouse, $expected]) {
     }
 }
 $actionCases = [
+    ['P4', 'admin', 'index', 'GET', false],
+    ['CENTRAL', 'admin', 'index', 'GET', false],
+    ['VIEWER', 'admin', 'index', 'GET', false],
+    ['ADMIN', 'admin', 'index', 'GET', true],
     ['P4', 'inventory', 'index', 'GET', false],
     ['P4', 'reports', 'index', 'GET', false],
     ['P4', 'warehouses', 'new', 'GET', false],
