@@ -193,7 +193,7 @@ final class RequestsController
             'data' => [
                 'requestStats' => $this->repository->stats(),
                 'requestStatsRestricted' => !\App\Services\P4WarehouseScope::current($this->database)['unrestricted'],
-                'serviceRequests' => \App\Services\P4WarehouseScope::filter($this->repository->recent(100), \App\Services\P4WarehouseScope::current($this->database), 'p4_warehouse_id'),
+                'serviceRequests' => $this->repository->recent(100, \App\Services\P4WarehouseScope::current($this->database)['unrestricted'] ? null : \App\Services\P4WarehouseScope::current($this->database)['warehouses']),
             ],
         ];
     }
