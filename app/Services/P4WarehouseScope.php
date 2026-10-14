@@ -30,6 +30,28 @@ final class P4WarehouseScope
         return array_map('intval', $stmt->fetchAll(PDO::FETCH_COLUMN));
     }
 
+    public static function current(\App\Support\Database $database): array
+    {
+        $user = sindesg_user() ?? [];
+        $roles = (array) ($user['role_codes'] ?? []);
+        if (in_array('ADMIN', $roles, true) || in_array('CENTRAL', $roles, true)) {
+            return ['roles' => $roles, 'warehouses' => [], 'unrestricted' => true];
+        }
+        $ids = (new self($database->connection('sindesg')))
+            ->warehouseIdsForUser((int) ($user['id'] ?? 0));
+        return ['roles' => $roles, 'warehouses' => $ids, 'unrestricted' => false];
+    }
+
+    public static function filter(array $records, array $scope, string $key): array
+    {
+        if ($scope['unrestricted']) {
+            return $records;
+        }
+        return array_values(array_filter($records, static fn (array $record): bool =>
+            self::authorized($scope['roles'], $scope['warehouses'], (int) ($record[$key] ?? 0))
+        ));
+    }
+
     public static function authorized(
         array $roleCodes,
         array $allowedWarehouseIds,
