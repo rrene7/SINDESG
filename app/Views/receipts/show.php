@@ -205,6 +205,36 @@ $statusLabel = $receipt['status'] === 'confirmed' ? 'Confirmada' : ucfirst((stri
     </details>
     <?php endif; ?>
 
+    <?php if ($receipt['status'] === 'draft' && sindesg_can('admin.manage')): ?>
+    <details class="receipt-info-panel">
+        <summary><strong>+ Agregar talla omitida del catálogo al lote</strong></summary>
+        <p>Para una talla que existe en SINDESG pero aún no se incluyó en esta recepción. No genera movimientos hasta confirmar el lote.</p>
+        <form method="post" action="<?= e(sindesg_url('?module=receipts&action=add-missing-variant')) ?>" class="receipt-form">
+            <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
+            <input type="hidden" name="receipt_id" value="<?= e($receipt['id']) ?>">
+            <label><span>Artículo y talla omitida</span>
+                <select name="variant_id" required>
+                    <option value="">Seleccione del catálogo...</option>
+                    <?php
+                    $existingVariantIds = array_map('intval', array_column($receiptItems, 'variant_id'));
+                    foreach ($variantOptions as $option):
+                        if (in_array((int) $option['id'], $existingVariantIds, true)) continue;
+                    ?>
+                        <option value="<?= e($option['id']) ?>"><?= e($option['product_name'] . ' · Talla ' . ($option['size_name'] ?: 'Sin talla') . ' · ' . $option['variant_code'] . ' · ' . ($option['brand_name'] ?: 'Sin marca')) ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </label>
+            <label><span>Cantidad de la talla omitida</span>
+                <input name="quantity" type="number" min="0.001" step="0.001" required>
+            </label>
+            <label><span>Observación (opcional)</span>
+                <input name="item_notes" maxlength="255" type="text" placeholder="Corrección de captura">
+            </label>
+            <button class="primary-button" type="submit">Agregar talla al borrador</button>
+        </form>
+    </details>
+    <?php endif; ?>
+
     <div class="responsive-table">
         <table>
             <thead>
