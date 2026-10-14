@@ -165,6 +165,9 @@ jobs:
       - name: Role workflow boundaries test
         run: php tests/role_operation_boundaries_test.php
 
+      - name: P4 warehouse scope foundation test
+        run: php tests/p4_warehouse_scope_foundation_test.php
+
       - name: Historical import schema test
         run: php tests/historical_import_schema_test.php
 
