@@ -295,7 +295,24 @@ if ($currentModule === 'dashboard') {
         }
     }
 
-    $contentView = dirname(__DIR__) . '/app/Views/dashboard.php';
+    $dashboardScope = \App\Services\P4WarehouseScope::current($database);
+    if (!$dashboardScope['unrestricted']) {
+        $p4DashboardRequests = \App\Services\P4WarehouseScope::filter(
+            (new \App\Repositories\RequestRepository($database->connection('sindesg')))->recent(100),
+            $dashboardScope, 'p4_warehouse_id'
+        );
+        $p4DashboardTransfers = \App\Services\P4WarehouseScope::filter(
+            (new \App\Repositories\DistributionRepository($database->connection('sindesg')))->recent(100),
+            $dashboardScope, 'destination_warehouse_id'
+        );
+        $p4DashboardDeliveries = \App\Services\P4WarehouseScope::filter(
+            (new \App\Repositories\DeliveryRepository($database->connection('sindesg')))->recent(100),
+            $dashboardScope, 'p4_warehouse_id'
+        );
+        $contentView = dirname(__DIR__) . '/app/Views/dashboard-p4.php';
+    } else {
+        $contentView = dirname(__DIR__) . '/app/Views/dashboard.php';
+    }
 } elseif ($currentModule === 'inventory') {
     if (!$health['sindesg']['ok']) {
         $pageTitle = 'Inventario';
