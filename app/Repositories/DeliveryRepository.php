@@ -929,7 +929,7 @@ final class DeliveryRepository
      * @param list<int> $employeeIds
      * @return array<int,string> employee_id => fecha DATETIME
      */
-    public function lastConfirmedDatesForProduct(int $productId, array $employeeIds): array
+    public function lastConfirmedDatesForProduct(int $productId, array $employeeIds, ?array $allowedP4Ids = null): array
     {
         if ($productId <= 0 || count($employeeIds) > 100) {
             throw new \InvalidArgumentException('Producto o lote de funcionarios no válido.');
@@ -945,6 +945,9 @@ final class DeliveryRepository
         if (!$ids) {
             return [];
         }
+
+        $p4SqlScope = $this->deliveryScopeClause($allowedP4Ids, 'd.p4_warehouse_id');
+        if ($p4SqlScope === null) return [];
 
         $bind = ['product_id' => $productId];
         $holders = [];
@@ -962,6 +965,7 @@ final class DeliveryRepository
             WHERE d.status = "confirmed"
               AND pv.product_id = :product_id
               AND d.recipient_employee_id IN (' . implode(', ', $holders) . ')
+            ' . $p4SqlScope . '
             GROUP BY d.recipient_employee_id';
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute($bind);
