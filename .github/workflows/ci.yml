@@ -66,6 +66,9 @@ jobs:
       - name: Dynamic dashboard test
         run: php tests/dashboard_dynamic_test.php
 
+      - name: P4 dashboard flow isolation test
+        run: php tests/p4_dashboard_flow_test.php
+
       - name: UTF-8 repair test
         run: php tests/utf8_repair_test.php
 
