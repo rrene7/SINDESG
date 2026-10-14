@@ -211,13 +211,22 @@ if (in_array($currentModule, ['requests', 'distribution', 'deliveries'], true)) 
             $id = (int) ($inputScope['delivery_id'] ?? $inputScope['id'] ?? 0);
             $sql = 'SELECT p4_warehouse_id FROM individual_deliveries WHERE id = :id';
         }
+        if ($currentModule === 'deliveries' && $id === 0 && isset($inputScope['request_item_id'])) {
+            $id = (int) $inputScope['request_item_id'];
+            $sql = 'SELECT r.p4_warehouse_id FROM service_request_items i
+                    JOIN service_requests r ON r.id = i.request_id WHERE i.id = :id';
+        }
         if ($id > 0) {
             $stmtScope = $pdoScope->prepare($sql);
             $stmtScope->execute(['id' => $id]);
             $warehouseScope = (int) ($stmtScope->fetchColumn() ?: 0);
-            \App\Services\P4WarehouseScope::assertAuthorized(
-                $scope['roles'], $scope['warehouses'], $warehouseScope
-            );
+            if (!\App\Services\P4WarehouseScope::authorized($scope['roles'], $scope['warehouses'], $warehouseScope)) {
+                http_response_code(403);
+                $pageTitle = 'Acceso denegado';
+                $contentView = dirname(__DIR__) . '/app/Views/auth/forbidden.php';
+                require dirname(__DIR__) . '/app/Views/layout.php';
+                exit;
+            }
         }
         if ($currentModule === 'requests' && $currentAction === 'save' && $currentMethod === 'POST') {
             \App\Services\P4WarehouseScope::assertAuthorized(
