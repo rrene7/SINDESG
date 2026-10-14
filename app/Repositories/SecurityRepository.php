@@ -102,11 +102,16 @@ final class SecurityRepository
         return array_map('intval', $stmt->fetchAll(PDO::FETCH_COLUMN));
     }
 
-    public function setP4ScopesForUser(int $userId, array $warehouseIds): void
+    public function setP4ScopesForUser(int $userId, array $warehouseIds, array $actor): void
     {
         if ($this->findUser($userId) === null) {
             throw new RuntimeException('Usuario no encontrado.');
         }
+        $roles = $this->roleCodesForUser($userId);
+        if ($warehouseIds !== [] && !in_array('P4', $roles, true)) {
+            throw new RuntimeException('Solo se asignan P4 a usuarios con rol P4.');
+        }
+        $before = $this->p4ScopesForUser($userId);
         $ids = [];
         foreach ($warehouseIds as $id) {
             if (!is_scalar($id) || !ctype_digit((string) $id) || (int) $id <= 0) {
@@ -130,6 +135,18 @@ final class SecurityRepository
             foreach ($ids as $id) {
                 $insert->execute(['user_id' => $userId, 'warehouse_id' => $id]);
             }
+            (new AuditRepository($this->pdo))->log([
+                'user_id' => (int) ($actor['id'] ?? 0),
+                'user_label_snapshot' => (string) ($actor['display_name'] ?? ''),
+                'module_code' => 'admin',
+                'action_code' => 'p4_scope_updated',
+                'record_type' => 'security_user',
+                'record_id' => (string) $userId,
+                'before' => ['p4_warehouses' => $before],
+                'after' => ['p4_warehouses' => array_values($ids)],
+                'ip_address' => $_SERVER['REMOTE_ADDR'] ?? null,
+                'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? null,
+            ]);
             $this->pdo->commit();
         } catch (\Throwable $e) {
             if ($this->pdo->inTransaction()) {
@@ -250,6 +267,13 @@ final class SecurityRepository
         try {
             $userId = $this->insertUser($employee, $username, $passwordHash, 'active');
             $this->assignRoles($userId, $roleIds);
+            // Never retain a dormant unit grant after the P4 role is revoked.
+            if (!in_array('P4', $this->roleCodesForUser($userId), true)) {
+                $revoke = $this->pdo->prepare(
+                    'DELETE FROM security_user_p4_scopes WHERE user_id = :user_id'
+                );
+                $revoke->execute(['user_id' => $userId]);
+            }
             $this->pdo->commit();
 
             return $userId;
