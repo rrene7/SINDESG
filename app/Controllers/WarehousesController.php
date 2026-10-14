@@ -117,7 +117,7 @@ final class WarehousesController
             ];
         }
 
-        $warehouses = $this->warehouses->all();
+        $warehouses = \App\Services\P4WarehouseScope::filter($this->warehouses->all(), \App\Services\P4WarehouseScope::current($this->database), 'id');
         $unitIds = [];
         foreach ($warehouses as $warehouse) {
             if (!empty($warehouse['organization_unit_id'])) {
@@ -137,6 +137,7 @@ final class WarehousesController
             'title' => 'Almacenes y P4',
             'data' => [
                 'warehouseStats' => $this->warehouses->stats(),
+                'warehouseStatsRestricted' => !\App\Services\P4WarehouseScope::current($this->database)['unrestricted'],
                 'warehouses' => $warehouses,
                 'currentUnits' => $currentUnits,
                 'rrhhAvailable' => $this->database->health('rrhh')['ok'],
