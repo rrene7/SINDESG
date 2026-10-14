@@ -85,7 +85,7 @@ $authUser = sindesg_user();
     <nav class="main-nav" aria-label="Módulos principales">
         <a class="<?= $currentModule === 'dashboard' ? 'active' : '' ?>" href="<?= e(sindesg_url()) ?>">Dashboard</a>
         <?php foreach (['inventory', 'receipts', 'requests', 'distribution', 'reports'] as $navKey): ?>
-            <?php if (sindesg_can(sindesg_permission_for($navKey, 'index', 'GET') ?? 'dashboard.view')): ?>
+            <?php if ((sindesg_can(sindesg_permission_for($navKey, 'index', 'GET') ?? 'dashboard.view') && sindesg_role_action_allowed($navKey, 'index', 'GET', (array) $authUser))): ?>
                 <a class="<?= $currentModule === $navKey ? 'active' : '' ?>"
                    href="<?= e(sindesg_url('?module=' . $navKey)) ?>">
                     <?= e($modules[$navKey]['short']) ?>
@@ -97,7 +97,7 @@ $authUser = sindesg_user();
 
     <div class="more-menu" data-more-menu hidden>
         <?php foreach (['production', 'deliveries', 'adjustments', 'warehouses', 'people', 'migration', 'audit', 'admin'] as $navKey): ?>
-            <?php if (sindesg_can(sindesg_permission_for($navKey, 'index', 'GET') ?? 'dashboard.view')): ?>
+            <?php if ((sindesg_can(sindesg_permission_for($navKey, 'index', 'GET') ?? 'dashboard.view') && sindesg_role_action_allowed($navKey, 'index', 'GET', (array) $authUser))): ?>
                 <a href="<?= e(sindesg_url('?module=' . $navKey)) ?>">
                     <span class="mini-icon"><?= e($modules[$navKey]['icon']) ?></span>
                     <span><strong><?= e($modules[$navKey]['label']) ?></strong><small><?= e($modules[$navKey]['phase']) ?></small></span>
@@ -152,14 +152,14 @@ window.SINDESG_SEARCH_ITEMS = <?= json_encode(array_merge(
             $modules,
             static fn (array $item, string $key): bool => sindesg_can(
                 sindesg_permission_for($key, 'index', 'GET') ?? 'dashboard.view'
-            ),
+            ) && sindesg_role_action_allowed($key, 'index', 'GET', (array) $authUser),
             ARRAY_FILTER_USE_BOTH
         ),
         array_keys(array_filter(
             $modules,
             static fn (array $item, string $key): bool => sindesg_can(
                 sindesg_permission_for($key, 'index', 'GET') ?? 'dashboard.view'
-            ),
+            ) && sindesg_role_action_allowed($key, 'index', 'GET', (array) $authUser),
             ARRAY_FILTER_USE_BOTH
         ))
     ),
