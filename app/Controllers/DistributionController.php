@@ -126,7 +126,7 @@ final class DistributionController
             'data' => [
                 'distributionStats' => $this->repository->stats(),
                 'readyRequests' => $this->repository->readyRequests(),
-                'distributions' => $this->repository->recent(),
+                'distributions' => \App\Services\P4WarehouseScope::filter($this->repository->recent(100), \App\Services\P4WarehouseScope::current($this->database), 'destination_warehouse_id'),
             ],
         ];
     }
