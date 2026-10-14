@@ -32,9 +32,19 @@ final class RequestRepository
         ];
     }
 
-    public function recent(int $limit = 50): array
+    public function recent(int $limit = 50, ?array $allowedP4Ids = null): array
     {
         $limit = max(1, min($limit, 100));
+        if ($allowedP4Ids === []) {
+            return [];
+        }
+        $ids = $allowedP4Ids === null ? [] : array_values(array_unique(array_map('intval', $allowedP4Ids)));
+        $ids = array_values(array_filter($ids, static fn (int $id): bool => $id > 0));
+        if ($allowedP4Ids !== null && $ids === []) {
+            return [];
+        }
+        $scope = $allowedP4Ids === null ? '' : ' WHERE r.p4_warehouse_id IN (' . implode(',', $ids) . ')';
+
 
         return $this->pdo->query('
             SELECT
@@ -52,6 +62,7 @@ final class RequestRepository
             FROM service_requests r
             INNER JOIN warehouses w ON w.id = r.p4_warehouse_id
             LEFT JOIN service_request_items i ON i.request_id = r.id
+            ' . $scope . '
             GROUP BY r.id
             ORDER BY r.requested_at DESC, r.id DESC
             LIMIT ' . $limit)->fetchAll();
