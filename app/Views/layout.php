@@ -155,14 +155,14 @@ window.SINDESG_SEARCH_ITEMS = <?= json_encode(array_merge(
             $modules,
             static fn (array $item, string $key): bool => sindesg_can(
                 sindesg_permission_for($key, 'index', 'GET') ?? 'dashboard.view'
-            ),
+            ) && sindesg_role_action_allowed($key, 'index', 'GET', (array) $authUser),
             ARRAY_FILTER_USE_BOTH
         ),
         array_keys(array_filter(
             $modules,
             static fn (array $item, string $key): bool => sindesg_can(
                 sindesg_permission_for($key, 'index', 'GET') ?? 'dashboard.view'
-            ),
+            ) && sindesg_role_action_allowed($key, 'index', 'GET', (array) $authUser),
             ARRAY_FILTER_USE_BOTH
         ))
     ),
@@ -172,7 +172,7 @@ window.SINDESG_SEARCH_ITEMS = <?= json_encode(array_merge(
             'meta' => 'Categoría',
             'url' => sindesg_url('?module=inventory&category_id=' . (int) ($item['id'] ?? 0)),
         ],
-        $categories ?? []
+        sindesg_role_action_allowed('inventory', 'index', 'GET', (array) $authUser) ? ($categories ?? []) : []
     )
 ), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
 </script>
