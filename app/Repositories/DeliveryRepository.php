@@ -53,6 +53,7 @@ final class DeliveryRepository
             SELECT
                 d.id,
                 d.delivery_code,
+                d.p4_warehouse_id,
                 d.delivered_at,
                 d.status,
                 d.recipient_employee_id,
