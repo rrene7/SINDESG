@@ -82,6 +82,63 @@ final class SecurityRepository
         )->fetchAll();
     }
 
+    /** @return list<array<string, mixed>> */
+    public function activeP4Warehouses(): array
+    {
+        return $this->pdo->query(
+            "SELECT id, code, name, organization_unit_name_snapshot
+             FROM warehouses WHERE warehouse_type = 'P4' AND is_active = 1
+             ORDER BY organization_unit_name_snapshot, code"
+        )->fetchAll();
+    }
+
+    /** @return list<int> */
+    public function p4ScopesForUser(int $userId): array
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT warehouse_id FROM security_user_p4_scopes WHERE user_id = :user_id ORDER BY warehouse_id'
+        );
+        $stmt->execute(['user_id' => $userId]);
+        return array_map('intval', $stmt->fetchAll(PDO::FETCH_COLUMN));
+    }
+
+    public function setP4ScopesForUser(int $userId, array $warehouseIds): void
+    {
+        if ($this->findUser($userId) === null) {
+            throw new RuntimeException('Usuario no encontrado.');
+        }
+        $ids = [];
+        foreach ($warehouseIds as $id) {
+            if (!is_scalar($id) || !ctype_digit((string) $id) || (int) $id <= 0) {
+                throw new RuntimeException('Identificador P4 inválido.');
+            }
+            $ids[(int) $id] = (int) $id;
+        }
+        $allowed = array_map('intval', array_column($this->activeP4Warehouses(), 'id'));
+        foreach ($ids as $id) {
+            if (!in_array($id, $allowed, true)) {
+                throw new RuntimeException('El P4 seleccionado no existe o no está activo.');
+            }
+        }
+        $this->pdo->beginTransaction();
+        try {
+            $delete = $this->pdo->prepare('DELETE FROM security_user_p4_scopes WHERE user_id = :id');
+            $delete->execute(['id' => $userId]);
+            $insert = $this->pdo->prepare(
+                'INSERT INTO security_user_p4_scopes (user_id,warehouse_id) VALUES (:user_id,:warehouse_id)'
+            );
+            foreach ($ids as $id) {
+                $insert->execute(['user_id' => $userId, 'warehouse_id' => $id]);
+            }
+            $this->pdo->commit();
+        } catch (\Throwable $e) {
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+            throw $e;
+        }
+    }
+
     public function roleCodesForUser(int $userId): array
     {
         $statement = $this->pdo->prepare(<<<'SQL'
