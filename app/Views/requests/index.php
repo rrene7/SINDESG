@@ -24,6 +24,7 @@ $statusLabels = [
     </div>
 </section>
 
+<?php if (empty($requestStatsRestricted)): ?>
 <section class="request-stats">
     <article><span>Borradores</span><strong><?= e($requestStats['drafts']) ?></strong><small>En preparación</small></article>
     <article><span>Pendientes de revisión</span><strong><?= e($requestStats['pending_review']) ?></strong><small>Enviadas / revisión</small></article>
@@ -31,6 +32,7 @@ $statusLabels = [
     <article><span>Parciales</span><strong><?= e($requestStats['partials']) ?></strong><small>Aprobación parcial</small></article>
     <article><span>Rechazadas</span><strong><?= e($requestStats['rejected']) ?></strong><small>Sin compromiso</small></article>
 </section>
+<?php endif; ?>
 
 <?php
 $draftReady = null;
