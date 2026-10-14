@@ -364,11 +364,8 @@ final class ReceiptRepository
         }
     }
 
-    /**
-     * Agrega una variante nueva al lote mientras la recepción permanece en borrador.
-     * No genera movimientos de inventario y audita la operación atómicamente.
-     */
-    public function addDraftItem(int $receiptId, int $variantId, string $quantity, ?string $notes, array $actor): void
+    /** Suma cantidades omitidas a una variante ya registrada, solo en borrador. */
+    public function increaseDraftItem(int $receiptId, int $itemId, string $addedQuantity, array $actor): void
     {
         $this->pdo->beginTransaction();
         try {
@@ -376,53 +373,43 @@ final class ReceiptRepository
             $stmt->execute(['id' => $receiptId]);
             $receipt = $stmt->fetch();
             if (!$receipt || $receipt['status'] !== 'draft') {
-                throw new \InvalidArgumentException('Solo se pueden agregar tallas a una recepción en borrador.');
+                throw new \InvalidArgumentException('Solo se pueden corregir cantidades en borrador.');
             }
-            $variant = $this->pdo->prepare(
-                "SELECT id FROM product_variants WHERE id = :id AND status = 'active' LIMIT 1"
+            $stmt = $this->pdo->prepare(
+                'SELECT id, product_variant_id, quantity FROM receipt_items
+                 WHERE id = :item_id AND receipt_id = :receipt_id FOR UPDATE'
             );
-            $variant->execute(['id' => $variantId]);
-            if (!$variant->fetchColumn()) {
-                throw new \InvalidArgumentException('Seleccione una variante activa.');
+            $stmt->execute(['item_id' => $itemId, 'receipt_id' => $receiptId]);
+            $item = $stmt->fetch();
+            if (!$item) {
+                throw new \InvalidArgumentException('La talla seleccionada no pertenece a este lote.');
             }
-            $lot = $this->pdo->prepare('SELECT id FROM lots WHERE receipt_id = :id LIMIT 1');
-            $lot->execute(['id' => $receiptId]);
-            $lotId = (int) $lot->fetchColumn();
-            if ($lotId <= 0) {
-                throw new \RuntimeException('El lote no existe.');
+            $beforeQuantity = (float) $item['quantity'];
+            $newQuantity = $beforeQuantity + (float) $addedQuantity;
+            if ($newQuantity > 999999999.999) {
+                throw new \InvalidArgumentException('La cantidad final supera el máximo permitido.');
             }
-            $duplicate = $this->pdo->prepare(
-                'SELECT id FROM receipt_items WHERE receipt_id = :receipt_id AND product_variant_id = :variant_id'
+            $stmt = $this->pdo->prepare(
+                'UPDATE receipt_items SET quantity = :quantity WHERE id = :id AND receipt_id = :receipt_id'
             );
-            $duplicate->execute(['receipt_id' => $receiptId, 'variant_id' => $variantId]);
-            if ($duplicate->fetchColumn()) {
-                throw new \InvalidArgumentException(
-                    'Esta talla ya pertenece al lote. No se agregará otra línea ni se duplicará la cantidad.'
-                );
-            }
-            $insert = $this->pdo->prepare(
-                'INSERT INTO receipt_items (receipt_id, lot_id, product_variant_id, quantity, notes)
-                 VALUES (:receipt_id, :lot_id, :variant_id, :quantity, :notes)'
-            );
-            $insert->execute([
+            $stmt->execute([
+                'quantity' => number_format($newQuantity, 3, '.', ''),
+                'id' => $itemId,
                 'receipt_id' => $receiptId,
-                'lot_id' => $lotId,
-                'variant_id' => $variantId,
-                'quantity' => $quantity,
-                'notes' => $notes,
             ]);
             (new AuditRepository($this->pdo))->log([
                 'user_id' => $actor['id'],
                 'user_label_snapshot' => $actor['display_name'] ?? '',
                 'module_code' => 'receipts',
-                'action_code' => 'draft_item_added',
-                'record_type' => 'receipt',
-                'record_id' => (string) $receiptId,
+                'action_code' => 'draft_item_quantity_increased',
+                'record_type' => 'receipt_item',
+                'record_id' => (string) $itemId,
+                'before' => ['receipt_id' => $receiptId, 'quantity' => $item['quantity']],
                 'after' => [
-                    'receipt_item_id' => (int) $this->pdo->lastInsertId(),
-                    'variant_id' => $variantId,
-                    'quantity' => $quantity,
-                    'notes' => $notes,
+                    'receipt_id' => $receiptId,
+                    'product_variant_id' => (int) $item['product_variant_id'],
+                    'added_quantity' => $addedQuantity,
+                    'quantity' => number_format($newQuantity, 3, '.', ''),
                 ],
                 'ip_address' => $_SERVER['REMOTE_ADDR'] ?? null,
                 'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? null,
