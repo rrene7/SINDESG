@@ -12,7 +12,7 @@ $steps = [
     <span class="eyebrow">SINDESG · OPERACIÓN LOGÍSTICA P4</span>
     <h1>Mi flujo de trabajo P4</h1>
     <p>Desde la solicitud al Almacén Central hasta la entrega documentada al funcionario.</p>
-    <div class="p4-home-status">Vista de flujo · Sin movimientos automáticos de inventario</div>
+    <div class="p4-home-status">Piloto visual seguro · Operaciones bloqueadas hasta validar aislamiento de almacenes</div>
 </section>
 
 <section class="p4-home-panel" aria-labelledby="p4-workflow-title">
@@ -21,12 +21,13 @@ $steps = [
             <span class="eyebrow">FLUJO OPERATIVO</span>
             <h2 id="p4-workflow-title">Etapas del P4</h2>
         </div>
-        <small>Cada acción respeta los permisos del usuario.</small>
+        <small>Las acciones permanecen bloqueadas para el rol P4 hasta comprobar el acceso exclusivo a su almacén.</small>
     </div>
     <div class="p4-home-grid">
         <?php foreach ($steps as $step): ?>
             <?php
-            $canAccess = sindesg_can($step['permission'])
+            $canAccess = !in_array('P4', (array) (sindesg_user()['role_codes'] ?? []), true)
+                && sindesg_can($step['permission'])
                 && sindesg_role_action_allowed($step['module'], $step['action'], 'GET', (array) sindesg_user());
             $url = '?module=' . $step['module']
                 . ($step['action'] !== 'index' ? '&action=' . $step['action'] : '');
@@ -38,7 +39,7 @@ $steps = [
                 <?php if ($canAccess): ?>
                     <a href="<?= e(sindesg_url($url)) ?>">Abrir etapa <span aria-hidden="true">→</span></a>
                 <?php else: ?>
-                    <span class="p4-step-locked">No autorizado para esta etapa</span>
+                    <span class="p4-step-locked">Próximamente: requiere aislamiento por P4</span>
                 <?php endif; ?>
             </article>
         <?php endforeach; ?>
