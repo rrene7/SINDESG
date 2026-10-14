@@ -45,9 +45,27 @@ final class DeliveryRepository
         ];
     }
 
-    public function recent(int $limit = 50): array
+    /**
+     * Scope in SQL before LIMIT. Null means unrestricted; [] fails closed.
+     * Values are cast to integers to avoid dynamic SQL injection.
+     */
+    private function deliveryScopeClause(?array $warehouseIds, string $column): ?string
+    {
+        if ($warehouseIds === null) return '';
+        $ids = array_values(array_unique(array_filter(
+            array_map('intval', $warehouseIds),
+            static fn (int $id): bool => $id > 0
+        )));
+        if ($ids === []) return null;
+        return 'AND ' . $column . ' IN (' . implode(',', $ids) . ')';
+    }
+
+    public function recent(int $limit = 50, ?array $allowedP4Ids = null): array
     {
         $limit = max(1, min($limit, 100));
+
+        $scope = $this->deliveryScopeClause($allowedP4Ids, 'd.p4_warehouse_id');
+        if ($scope === null) return [];
 
         return $this->pdo->query('
             SELECT
@@ -66,6 +84,7 @@ final class DeliveryRepository
             FROM individual_deliveries d
             INNER JOIN warehouses w ON w.id = d.p4_warehouse_id
             LEFT JOIN individual_delivery_items di ON di.delivery_id = d.id
+            WHERE 1 = 1 ' . $scope . '
             GROUP BY d.id
             ORDER BY d.delivered_at DESC, d.id DESC
             LIMIT ' . $limit)->fetchAll();
@@ -117,9 +136,12 @@ final class DeliveryRepository
         return $value === false || $value === null ? null : (int) $value;
     }
 
-    public function pendingNominal(int $limit = 40): array
+    public function pendingNominal(int $limit = 40, ?array $allowedP4Ids = null): array
     {
         $limit = max(1, min($limit, 100));
+
+        $scope = $this->deliveryScopeClause($allowedP4Ids, 'r.p4_warehouse_id');
+        if ($scope === null) return [];
 
         return $this->pdo->query('
             SELECT
@@ -165,6 +187,7 @@ final class DeliveryRepository
               AND r.status IN ("approved", "partially_approved", "fulfilled")
               AND w.warehouse_type = "P4"
               AND w.is_active = 1
+              ' . $scope . '
             ORDER BY r.requested_at, i.id
             LIMIT ' . $limit)->fetchAll();
     }
