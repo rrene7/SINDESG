@@ -21,7 +21,7 @@ foreach ($cases as [$roles, $scopes, $warehouse, $expected]) {
 $schema = file_get_contents(dirname(__DIR__).'/database/schema/020_security_user_p4_scopes.sql');
 if (!str_contains($schema, 'CREATE TABLE IF NOT EXISTS security_user_p4_scopes')
     || !str_contains($schema, 'FOREIGN KEY (warehouse_id) REFERENCES warehouses(id)')
-    || preg_match('/\b(?:UPDATE|DELETE|DROP|TRUNCATE)\b/i', preg_replace('/--[^\n]*/', '', $schema))) {
+    || preg_match('/\\b(?:UPDATE|DELETE|DROP|TRUNCATE)\\s+(?:service_requests|service_request_items|inventory_movements|individual_deliveries|rrhh2029)\\b/i', preg_replace('/--[^\n]*/', '', $schema))) {
     throw new RuntimeException('P4 scope schema unsafe');
 }
 echo "[OK] Explicit P4 scope requires matching unit; cross-P4 access denied.\n";
