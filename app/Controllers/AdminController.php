@@ -225,22 +225,9 @@ final class AdminController
             if (!is_array($selected)) {
                 throw new InvalidArgumentException('Selección P4 inválida.');
             }
-            $before = $security->p4ScopesForUser($userId);
-            $security->setP4ScopesForUser($userId, $selected);
-            $after = $security->p4ScopesForUser($userId);
-            $audit->log([
-                'user_id' => $actor['id'],
-                'user_label_snapshot' => $actor['display_name'],
-                'module_code' => 'admin',
-                'action_code' => 'p4_scope_updated',
-                'record_type' => 'security_user',
-                'record_id' => (string) $userId,
-                'before' => ['p4_warehouses' => $before],
-                'after' => ['p4_warehouses' => $after],
-                'ip_address' => $_SERVER['REMOTE_ADDR'] ?? null,
-                'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? null,
-            ]);
-            flash('success', 'Unidades P4 autorizadas actualizadas.');
+            // Assignment and audit are written in one SINDESG DB transaction.
+            $security->setP4ScopesForUser($userId, $selected, (array) $actor);
+            flash('success', 'Unidades P4 autorizadas actualizadas con auditoría.');
             $this->redirect('?module=admin&action=edit&id=' . $userId);
         }
 
