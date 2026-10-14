@@ -34,7 +34,7 @@ final class P4WarehouseScope
     {
         $user = sindesg_user() ?? [];
         $roles = (array) ($user['role_codes'] ?? []);
-        if (in_array('ADMIN', $roles, true) || in_array('CENTRAL', $roles, true)) {
+        if (!in_array('P4', $roles, true) || in_array('ADMIN', $roles, true) || in_array('CENTRAL', $roles, true)) {
             return ['roles' => $roles, 'warehouses' => [], 'unrestricted' => true];
         }
         $ids = (new self($database->connection('sindesg')))
@@ -60,7 +60,7 @@ final class P4WarehouseScope
         if ($warehouseId <= 0) {
             return false;
         }
-        if (in_array('ADMIN', $roleCodes, true) || in_array('CENTRAL', $roleCodes, true)) {
+        if (!in_array('P4', $roleCodes, true) || in_array('ADMIN', $roleCodes, true) || in_array('CENTRAL', $roleCodes, true)) {
             return true;
         }
         return in_array('P4', $roleCodes, true)
