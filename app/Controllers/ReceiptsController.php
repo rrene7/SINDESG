@@ -48,7 +48,7 @@ final class ReceiptsController
             return $this->handleGet($action, $query);
         } catch (InvalidArgumentException $exception) {
             flash('error', $exception->getMessage());
-            $this->redirect(in_array($action, ['confirm', 'update-draft', 'add-draft-item'], true)
+            $this->redirect(in_array($action, ['confirm', 'update-draft', 'increase-draft-quantity'], true)
                 ? '?module=receipts&action=show&id=' . (int) ($post['receipt_id'] ?? 0)
                 : '?module=receipts&action=new');
         } catch (Throwable $exception) {
@@ -127,27 +127,23 @@ final class ReceiptsController
             $this->redirect('?module=receipts&action=show&id=' . $receiptId);
         }
 
-        if ($action === 'add-draft-item') {
+        if ($action === 'increase-draft-quantity') {
             if (!sindesg_can('admin.manage')) {
-                throw new InvalidArgumentException('Solo Administración puede agregar tallas al lote.');
+                throw new InvalidArgumentException('Solo Administración puede corregir cantidades.');
             }
             $receiptId = (int) ($post['receipt_id'] ?? 0);
-            $variantId = (int) ($post['variant_id'] ?? 0);
-            $quantity = trim((string) ($post['quantity'] ?? ''));
-            $notes = trim((string) ($post['item_notes'] ?? ''));
-            if ($receiptId <= 0 || $variantId <= 0
+            $itemId = (int) ($post['receipt_item_id'] ?? 0);
+            $quantity = trim((string) ($post['added_quantity'] ?? ''));
+            if ($receiptId <= 0 || $itemId <= 0
                 || !preg_match('/^\\d{1,9}(?:\\.\\d{1,3})?$/', $quantity)
-                || (float) $quantity <= 0 || mb_strlen($notes) > 255) {
-                throw new InvalidArgumentException('Seleccione talla activa y cantidad positiva (hasta tres decimales).');
+                || (float) $quantity <= 0) {
+                throw new InvalidArgumentException('Indique una cantidad positiva (máximo tres decimales).');
             }
-            $this->repository->addDraftItem(
-                $receiptId,
-                $variantId,
-                number_format((float) $quantity, 3, '.', ''),
-                $notes === '' ? null : $notes,
+            $this->repository->increaseDraftItem(
+                $receiptId, $itemId, number_format((float) $quantity, 3, '.', ''),
                 (array) sindesg_user()
             );
-            flash('success', 'Talla agregada al borrador. Todavía no se movió inventario.');
+            flash('success', 'Cantidad agregada al borrador con auditoría. No hubo movimientos de inventario.');
             $this->redirect('?module=receipts&action=show&id=' . $receiptId);
         }
 
