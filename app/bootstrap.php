@@ -211,6 +211,13 @@ function sindesg_role_action_allowed(string $module, string $action, string $met
         return true;
     }
 
+    // Safe local pilot: the legacy controllers do not enforce row-level
+    // warehouse scopes. Until that is complete, P4 may only view its home.
+    if (in_array('P4', $roles, true) && !in_array('ADMIN', $roles, true)
+        && !in_array('CENTRAL', $roles, true)) {
+        return $module === 'dashboard' || $module === 'auth';
+    }
+
     $isWrite = strtoupper($method) === 'POST';
     $centralOnly = $module === 'requests' && (
         ($isWrite && in_array($action, ['start-review', 'decide'], true))
