@@ -18,6 +18,24 @@ foreach ($cases as [$roles, $scopes, $warehouse, $expected]) {
         throw new RuntimeException('P4 scope evaluation mismatch');
     }
 }
+$actionCases = [
+    ['P4', 'inventory', 'index', 'GET', false],
+    ['P4', 'reports', 'index', 'GET', false],
+    ['P4', 'warehouses', 'new', 'GET', false],
+    ['P4', 'warehouses', 'save', 'POST', false],
+    ['P4', 'warehouses', 'index', 'GET', true],
+    ['P4', 'distribution', 'receive', 'POST', true],
+    ['P4', 'distribution', 'dispatch', 'POST', false],
+    ['CENTRAL', 'distribution', 'receive', 'POST', false],
+    ['CENTRAL', 'distribution', 'dispatch', 'POST', true],
+    ['ADMIN', 'distribution', 'dispatch', 'POST', true],
+];
+foreach ($actionCases as [$role, $module, $action, $method, $expected]) {
+    if (sindesg_role_action_allowed($module, $action, $method, ['role_codes' => [$role]]) !== $expected) {
+        throw new RuntimeException('Acceso por rol incorrecto: '.$role.'/'.$module.'/'.$action);
+    }
+}
+
 $schema = file_get_contents(dirname(__DIR__).'/database/schema/020_security_user_p4_scopes.sql');
 if (!str_contains($schema, 'CREATE TABLE IF NOT EXISTS security_user_p4_scopes')
     || !str_contains($schema, 'FOREIGN KEY (warehouse_id) REFERENCES warehouses(id)')
