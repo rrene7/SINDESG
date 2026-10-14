@@ -45,6 +45,7 @@ final class DistributionRepository
             SELECT
                 d.id,
                 d.transfer_code,
+                d.destination_warehouse_id,
                 d.status,
                 d.prepared_at,
                 d.authorized_at,
