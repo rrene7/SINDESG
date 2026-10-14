@@ -193,7 +193,7 @@ if (($requiredPermission !== null && !$authService->can($requiredPermission))
 }
 
 // Enforce P4 record scope before controller dispatch (GET and POST).
-if (in_array($currentModule, ['requests', 'distribution', 'deliveries'], true)) {
+if (in_array($currentModule, ['requests', 'distribution', 'deliveries', 'warehouses'], true)) {
     $scope = \App\Services\P4WarehouseScope::current($database);
     if (!$scope['unrestricted']) {
         $pdoScope = $database->connection('sindesg');
@@ -207,6 +207,9 @@ if (in_array($currentModule, ['requests', 'distribution', 'deliveries'], true)) 
         } elseif ($currentModule === 'distribution') {
             $id = (int) ($inputScope['distribution_id'] ?? $inputScope['id'] ?? 0);
             $sql = 'SELECT destination_warehouse_id FROM distributions WHERE id = :id';
+        } elseif ($currentModule === 'warehouses') {
+            $id = (int) ($inputScope['warehouse_id'] ?? $inputScope['id'] ?? 0);
+            $sql = 'SELECT id FROM warehouses WHERE id = :id AND warehouse_type = "P4"';
         } else {
             $id = (int) ($inputScope['delivery_id'] ?? $inputScope['id'] ?? 0);
             $sql = 'SELECT p4_warehouse_id FROM individual_deliveries WHERE id = :id';
