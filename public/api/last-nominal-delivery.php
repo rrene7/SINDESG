@@ -51,8 +51,13 @@ try {
         echo json_encode(['ok' => false, 'message' => 'Variante no disponible.']);
         exit;
     }
+    $scope = \App\Services\P4WarehouseScope::current($database);
     $dates = (new DeliveryRepository($pdo))
-        ->lastConfirmedDatesForProduct($productId, array_values($ids));
+        ->lastConfirmedDatesForProduct(
+            $productId,
+            array_values($ids),
+            $scope['unrestricted'] ? null : $scope['warehouses']
+        );
 
     echo json_encode([
         'ok' => true,
