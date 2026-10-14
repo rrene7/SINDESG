@@ -162,6 +162,9 @@ jobs:
       - name: Security permissions test
         run: php tests/security_permissions_test.php
 
+      - name: Admin employee picker wiring test
+        run: php tests/admin_employee_picker_wiring_test.php
+
       - name: Role workflow boundaries test
         run: php tests/role_operation_boundaries_test.php
 
