@@ -21,7 +21,7 @@ $cases = [
     ['distribution','cancel','POST',$p4,false],
     ['distribution','receive','POST',$central,false],
     ['distribution','receive','POST',$p4,false],
-    ['distribution','receive','POST',$both,false],
+    ['distribution','receive','POST',$both,true],
     ['distribution','receive','POST',$viewer,false],
     ['requests','decide','POST',$admin,true],
     ['distribution','receive','POST',$admin,true],
