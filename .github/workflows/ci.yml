@@ -165,6 +165,9 @@ jobs:
       - name: Role workflow boundaries test
         run: php tests/role_operation_boundaries_test.php
 
+      - name: Receipt admin draft edit test
+        run: php tests/receipt_admin_draft_edit_test.php
+
       - name: Historical import schema test
         run: php tests/historical_import_schema_test.php
 
