@@ -312,6 +312,58 @@ final class ReceiptRepository
         }
     }
 
+    /**
+     * Modifica solo la cabecera de una recepción en borrador.
+     * Bloquea la fila y registra la auditoría en la misma transacción.
+     */
+    public function updateDraftHeader(int $receiptId, array $values, array $actor): void
+    {
+        $this->pdo->beginTransaction();
+        try {
+            $stmt = $this->pdo->prepare('SELECT * FROM receipts WHERE id = :id FOR UPDATE');
+            $stmt->execute(['id' => $receiptId]);
+            $before = $stmt->fetch();
+            if (!$before || $before['status'] !== 'draft') {
+                throw new \InvalidArgumentException('Solo pueden editarse recepciones en borrador.');
+            }
+            $update = $this->pdo->prepare(
+                'UPDATE receipts SET source_type = :source_type,
+                 supplier_or_origin = :supplier, document_number = :document,
+                 notes = :notes WHERE id = :id AND status = "draft"'
+            );
+            $update->execute([
+                'source_type' => $values['source_type'],
+                'supplier' => $values['supplier_or_origin'],
+                'document' => $values['document_number'],
+                'notes' => $values['notes'],
+                'id' => $receiptId,
+            ]);
+            (new AuditRepository($this->pdo))->log([
+                'user_id' => $actor['id'],
+                'user_label_snapshot' => $actor['display_name'] ?? '',
+                'module_code' => 'receipts',
+                'action_code' => 'draft_header_updated',
+                'record_type' => 'receipt',
+                'record_id' => (string) $receiptId,
+                'before' => [
+                    'source_type' => $before['source_type'],
+                    'supplier_or_origin' => $before['supplier_or_origin'],
+                    'document_number' => $before['document_number'],
+                    'notes' => $before['notes'],
+                ],
+                'after' => $values,
+                'ip_address' => $_SERVER['REMOTE_ADDR'] ?? null,
+                'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? null,
+            ]);
+            $this->pdo->commit();
+        } catch (\Throwable $e) {
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+            throw $e;
+        }
+    }
+
     public function confirm(int $receiptId): array
     {
         $this->pdo->beginTransaction();
