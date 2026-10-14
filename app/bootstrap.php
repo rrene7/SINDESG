@@ -211,6 +211,12 @@ function sindesg_role_action_allowed(string $module, string $action, string $met
         return true;
     }
 
+    // Reports and adjustments need row-level scope before P4 access can be enabled.
+    // Fail closed instead of exposing institution-wide history or stock adjustments.
+    if (in_array('P4', $roles, true) && in_array($module, ['reports', 'adjustments'], true)) {
+        return false;
+    }
+
     $isWrite = strtoupper($method) === 'POST';
     $centralOnly = $module === 'requests' && (
         ($isWrite && in_array($action, ['start-review', 'decide'], true))
