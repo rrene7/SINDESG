@@ -168,6 +168,9 @@ jobs:
       - name: P4 warehouse scope foundation test
         run: php tests/p4_warehouse_scope_foundation_test.php
 
+      - name: P4 delivery SQL scope test
+        run: php tests/p4_delivery_sql_scope_test.php
+
       - name: Historical import schema test
         run: php tests/historical_import_schema_test.php
 
