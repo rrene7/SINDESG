@@ -16,12 +16,14 @@ $statusLabels = [
     <a class="primary-button" href="<?= e(sindesg_url('?module=deliveries&action=new')) ?>">+ Nuevo despacho</a>
 </section>
 
+<?php if (empty($deliveryStatsRestricted)): ?>
 <section class="delivery-stats">
     <article><span>Pendientes nominales</span><strong><?= e($deliveryStats['pending_nominal']) ?></strong><small>Recibidos en P4</small></article>
     <article><span>Borradores</span><strong><?= e($deliveryStats['drafts']) ?></strong><small>Sin afectar inventario</small></article>
     <article><span>Confirmados</span><strong><?= e($deliveryStats['confirmed']) ?></strong><small>Entregas finales</small></article>
     <article><span>Unidades entregadas</span><strong><?= e(number_format((float) $deliveryStats['delivered_quantity'], 0, '.', ',')) ?></strong><small>Histórico confirmado</small></article>
 </section>
+<?php endif; ?>
 
 <section class="delivery-panel">
     <div class="delivery-section-head">
