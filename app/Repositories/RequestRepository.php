@@ -40,6 +40,7 @@ final class RequestRepository
             SELECT
                 r.id,
                 r.request_code,
+                r.p4_warehouse_id,
                 r.requested_at,
                 r.status,
                 r.requested_by_label_snapshot,
