@@ -196,7 +196,23 @@ if ($currentMethod === 'POST') {
     $authService->registerRequestAudit($currentModule, $currentAction, $_POST);
 }
 
-if ($currentModule === 'dashboard') {
+if ($currentModule === 'dashboard'
+    && ($currentAction === 'p4-preview'
+        || in_array('P4', (array) (sindesg_user()['role_codes'] ?? []), true))) {
+    // Isolated UI only: never query/show institution-wide metrics on P4 home.
+    // This does not activate multi-P4 data isolation in operational modules.
+    $roles = (array) (sindesg_user()['role_codes'] ?? []);
+    if ($currentAction === 'p4-preview'
+        && !in_array('P4', $roles, true)
+        && !in_array('ADMIN', $roles, true)) {
+        http_response_code(403);
+        $pageTitle = 'Acceso denegado';
+        $contentView = dirname(__DIR__) . '/app/Views/auth/forbidden.php';
+    } else {
+        $pageTitle = 'Panel operativo P4';
+        $contentView = dirname(__DIR__) . '/app/Views/dashboard-p4.php';
+    }
+} elseif ($currentModule === 'dashboard') {
     $pageTitle = 'Dashboard';
     $dashboardCategories = [];
     $featuredProduct = null;
