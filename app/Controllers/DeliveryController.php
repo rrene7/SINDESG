@@ -185,6 +185,7 @@ final class DeliveryController
             'title' => 'Despacho individual',
             'data' => [
                 'deliveryStats' => $this->repository->stats(),
+                'deliveryStatsRestricted' => !\App\Services\P4WarehouseScope::current($this->database)['unrestricted'],
                 'pendingNominalDeliveries' => \App\Services\P4WarehouseScope::filter($this->repository->pendingNominal(100), \App\Services\P4WarehouseScope::current($this->database), 'p4_warehouse_id'),
                 'deliveries' => \App\Services\P4WarehouseScope::filter($this->repository->recent(100), \App\Services\P4WarehouseScope::current($this->database), 'p4_warehouse_id'),
             ],
