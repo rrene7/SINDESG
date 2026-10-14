@@ -113,7 +113,7 @@ final class RequestsController
                 'view' => SINDESG_ROOT . '/app/Views/requests/form.php',
                 'title' => 'Nueva solicitud',
                 'data' => [
-                    'activeP4s' => $this->repository->activeP4s(),
+                    'activeP4s' => \App\Services\P4WarehouseScope::filter($this->repository->activeP4s(), \App\Services\P4WarehouseScope::current($this->database), 'id'),
                     'employeeSearchUrl' => sindesg_url('public/api/employees.php'),
                     'defaultRequestedAt' => date('Y-m-d\TH:i'),
                 ],
