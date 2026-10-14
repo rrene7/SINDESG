@@ -5,11 +5,11 @@ $repo = (string) file_get_contents($root . '/app/Repositories/DeliveryRepository
 $controller = (string) file_get_contents($root . '/app/Controllers/DeliveryController.php');
 foreach ([
     'deliveryScopeClause($allowedP4Ids',
-    "if ($scope === null) return [];",
+    'if ($scope === null) return [];',
     "'d.p4_warehouse_id'",
     "'r.p4_warehouse_id'",
-    "WHERE 1 = 1 ' . $scope",
-    "' . $scope . '",
+    'WHERE 1 = 1 \' . $scope',
+    '\' . $scope . \',
 ] as $fragment) {
     if (!str_contains($repo, $fragment)) {
         throw new RuntimeException('Missing SQL P4 scope: ' . $fragment);
