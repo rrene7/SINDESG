@@ -364,6 +364,65 @@ final class ReceiptRepository
         }
     }
 
+    /** Agrega una variante del catálogo ausente del lote, sin movimientos de stock. */
+    public function addMissingDraftVariant(int $receiptId, int $variantId, string $quantity, ?string $notes, array $actor): void
+    {
+        $this->pdo->beginTransaction();
+        try {
+            $stmt = $this->pdo->prepare('SELECT id, status FROM receipts WHERE id = :id FOR UPDATE');
+            $stmt->execute(['id' => $receiptId]);
+            $receipt = $stmt->fetch();
+            if (!$receipt || $receipt['status'] !== 'draft') {
+                throw new \InvalidArgumentException('Solo se pueden agregar variantes a borradores.');
+            }
+            $stmt = $this->pdo->prepare("SELECT id FROM product_variants WHERE id = :id AND status = 'active'");
+            $stmt->execute(['id' => $variantId]);
+            if (!$stmt->fetchColumn()) {
+                throw new \InvalidArgumentException('La variante no existe o está inactiva.');
+            }
+            $stmt = $this->pdo->prepare(
+                'SELECT id FROM receipt_items WHERE receipt_id = :receipt_id AND product_variant_id = :variant_id'
+            );
+            $stmt->execute(['receipt_id' => $receiptId, 'variant_id' => $variantId]);
+            if ($stmt->fetchColumn()) {
+                throw new \InvalidArgumentException('La talla ya existe en este lote. Use la opción de sumar cantidades.');
+            }
+            $stmt = $this->pdo->prepare('SELECT id FROM lots WHERE receipt_id = :id');
+            $stmt->execute(['id' => $receiptId]);
+            $lotId = (int) $stmt->fetchColumn();
+            if ($lotId <= 0) {
+                throw new \RuntimeException('No se encontró el lote asociado.');
+            }
+            $stmt = $this->pdo->prepare(
+                'INSERT INTO receipt_items (receipt_id, lot_id, product_variant_id, quantity, notes)
+                 VALUES (:receipt_id, :lot_id, :variant_id, :quantity, :notes)'
+            );
+            $stmt->execute([
+                'receipt_id' => $receiptId, 'lot_id' => $lotId,
+                'variant_id' => $variantId, 'quantity' => $quantity, 'notes' => $notes,
+            ]);
+            $itemId = (int) $this->pdo->lastInsertId();
+            (new AuditRepository($this->pdo))->log([
+                'user_id' => $actor['id'] ?? null,
+                'user_label_snapshot' => $actor['display_name'] ?? '',
+                'module_code' => 'receipts',
+                'action_code' => 'draft_variant_added',
+                'record_type' => 'receipt_item',
+                'record_id' => (string) $itemId,
+                'after' => ['receipt_id' => $receiptId, 'lot_id' => $lotId,
+                    'variant_id' => $variantId, 'quantity' => $quantity, 'notes' => $notes],
+                'ip_address' => $_SERVER['REMOTE_ADDR'] ?? null,
+                'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? null,
+            ]);
+            $this->pdo->commit();
+        } catch (\Throwable $e) {
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+            throw $e;
+        }
+    }
+
     /** Suma cantidades omitidas a una variante ya registrada, solo en borrador. */
     public function increaseDraftItem(int $receiptId, int $itemId, string $addedQuantity, array $actor): void
     {
