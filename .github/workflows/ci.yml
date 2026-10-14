@@ -168,6 +168,9 @@ jobs:
       - name: Receipt admin draft edit test
         run: php tests/receipt_admin_draft_edit_test.php
 
+      - name: Receipt draft quantity increase test
+        run: php tests/receipt_draft_quantity_increase_test.php
+
       - name: Historical import schema test
         run: php tests/historical_import_schema_test.php
 
