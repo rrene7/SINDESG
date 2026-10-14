@@ -48,7 +48,7 @@ final class ReceiptsController
             return $this->handleGet($action, $query);
         } catch (InvalidArgumentException $exception) {
             flash('error', $exception->getMessage());
-            $this->redirect($action === 'confirm'
+            $this->redirect(in_array($action, ['confirm', 'update-draft'], true)
                 ? '?module=receipts&action=show&id=' . (int) ($post['receipt_id'] ?? 0)
                 : '?module=receipts&action=new');
         } catch (Throwable $exception) {
@@ -123,6 +123,30 @@ final class ReceiptsController
                 'success',
                 'Recepción guardada en borrador. Revise el detalle antes de confirmar el ingreso al inventario.'
             );
+            $this->redirect('?module=receipts&action=show&id=' . $receiptId);
+        }
+
+        if ($action === 'update-draft') {
+            if (!sindesg_can('admin.manage')) {
+                throw new InvalidArgumentException('Solo Administración puede modificar la recepción.');
+            }
+            $receiptId = (int) ($post['receipt_id'] ?? 0);
+            $sourceType = trim((string) ($post['source_type'] ?? ''));
+            $supplier = trim((string) ($post['supplier_or_origin'] ?? ''));
+            $document = trim((string) ($post['document_number'] ?? ''));
+            $notes = trim((string) ($post['notes'] ?? ''));
+            if (!array_key_exists($sourceType, ReceiptService::sourceTypes())
+                || $supplier === '' || mb_strlen($supplier) > 180
+                || mb_strlen($document) > 120 || mb_strlen($notes) > 5000) {
+                throw new InvalidArgumentException('Revise procedencia, proveedor y longitudes del formulario.');
+            }
+            $this->repository->updateDraftHeader($receiptId, [
+                'source_type' => $sourceType,
+                'supplier_or_origin' => $supplier,
+                'document_number' => $document === '' ? null : $document,
+                'notes' => $notes === '' ? null : $notes,
+            ], (array) sindesg_user());
+            flash('success', 'Datos del borrador actualizados y auditados. El inventario no cambió.');
             $this->redirect('?module=receipts&action=show&id=' . $receiptId);
         }
 

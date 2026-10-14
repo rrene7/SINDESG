@@ -46,6 +46,35 @@ $statusLabel = $receipt['status'] === 'confirmed' ? 'Confirmada' : ucfirst((stri
         <?php endif; ?>
     </article>
 
+    <?php if ($receipt['status'] === 'draft' && sindesg_can('admin.manage')): ?>
+    <article class="receipt-info-panel">
+        <span class="eyebrow">ADMINISTRACIÓN · BORRADOR</span>
+        <h2>Editar datos de recepción</h2>
+        <p>Corrija los datos documentales antes de confirmar el ingreso. Esta edición queda auditada y no altera cantidades ni kardex.</p>
+        <form method="post" action="<?= e(sindesg_url('?module=receipts&action=update-draft')) ?>" class="receipt-form">
+            <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
+            <input type="hidden" name="receipt_id" value="<?= e($receipt['id']) ?>">
+            <label><span>Procedencia</span>
+                <select name="source_type" required>
+                <?php foreach ($sourceTypes as $value => $label): ?>
+                    <option value="<?= e($value) ?>" <?= $receipt['source_type'] === $value ? 'selected' : '' ?>><?= e($label) ?></option>
+                <?php endforeach; ?>
+                </select>
+            </label>
+            <label><span>Proveedor / origen</span>
+                <input type="text" name="supplier_or_origin" maxlength="180" required value="<?= e($receipt['supplier_or_origin']) ?>">
+            </label>
+            <label><span>Documento soporte</span>
+                <input type="text" name="document_number" maxlength="120" value="<?= e($receipt['document_number'] ?? '') ?>">
+            </label>
+            <label><span>Observaciones</span>
+                <textarea name="notes" rows="3" maxlength="5000"><?= e($receipt['notes'] ?? '') ?></textarea>
+            </label>
+            <button class="primary-button" type="submit">Guardar correcciones del borrador</button>
+        </form>
+    </article>
+    <?php endif; ?>
+
     <aside class="receipt-confirm-panel">
         <?php if ($receipt['status'] === 'draft'): ?>
             <span class="eyebrow">PASO PENDIENTE</span>
