@@ -23,4 +23,23 @@ if (str_contains($view, 'recentRequests(') || str_contains($view, 'stockBreakdow
     || str_contains($view, 'inventory_movements') || !str_contains($css, 'p4-home-grid')) {
     throw new RuntimeException('P4 dashboard must remain isolated, read-only and responsive.');
 }
+require $root . '/app/bootstrap.php';
+$p4 = ['role_codes' => ['P4']];
+$central = ['role_codes' => ['CENTRAL']];
+$admin = ['role_codes' => ['ADMIN']];
+foreach (['requests', 'distribution', 'deliveries', 'inventory', 'warehouses', 'admin', 'people', 'reports', 'audit'] as $module) {
+    if (sindesg_role_action_allowed($module, 'index', 'GET', $p4)
+        || sindesg_role_action_allowed($module, 'save', 'POST', $p4)) {
+        throw new RuntimeException('P4 pilot must fail closed for unscoped module: ' . $module);
+    }
+}
+if (!sindesg_role_action_allowed('dashboard', 'index', 'GET', $p4)
+    || !sindesg_role_action_allowed('requests', 'index', 'GET', $central)
+    || !sindesg_role_action_allowed('admin', 'index', 'GET', $admin)) {
+    throw new RuntimeException('P4 dashboard or existing administrative functions incorrectly blocked.');
+}
+if (!str_contains($view, 'Piloto visual seguro')
+    || !str_contains($view, 'Próximamente: requiere aislamiento por P4')) {
+    throw new RuntimeException('P4 pilot must visibly identify unavailable operations.');
+}
 echo "[OK] P4 workflow dashboard is permission-aware with no global data.\n";
