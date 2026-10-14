@@ -48,7 +48,7 @@ final class ReceiptsController
             return $this->handleGet($action, $query);
         } catch (InvalidArgumentException $exception) {
             flash('error', $exception->getMessage());
-            $this->redirect(in_array($action, ['confirm', 'update-draft'], true)
+            $this->redirect(in_array($action, ['confirm', 'update-draft', 'increase-draft-quantity'], true)
                 ? '?module=receipts&action=show&id=' . (int) ($post['receipt_id'] ?? 0)
                 : '?module=receipts&action=new');
         } catch (Throwable $exception) {
@@ -91,6 +91,7 @@ final class ReceiptsController
                 'data' => [
                     'receipt' => $receipt,
                     'receiptItems' => $this->repository->items($receiptId),
+                    'variantOptions' => $receipt['status'] === 'draft' && sindesg_can('admin.manage') ? $this->catalog->listVariantOptions() : [],
                     'receiptVerification' => $receipt['status'] === 'confirmed'
                         ? $this->repository->confirmationEvidence($receiptId)
                         : [
@@ -123,6 +124,26 @@ final class ReceiptsController
                 'success',
                 'Recepción guardada en borrador. Revise el detalle antes de confirmar el ingreso al inventario.'
             );
+            $this->redirect('?module=receipts&action=show&id=' . $receiptId);
+        }
+
+        if ($action === 'increase-draft-quantity') {
+            if (!sindesg_can('admin.manage')) {
+                throw new InvalidArgumentException('Solo Administración puede corregir cantidades.');
+            }
+            $receiptId = (int) ($post['receipt_id'] ?? 0);
+            $itemId = (int) ($post['receipt_item_id'] ?? 0);
+            $quantity = trim((string) ($post['added_quantity'] ?? ''));
+            if ($receiptId <= 0 || $itemId <= 0
+                || !preg_match('/^\\d{1,9}(?:\\.\\d{1,3})?$/', $quantity)
+                || (float) $quantity <= 0) {
+                throw new InvalidArgumentException('Indique una cantidad positiva (máximo tres decimales).');
+            }
+            $this->repository->increaseDraftItem(
+                $receiptId, $itemId, number_format((float) $quantity, 3, '.', ''),
+                (array) sindesg_user()
+            );
+            flash('success', 'Cantidad agregada al borrador con auditoría. No hubo movimientos de inventario.');
             $this->redirect('?module=receipts&action=show&id=' . $receiptId);
         }
 

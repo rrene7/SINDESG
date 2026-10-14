@@ -364,6 +364,65 @@ final class ReceiptRepository
         }
     }
 
+    /** Suma cantidades omitidas a una variante ya registrada, solo en borrador. */
+    public function increaseDraftItem(int $receiptId, int $itemId, string $addedQuantity, array $actor): void
+    {
+        $this->pdo->beginTransaction();
+        try {
+            $stmt = $this->pdo->prepare('SELECT id, status FROM receipts WHERE id = :id FOR UPDATE');
+            $stmt->execute(['id' => $receiptId]);
+            $receipt = $stmt->fetch();
+            if (!$receipt || $receipt['status'] !== 'draft') {
+                throw new \InvalidArgumentException('Solo se pueden corregir cantidades en borrador.');
+            }
+            $stmt = $this->pdo->prepare(
+                'SELECT id, product_variant_id, quantity FROM receipt_items
+                 WHERE id = :item_id AND receipt_id = :receipt_id FOR UPDATE'
+            );
+            $stmt->execute(['item_id' => $itemId, 'receipt_id' => $receiptId]);
+            $item = $stmt->fetch();
+            if (!$item) {
+                throw new \InvalidArgumentException('La talla seleccionada no pertenece a este lote.');
+            }
+            $beforeQuantity = (float) $item['quantity'];
+            $newQuantity = $beforeQuantity + (float) $addedQuantity;
+            if ($newQuantity > 999999999.999) {
+                throw new \InvalidArgumentException('La cantidad final supera el máximo permitido.');
+            }
+            $stmt = $this->pdo->prepare(
+                'UPDATE receipt_items SET quantity = :quantity WHERE id = :id AND receipt_id = :receipt_id'
+            );
+            $stmt->execute([
+                'quantity' => number_format($newQuantity, 3, '.', ''),
+                'id' => $itemId,
+                'receipt_id' => $receiptId,
+            ]);
+            (new AuditRepository($this->pdo))->log([
+                'user_id' => $actor['id'],
+                'user_label_snapshot' => $actor['display_name'] ?? '',
+                'module_code' => 'receipts',
+                'action_code' => 'draft_item_quantity_increased',
+                'record_type' => 'receipt_item',
+                'record_id' => (string) $itemId,
+                'before' => ['receipt_id' => $receiptId, 'quantity' => $item['quantity']],
+                'after' => [
+                    'receipt_id' => $receiptId,
+                    'product_variant_id' => (int) $item['product_variant_id'],
+                    'added_quantity' => $addedQuantity,
+                    'quantity' => number_format($newQuantity, 3, '.', ''),
+                ],
+                'ip_address' => $_SERVER['REMOTE_ADDR'] ?? null,
+                'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? null,
+            ]);
+            $this->pdo->commit();
+        } catch (\Throwable $e) {
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+            throw $e;
+        }
+    }
+
     public function confirm(int $receiptId): array
     {
         $this->pdo->beginTransaction();
