@@ -210,6 +210,17 @@ if ($currentModule === 'dashboard'
         $contentView = dirname(__DIR__) . '/app/Views/auth/forbidden.php';
     } else {
         $pageTitle = 'Panel operativo P4';
+        $p4AssignedWarehouses = [];
+        $p4ScopeReady = false;
+        try {
+            $p4AssignedWarehouses = (new \App\Services\P4AssignedWarehouses(
+                $database->connection('sindesg')
+            ))->listForUser((int) (sindesg_user()['id'] ?? 0));
+            $p4ScopeReady = true;
+        } catch (\PDOException $exception) {
+            // The table may be absent in another local database. Deny by default.
+            $p4AssignedWarehouses = [];
+        }
         $contentView = dirname(__DIR__) . '/app/Views/dashboard-p4.php';
     }
 } elseif ($currentModule === 'dashboard') {
