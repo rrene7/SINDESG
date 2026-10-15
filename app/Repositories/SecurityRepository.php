@@ -82,6 +82,81 @@ final class SecurityRepository
         )->fetchAll();
     }
 
+    /** Only active official P4 stores, never inferred from RRHH user labels. */
+    public function activeP4WarehouseOptions(): array
+    {
+        return $this->pdo->query(
+            "SELECT id, code, name, organization_unit_name_snapshot
+             FROM warehouses WHERE warehouse_type = 'P4' AND is_active = 1
+             ORDER BY organization_unit_name_snapshot, code"
+        )->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function p4WarehouseIdsForUser(int $userId): array
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT warehouse_id FROM security_user_p4_scopes WHERE user_id = :user_id ORDER BY warehouse_id'
+        );
+        $stmt->execute(['user_id' => $userId]);
+        return array_map('intval', $stmt->fetchAll(PDO::FETCH_COLUMN));
+    }
+
+    /**
+     * Scope assignment + audit must commit/rollback together.
+     * A role P4 is required; no grants to missing/inactive/non-P4 warehouses.
+     */
+    public function assignP4WarehousesWithAudit(int $userId, array $rawIds, array $actor): void
+    {
+        if ($userId <= 0 || $this->findUser($userId) === null) {
+            throw new RuntimeException('Usuario inexistente.');
+        }
+        if (!in_array('P4', $this->roleCodesForUser($userId), true)) {
+            throw new RuntimeException('Primero asigne el rol P4 a este usuario.');
+        }
+        $ids = [];
+        foreach ($rawIds as $raw) {
+            if (!is_scalar($raw) || !ctype_digit((string) $raw) || (int) $raw <= 0) {
+                throw new RuntimeException('Identificador de almacén P4 inválido.');
+            }
+            $ids[(int) $raw] = (int) $raw;
+        }
+        $allowed = array_map('intval', array_column($this->activeP4WarehouseOptions(), 'id'));
+        foreach ($ids as $id) {
+            if (!in_array($id, $allowed, true)) {
+                throw new RuntimeException('El almacén solicitado no es un P4 activo.');
+            }
+        }
+        $previous = $this->p4WarehouseIdsForUser($userId);
+        $this->pdo->beginTransaction();
+        try {
+            $this->pdo->prepare(
+                'DELETE FROM security_user_p4_scopes WHERE user_id = :id'
+            )->execute(['id' => $userId]);
+            $insert = $this->pdo->prepare(
+                'INSERT INTO security_user_p4_scopes (user_id, warehouse_id) VALUES (:user_id, :warehouse_id)'
+            );
+            foreach ($ids as $id) {
+                $insert->execute(['user_id' => $userId, 'warehouse_id' => $id]);
+            }
+            (new AuditRepository($this->pdo))->log([
+                'user_id' => (int) ($actor['id'] ?? 0),
+                'user_label_snapshot' => (string) ($actor['display_name'] ?? ''),
+                'module_code' => 'admin',
+                'action_code' => 'p4_scope_updated',
+                'record_type' => 'security_user',
+                'record_id' => (string) $userId,
+                'before' => ['p4_warehouse_ids' => $previous],
+                'after' => ['p4_warehouse_ids' => array_values($ids)],
+                'ip_address' => $_SERVER['REMOTE_ADDR'] ?? null,
+                'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? null,
+            ]);
+            $this->pdo->commit();
+        } catch (\Throwable $exception) {
+            if ($this->pdo->inTransaction()) $this->pdo->rollBack();
+            throw $exception;
+        }
+    }
+
     public function roleCodesForUser(int $userId): array
     {
         $statement = $this->pdo->prepare(<<<'SQL'
