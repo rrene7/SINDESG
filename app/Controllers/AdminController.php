@@ -85,6 +85,8 @@ final class AdminController
                     'securityUser' => $user,
                     'securityRoles' => $security->roles(),
                     'selectedRoleCodes' => $security->roleCodesForUser((int) $user['id']),
+                    'p4WarehouseOptions' => $security->activeP4WarehouseOptions(),
+                    'selectedP4WarehouseIds' => $security->p4WarehouseIdsForUser((int) $user['id']),
                     'employeeSearchUrl' => sindesg_url('public/api/employees.php'),
                 ],
             ];
@@ -162,6 +164,17 @@ final class AdminController
 
             flash('success', 'Usuario creado correctamente.');
             $this->redirect('?module=admin');
+        }
+
+        if ($action === 'assign-p4-warehouses') {
+            $userId = (int) ($post['user_id'] ?? 0);
+            $ids = $post['p4_warehouse_ids'] ?? [];
+            if (!is_array($ids)) {
+                throw new InvalidArgumentException('Seleccione almacenes P4 válidos.');
+            }
+            $security->assignP4WarehousesWithAudit($userId, $ids, (array) $actor);
+            flash('success', 'Almacenes P4 autorizados con trazabilidad.');
+            $this->redirect('?module=admin&action=edit&id=' . $userId);
         }
 
         if ($action === 'update-user') {
