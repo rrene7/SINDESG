@@ -17,6 +17,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.2'
+          extensions: pdo_sqlite, sqlite3
           coverage: none
 
       - name: PHP syntax
@@ -68,6 +69,9 @@ jobs:
 
       - name: P4 dashboard flow isolation test
         run: php tests/p4_dashboard_flow_test.php
+
+      - name: Assigned P4 warehouses SQL test
+        run: php tests/p4_assigned_warehouses_test.php
 
       - name: UTF-8 repair test
         run: php tests/utf8_repair_test.php
