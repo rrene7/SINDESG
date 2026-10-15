@@ -15,6 +15,26 @@ $steps = [
     <div class="p4-home-status">Piloto visual seguro · Operaciones bloqueadas hasta validar aislamiento de almacenes</div>
 </section>
 
+<section class="p4-home-panel" aria-labelledby="p4-unit-heading">
+    <span class="eyebrow">ÁMBITO DEL USUARIO</span>
+    <h2 id="p4-unit-heading">Mis almacenes P4 autorizados</h2>
+    <?php if (empty($p4ScopeReady)): ?>
+        <p>No fue posible verificar las asignaciones de almacén. Operaciones bloqueadas.</p>
+    <?php elseif ($p4AssignedWarehouses === []): ?>
+        <p>Sin almacén autorizado. Un administrador debe asignar expresamente la Zona Policial 16 de Pacora, después de verificar su registro oficial en SINDESG.</p>
+    <?php else: ?>
+        <div class="p4-home-grid">
+            <?php foreach ($p4AssignedWarehouses as $warehouse): ?>
+                <article class="p4-step-card">
+                    <span class="p4-step-number"><?= e($warehouse['code']) ?></span>
+                    <h3><?= e($warehouse['organization_unit_name_snapshot'] ?: $warehouse['name']) ?></h3>
+                    <p>Almacén P4 autorizado · Identificador <?= e((int) $warehouse['id']) ?></p>
+                </article>
+            <?php endforeach; ?>
+        </div>
+        <p>Las asignaciones se muestran para validación. Las operaciones continúan bloqueadas hasta integrar los controles de acceso a cada registro.</p>
+    <?php endif; ?>
+</section>
 <section class="p4-home-panel" aria-labelledby="p4-workflow-title">
     <div class="p4-home-heading">
         <div>
