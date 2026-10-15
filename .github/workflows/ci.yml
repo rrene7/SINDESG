@@ -73,6 +73,9 @@ jobs:
       - name: Assigned P4 warehouses SQL test
         run: php tests/p4_assigned_warehouses_test.php
 
+      - name: P4 admin assignment audit contract test
+        run: php tests/p4_admin_assignment_contract_test.php
+
       - name: UTF-8 repair test
         run: php tests/utf8_repair_test.php
 
