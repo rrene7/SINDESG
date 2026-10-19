@@ -1,5 +1,10 @@
 <?php
 declare(strict_types=1);
+$deliveryRoles = (array) (sindesg_user()['role_codes'] ?? []);
+$deliveryP4Only = in_array('P4', $deliveryRoles, true)
+    && !in_array('ADMIN', $deliveryRoles, true)
+    && !in_array('CENTRAL', $deliveryRoles, true);
+
 
 $statusLabels = [
     'draft' => 'Borrador',
@@ -68,11 +73,13 @@ $totalQuantity = array_sum(array_map(
                 <button class="primary-button delivery-full-button" type="submit" <?= $deliveryItems === [] ? 'disabled' : '' ?>>Confirmar despacho</button>
             </form>
 
+            <?php if (!$deliveryP4Only): ?>
             <form method="post" action="<?= e(sindesg_url('?module=deliveries&action=cancel')) ?>" class="delivery-cancel-form">
                 <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
                 <input type="hidden" name="delivery_id" value="<?= e($delivery['id']) ?>">
                 <button class="delivery-danger-button" type="submit">Cancelar borrador</button>
             </form>
+            <?php endif; ?>
         <?php elseif ($delivery['status'] === 'confirmed'): ?>
             <p>La entrega está confirmada y ya forma parte del historial de dotación del funcionario.</p>
             <button class="secondary-button delivery-full-button" type="button" onclick="window.print()">Imprimir comprobante</button>
@@ -188,6 +195,7 @@ $totalQuantity = array_sum(array_map(
     <?php if ($freeOptions === []): ?>
         <div class="delivery-empty compact"><p>No hay otras variantes con stock libre en este P4.</p></div>
     <?php else: ?>
+        <?php if (!$deliveryP4Only): ?>
         <form class="delivery-item-form" method="post" action="<?= e(sindesg_url('?module=deliveries&action=add-item')) ?>">
             <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
             <input type="hidden" name="delivery_id" value="<?= e($delivery['id']) ?>">
@@ -220,6 +228,7 @@ $totalQuantity = array_sum(array_map(
 
             <button class="primary-button" type="submit">Agregar</button>
         </form>
+        <?php endif; ?>
     <?php endif; ?>
 </section>
 <?php endif; ?>
@@ -247,7 +256,7 @@ $totalQuantity = array_sum(array_map(
                         <td class="delivery-qty"><?= e(number_format((float) $item['quantity'], 3, '.', ',')) ?></td>
                         <td><?= e($item['request_code'] ?: 'Stock libre P4') ?></td>
                         <td><?= e($item['transfer_code'] ?: '—') ?></td>
-                        <?php if ($delivery['status'] === 'draft'): ?>
+                        <?php if ($delivery['status'] === 'draft' && !$deliveryP4Only): ?>
                             <td>
                                 <form method="post" action="<?= e(sindesg_url('?module=deliveries&action=remove-item')) ?>">
                                     <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
