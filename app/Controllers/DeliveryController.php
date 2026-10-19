@@ -265,7 +265,22 @@ final class DeliveryController
 
         if ($action === 'confirm') {
             $deliveryId = (int) ($post['delivery_id'] ?? 0);
-            $result = $this->service->confirm($deliveryId);
+            $evidence = null;
+            if ($this->isP4Only()) {
+                $raw = (string) ($post['recipient_signature_png'] ?? '');
+                if (!str_starts_with($raw, 'data:image/png;base64,') || strlen($raw) > 220000) {
+                    throw new InvalidArgumentException('La firma de recibido es obligatoria y debe ser una imagen PNG válida.');
+                }
+                $png = base64_decode(substr($raw, strlen('data:image/png;base64,')), true);
+                if ($png === false || strlen($png) < 100 || strlen($png) > 160000
+                    || !str_starts_with($png, "\x89PNG\r\n\x1a\n")) {
+                    throw new InvalidArgumentException('Firma inválida. Capture nuevamente el recibido.');
+                }
+                $actorId = (int) (sindesg_user()['id'] ?? 0);
+                if ($actorId <= 0) throw new InvalidArgumentException('Sesión inválida.');
+                $evidence = ['png' => $png, 'actor' => $actorId];
+            }
+            $result = $this->service->confirm($deliveryId, $evidence);
             flash(
                 'success',
                 !empty($result['already_confirmed'])
