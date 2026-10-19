@@ -102,6 +102,9 @@ $ready = !empty($p4ScopeReady) && !empty($p4OperationsReadable)
                 && sindesg_role_action_allowed('deliveries','index','GET',(array)sindesg_user())): ?>
                 <a href="<?= e(sindesg_url('?module=deliveries')) ?>">Entregar dotación →</a>
             <?php endif; ?>
+            <?php if ($ready && sindesg_role_action_allowed('profile','signature','GET',(array)sindesg_user())): ?>
+                <a href="<?= e(sindesg_url('?module=profile&action=signature')) ?>">✍ Mi firma institucional</a>
+            <?php endif; ?>
         </nav>
     </header>
     <?php if (!$ready): ?>
