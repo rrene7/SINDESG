@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 $steps = [
     ['number' => '01', 'title' => 'Preparar solicitud', 'description' => 'Registrar la necesidad institucional y seleccionar las tallas y cantidades.', 'module' => 'requests', 'action' => 'new', 'permission' => 'requests.manage'],
-    ['number' => '02', 'title' => 'Enviar al Almacén Central', 'description' => 'Revisar la solicitud, adjuntar la información nominal y remitirla para evaluación.', 'module' => 'requests', 'action' => 'index', 'permission' => 'requests.view'],
+    ['number' => '02', 'title' => 'Enviar al Almacén Central', 'description' => 'Revisar la solicitud, adjuntar la información nominal y remitirla para evaluación.', 'module' => 'requests', 'action' => 'show', 'permission' => 'requests.view'],
     ['number' => '03', 'title' => 'Seguimiento y recepción', 'description' => 'Consultar transferencias asignadas y confirmar solamente lo efectivamente recibido.', 'module' => 'distribution', 'action' => 'index', 'permission' => 'distribution.view'],
     ['number' => '04', 'title' => 'Entrega al funcionario', 'description' => 'Registrar la entrega física de las unidades recibidas y conservar su historial.', 'module' => 'deliveries', 'action' => 'index', 'permission' => 'deliveries.view'],
 ];
@@ -12,7 +12,7 @@ $steps = [
     <span class="eyebrow">SINDESG · OPERACIÓN LOGÍSTICA P4</span>
     <h1>Mi flujo de trabajo P4</h1>
     <p>Desde la solicitud al Almacén Central hasta la entrega documentada al funcionario.</p>
-    <div class="p4-home-status">Piloto visual seguro · Operaciones bloqueadas hasta validar aislamiento de almacenes</div>
+    <div class="p4-home-status">Solicitudes P4: creación y envío habilitados únicamente para almacenes autorizados. Recepción y entregas siguen bloqueadas.</div>
 </section>
 
 <section class="p4-home-panel" aria-labelledby="p4-unit-heading">
@@ -32,7 +32,7 @@ $steps = [
                 </article>
             <?php endforeach; ?>
         </div>
-        <p>Las asignaciones se muestran para validación. Las operaciones continúan bloqueadas hasta integrar los controles de acceso a cada registro.</p>
+        <p>Almacenes validados. Las solicitudes requieren autorización del servidor; transferencias y entregas permanecen en solo lectura.</p>
     <?php endif; ?>
 </section>
 <section class="p4-home-panel">
@@ -57,7 +57,9 @@ $steps = [
                             <p>Sin registros en este almacén.</p>
                         <?php else: ?>
                             <?php foreach ($operations[$key] as $record): ?>
-                                <p><strong><?= e($record['code']) ?></strong>
+                                <p><?php if ($key === 'requests' && sindesg_can('requests.view')): ?>
+                                    <a href="<?= e(sindesg_url('?module=requests&action=show&id=' . (int) $record['id'])) ?>"><?= e($record['code']) ?></a>
+                                <?php else: ?><strong><?= e($record['code']) ?></strong><?php endif; ?>
                                 · <?= e($record['status']) ?>
                                 · <?= e($record['event_at'] ?? '') ?></p>
                             <?php endforeach; ?>
@@ -76,12 +78,14 @@ $steps = [
             <span class="eyebrow">FLUJO OPERATIVO</span>
             <h2 id="p4-workflow-title">Etapas del P4</h2>
         </div>
-        <small>Las acciones permanecen bloqueadas para el rol P4 hasta comprobar el acceso exclusivo a su almacén.</small>
+        <small>Solo solicitudes habilitadas; recepción y entregas continúan protegidas.</small>
     </div>
     <div class="p4-home-grid">
         <?php foreach ($steps as $step): ?>
             <?php
-            $canAccess = !in_array('P4', (array) (sindesg_user()['role_codes'] ?? []), true)
+            $canAccess = $step['number'] === '01'
+                && !empty($p4ScopeReady)
+                && !empty($p4AssignedWarehouses)
                 && sindesg_can($step['permission'])
                 && sindesg_role_action_allowed($step['module'], $step['action'], 'GET', (array) sindesg_user());
             $url = '?module=' . $step['module']
@@ -94,7 +98,7 @@ $steps = [
                 <?php if ($canAccess): ?>
                     <a href="<?= e(sindesg_url($url)) ?>">Abrir etapa <span aria-hidden="true">→</span></a>
                 <?php else: ?>
-                    <span class="p4-step-locked">Próximamente: requiere aislamiento por P4</span>
+                    <span class="p4-step-locked">Disponible tras completar controles de acceso</span>
                 <?php endif; ?>
             </article>
         <?php endforeach; ?>
