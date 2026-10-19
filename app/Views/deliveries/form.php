@@ -5,10 +5,21 @@ $isNominal = is_array($pendingLine);
 $roles = (array) (sindesg_user()['role_codes'] ?? []);
 $p4Only = in_array('P4', $roles, true) && !in_array('ADMIN', $roles, true) && !in_array('CENTRAL', $roles, true);
 ?>
+<?php if ($p4Only && $isNominal): ?>
+<style>
+.delivery-hero.compact{padding:18px 24px;margin-bottom:12px}
+.delivery-hero.compact h1{font-size:clamp(1.5rem,2.2vw,2rem)}
+.delivery-form .delivery-panel{padding:18px 20px;margin-bottom:12px}
+.delivery-form .delivery-fixed-grid{gap:9px}
+.delivery-form .delivery-fixed-grid article{padding:11px 13px;min-height:0}
+.delivery-form .delivery-section-head{margin-bottom:12px}
+.delivery-form .delivery-section-head h2{font-size:1.15rem}
+</style>
+<?php endif; ?>
 <section class="delivery-hero compact">
     <div>
         <span class="eyebrow"><?= $isNominal ? 'ENTREGA NOMINAL' : 'NUEVO DESPACHO' ?></span>
-        <h1><?= $isNominal ? 'Entregar prenda reservada' : 'Crear borrador de despacho' ?></h1>
+        <h1><?= $isNominal && $p4Only ? 'Preparar constancia de entrega' : ($isNominal ? 'Entregar prenda reservada' : 'Crear borrador de despacho') ?></h1>
         <p><?= $isNominal
             ? 'La prenda ya fue recibida en el P4 para este beneficiario. Confirme quién entrega y la cantidad.'
             : 'Seleccione el P4 y el funcionario receptor. Después podrá agregar artículos disponibles en ese P4.' ?></p>
@@ -34,8 +45,8 @@ $p4Only = in_array('P4', $roles, true) && !in_array('ADMIN', $roles, true) && !i
             <div class="delivery-fixed-grid">
                 <article>
                     <span>P4</span>
-                    <strong><?= e($pendingLine['p4_code']) ?></strong>
-                    <small><?= e($pendingLine['p4_name'] ?: 'P4') ?></small>
+                    <strong><?= e($p4Only ? ($pendingLine['p4_name'] ?: 'P4') : $pendingLine['p4_code']) ?></strong>
+                    <small><?= e($p4Only ? 'Unidad logística autorizada' : ($pendingLine['p4_name'] ?: 'P4')) ?></small>
                 </article>
                 <article>
                     <span>Funcionario receptor</span>
@@ -45,12 +56,12 @@ $p4Only = in_array('P4', $roles, true) && !in_array('ADMIN', $roles, true) && !i
                 <article>
                     <span>Artículo reservado</span>
                     <strong><?= e($pendingLine['product_name']) ?></strong>
-                    <small><?= e($pendingLine['variant_code'] . ($pendingLine['size_name'] ? ' · Talla ' . $pendingLine['size_name'] : '')) ?></small>
+                    <small><?= e(($pendingLine['size_name'] ? 'Talla ' . $pendingLine['size_name'] : 'Variante sin talla') . ($p4Only ? '' : ' · ' . $pendingLine['variant_code'])) ?></small>
                 </article>
                 <article>
                     <span>Origen logístico</span>
-                    <strong><?= e($pendingLine['request_code']) ?></strong>
-                    <small><?= e($pendingLine['transfer_code'] ?: 'Transferencia recibida') ?></small>
+                    <strong><?= e($p4Only ? 'Dotación autorizada' : $pendingLine['request_code']) ?></strong>
+                    <small><?= e($p4Only ? 'Recibida en el almacén' : ($pendingLine['transfer_code'] ?: 'Transferencia recibida')) ?></small>
                 </article>
             </div>
 
