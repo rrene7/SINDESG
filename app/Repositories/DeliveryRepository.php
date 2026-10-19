@@ -397,6 +397,18 @@ SQL;
         return $row ?: null;
     }
 
+    public function issuerReceiptEvidence(int $deliveryId): ?array
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT i.issuer_user_id, i.signature_png, i.signature_sha256, i.captured_at
+             FROM individual_delivery_issuer_signatures i
+             JOIN individual_deliveries d ON d.id=i.delivery_id
+             WHERE i.delivery_id=:id AND d.status=\'confirmed\' LIMIT 1'
+        );
+        $stmt->execute(['id' => $deliveryId]);
+        return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+    }
+
     public function find(int $deliveryId): ?array
     {
         $statement = $this->pdo->prepare(<<<'SQL'
@@ -850,6 +862,30 @@ SQL;
                         'request_item_id' => $item['request_item_id'],
                     ]);
                 }
+            }
+
+            if ($signatureEvidence !== null && !empty($signatureEvidence['issuer_user_id'])) {
+                $issuerId = (int)$signatureEvidence['issuer_user_id'];
+                // Lock current signature so replacement cannot race with this receipt.
+                $statement = $this->pdo->prepare(
+                    'SELECT signature_png, signature_sha256 FROM p4_user_signatures
+                     WHERE user_id=:id FOR UPDATE'
+                );
+                $statement->execute(['id'=>$issuerId]);
+                $issuer = $statement->fetch(PDO::FETCH_ASSOC);
+                if (!$issuer || $issuerId !== (int)$signatureEvidence['actor']) {
+                    throw new RuntimeException('Registre primero su firma P4 y vuelva a confirmar.');
+                }
+                $this->pdo->prepare(
+                    'INSERT INTO individual_delivery_issuer_signatures
+                     (delivery_id,issuer_user_id,signature_png,signature_sha256)
+                     VALUES (:delivery,:user,:png,:sha)'
+                )->execute([
+                    'delivery'=>$deliveryId,
+                    'user'=>$issuerId,
+                    'png'=>$issuer['signature_png'],
+                    'sha'=>$issuer['signature_sha256'],
+                ]);
             }
 
             if ($signatureEvidence !== null) {
