@@ -26,7 +26,7 @@ if (!str_contains($repo, 'w.organization_unit_name_snapshot AS p4_name')
     || !str_contains($repo, 'r.requested_at')
     || !str_contains($view, "Dotación de ")
     || !str_contains($view, "Dotación · ")
-    || str_contains($view, 'variant_code')) {
+    || str_contains($view, '<small><?= e($line')) {
     throw new RuntimeException('Human-readable item and request labels missing.');
 }
 echo "[OK] Compact searchable P4 delivery list wiring and responsive styles.\n";
