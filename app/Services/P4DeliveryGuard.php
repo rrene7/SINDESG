@@ -42,7 +42,16 @@ final class P4DeliveryGuard
              JOIN security_user_p4_scopes s ON s.warehouse_id=d.p4_warehouse_id
              JOIN warehouses w ON w.id=s.warehouse_id
              WHERE d.id=:delivery AND s.user_id=:user
-               AND w.warehouse_type='P4' AND w.is_active=1 LIMIT 1"
+               AND w.warehouse_type='P4' AND w.is_active=1
+               AND EXISTS (
+                   SELECT 1 FROM individual_delivery_items di
+                   WHERE di.delivery_id=d.id AND di.request_item_id IS NOT NULL
+               )
+               AND NOT EXISTS (
+                   SELECT 1 FROM individual_delivery_items di
+                   WHERE di.delivery_id=d.id AND di.request_item_id IS NULL
+               )
+               LIMIT 1"
         );
         $stmt->execute(['delivery'=>$deliveryId,'user'=>$userId]);
         if (!$stmt->fetchColumn()) throw new RuntimeException('Entrega de otro P4 no autorizada.');
