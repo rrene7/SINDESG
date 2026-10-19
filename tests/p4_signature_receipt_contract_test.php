@@ -17,7 +17,12 @@ foreach ([
  [$view,'data-p4-signature-ack'],
  [$view,'canvas.toDataURL(\'image/png\')'],
  [$repository,'public function receiptEvidence('],
- [$view,'Imprimir / guardar PDF']
+ [$view,'Imprimir / guardar PDF'],
+ [$view,'receipt-facts'],
+ [$view,'receipt-signoff'],
+ [$view,'receipt-integrity'],
+ [$view,'@page{size:A4 portrait'],
+ [$view,'Detalle de artículos entregados']
 ] as [$source,$term]) {
  if(!str_contains($source,$term)) throw new RuntimeException('Missing P4 receipt evidence: '.$term);
 }
