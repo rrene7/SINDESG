@@ -866,6 +866,11 @@ SQL;
 
             if ($signatureEvidence !== null && !empty($signatureEvidence['issuer_user_id'])) {
                 $issuerId = (int)$signatureEvidence['issuer_user_id'];
+                $issuerEmployee = (int)($signatureEvidence['issuer_employee_id'] ?? 0);
+                if ($issuerEmployee <= 0
+                    || (int)$delivery['delivered_by_employee_id'] !== $issuerEmployee) {
+                    throw new RuntimeException('La firma debe pertenecer al funcionario que figura como responsable de esta entrega.');
+                }
                 // Lock current signature so replacement cannot race with this receipt.
                 $statement = $this->pdo->prepare(
                     'SELECT signature_png, signature_sha256 FROM p4_user_signatures
