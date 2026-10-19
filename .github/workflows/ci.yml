@@ -79,6 +79,9 @@ jobs:
       - name: P4 operational SQL isolation test
         run: php tests/p4_operational_summary_isolation_test.php
 
+      - name: P4 request ownership guard integration test
+        run: php tests/p4_request_guard_integration_test.php
+
       - name: UTF-8 repair test
         run: php tests/utf8_repair_test.php
 
