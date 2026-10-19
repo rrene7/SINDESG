@@ -14,6 +14,14 @@ if (!sindesg_api_authorized(false) || !sindesg_can('requests.view')) {
     exit;
 }
 
+$roles = (array) (sindesg_user()['role_codes'] ?? []);
+if (in_array('P4', $roles, true) && !in_array('ADMIN', $roles, true)
+    && !in_array('CENTRAL', $roles, true)) {
+    http_response_code(403);
+    echo json_encode(['ok'=>false,'message'=>'Historial nominal global no disponible para P4.'], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
 $variantId = filter_var($_GET['variant_id'] ?? null, FILTER_VALIDATE_INT);
 $rawIds = (string) ($_GET['employee_ids'] ?? '');
 $values = explode(',', $rawIds);
