@@ -78,10 +78,14 @@ $totalQuantity = array_sum(array_map(static fn (array $row): float => (float) $r
             <p>Los artículos están contabilizados en <strong>Inventario en tránsito</strong>. El P4 debe confirmar la recepción.</p>
             <form method="post" action="<?= e(sindesg_url('?module=distribution&action=receive')) ?>">
                 <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>"><input type="hidden" name="distribution_id" value="<?= e($distribution['id']) ?>">
+                <?php if (in_array('P4', (array) (sindesg_user()['role_codes'] ?? []), true) && !in_array('ADMIN', (array) (sindesg_user()['role_codes'] ?? []), true) && !in_array('CENTRAL', (array) (sindesg_user()['role_codes'] ?? []), true)): ?>
+                    <p>Recibe: <strong><?= e(sindesg_user()['display_name'] ?? 'Funcionario P4') ?></strong>. Se valida la identidad de sesión en RRHH2029.</p>
+                <?php else: ?>
                 <div class="distribution-employee-picker" data-distribution-picker="receive" data-search-url="<?= e($employeeSearchUrl) ?>">
                     <label><span>Funcionario que recibe en P4 *</span><input type="search" data-distribution-search required autocomplete="off" placeholder="Nombre, cédula o posición..."><input type="hidden" name="received_by_employee_id" data-distribution-id></label>
                     <div class="distribution-picker-results" data-distribution-results hidden></div><div class="distribution-picker-selection" data-distribution-selection hidden></div>
                 </div>
+                <?php endif; ?>
                 <label class="distribution-notes-field"><span>Observación de recepción</span><textarea name="receipt_notes" rows="2"></textarea></label>
                 <button class="primary-button distribution-full-button" type="submit">Confirmar recepción en P4</button>
             </form>
