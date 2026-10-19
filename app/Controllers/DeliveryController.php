@@ -171,6 +171,8 @@ final class DeliveryController
                     'delivery' => $delivery,
                     'receiptEvidence' => $delivery['status'] === 'confirmed'
                         ? $this->repository->receiptEvidence($deliveryId) : null,
+                    'issuerReceiptEvidence' => $delivery['status'] === 'confirmed'
+                        ? $this->repository->issuerReceiptEvidence($deliveryId) : null,
                     'deliveryItems' => $this->repository->items($deliveryId),
                     'deliveryVerification' => $delivery['status'] === 'confirmed'
                         ? $this->repository->confirmationEvidence($deliveryId)
@@ -269,6 +271,15 @@ final class DeliveryController
             $deliveryId = (int) ($post['delivery_id'] ?? 0);
             $evidence = null;
             if ($this->isP4Only()) {
+                if (($post['issuer_ack'] ?? '') !== '1') {
+                    throw new InvalidArgumentException('Debe autorizar expresamente el uso de su firma para esta entrega.');
+                }
+                $currentIssuer = (new \App\Services\P4IssuerSignature(
+                    $this->database->connection('sindesg')
+                ))->current((int)(sindesg_user()['id'] ?? 0));
+                if (!$currentIssuer) {
+                    throw new InvalidArgumentException('Registre primero su firma en Mi firma institucional.');
+                }
                 $raw = (string) ($post['recipient_signature_png'] ?? '');
                 if (!str_starts_with($raw, 'data:image/png;base64,') || strlen($raw) > 220000) {
                     throw new InvalidArgumentException('La firma de recibido es obligatoria y debe ser una imagen PNG válida.');
@@ -280,7 +291,7 @@ final class DeliveryController
                 }
                 $actorId = (int) (sindesg_user()['id'] ?? 0);
                 if ($actorId <= 0) throw new InvalidArgumentException('Sesión inválida.');
-                $evidence = ['png' => $png, 'actor' => $actorId];
+                $evidence = ['png' => $png, 'actor' => $actorId, 'issuer_user_id' => $actorId];
             }
             $result = $this->service->confirm($deliveryId, $evidence);
             flash(
