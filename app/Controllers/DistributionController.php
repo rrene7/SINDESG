@@ -16,7 +16,7 @@ final class DistributionController
     private DistributionRepository $repository;
     private DistributionService $service;
 
-    public function __construct(Database $database)
+    public function __construct(private Database $database)
     {
         $this->repository = new DistributionRepository($database->connection('sindesg'));
         $this->service = new DistributionService(
@@ -32,6 +32,22 @@ final class DistributionController
         string $method
     ): array {
         try {
+            $user = (array) sindesg_user();
+            $roles = (array) ($user['role_codes'] ?? []);
+            $p4Only = in_array('P4', $roles, true) && !in_array('ADMIN', $roles, true)
+                && !in_array('CENTRAL', $roles, true);
+            if ($p4Only) {
+                $postRequest = strtoupper($method) === 'POST';
+                if (($postRequest && $action !== 'receive')
+                    || (!$postRequest && $action !== 'show')) {
+                    throw new InvalidArgumentException('Acción no autorizada para P4.');
+                }
+                $transferId = (int) (($postRequest ? $post['distribution_id'] ?? 0
+                    : $query['id'] ?? 0));
+                (new \App\Services\P4DistributionGuard(
+                    $this->database->connection('sindesg')
+                ))->assertAssigned((int) ($user['id'] ?? 0), $transferId);
+            }
             if (strtoupper($method) === 'POST') {
                 if (!csrf_valid(isset($post['_token']) ? (string) $post['_token'] : null)) {
                     throw new InvalidArgumentException('La sesión del formulario venció. Intente nuevamente.');
