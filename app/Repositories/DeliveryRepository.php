@@ -382,6 +382,21 @@ SQL;
         }
     }
 
+    public function receiptEvidence(int $deliveryId): ?array
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT r.delivery_id, r.recipient_employee_id, r.signature_png,
+                    r.signature_sha256, r.captured_at,
+                    r.captured_by_user_id
+             FROM individual_delivery_receipts r
+             INNER JOIN individual_deliveries d ON d.id=r.delivery_id
+             WHERE r.delivery_id=:id AND d.status=\'confirmed\' LIMIT 1'
+        );
+        $stmt->execute(['id' => $deliveryId]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $row ?: null;
+    }
+
     public function find(int $deliveryId): ?array
     {
         $statement = $this->pdo->prepare(<<<'SQL'
