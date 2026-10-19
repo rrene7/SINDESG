@@ -180,7 +180,8 @@ final class DeliveryRepository
             SELECT i.id AS request_item_id,
                    i.beneficiary_label_snapshot, i.beneficiary_document_snapshot,
                    GREATEST(i.quantity_received-i.quantity_delivered,0) AS pending_quantity,
-                   r.request_code, r.p4_warehouse_id,
+                   r.request_code, r.requested_at, r.p4_warehouse_id,
+                   w.organization_unit_name_snapshot AS p4_name,
                    pv.internal_code AS variant_code, p.name AS product_name,
                    sz.name AS size_name
             FROM service_request_items i
