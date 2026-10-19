@@ -82,6 +82,9 @@ jobs:
       - name: P4 request ownership guard integration test
         run: php tests/p4_request_guard_integration_test.php
 
+      - name: P4 distribution receipt ownership test
+        run: php tests/p4_distribution_receive_guard_test.php
+
       - name: UTF-8 repair test
         run: php tests/utf8_repair_test.php
 
