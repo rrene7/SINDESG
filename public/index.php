@@ -57,13 +57,6 @@ $modules = [
         'phase' => 'Fase 8',
         'description' => 'Transferencias desde el Almacén Central hacia los almacenes/P4.',
     ],
-    'profile' => [
-        'label' => 'Mi firma P4',
-        'short' => 'Mi firma',
-        'icon' => 'PF',
-        'phase' => 'Perfil',
-        'description' => 'Registro personal de firma institucional del responsable P4.',
-    ],
     'deliveries' => [
         'label' => 'Despacho individual',
         'short' => 'Despacho',
@@ -185,7 +178,7 @@ if ($health['sindesg']['ok']) {
     }
 }
 
-if ($currentModule !== 'dashboard' && !isset($modules[$currentModule])) {
+if (!in_array($currentModule, ['dashboard','profile'], true) && !isset($modules[$currentModule])) {
     http_response_code(404);
     $currentModule = 'not-found';
 }
