@@ -347,6 +347,15 @@ $totalQuantity = array_sum(array_map(
     <p><strong>Comprobante:</strong> <?= e($delivery['delivery_code']) ?> · <strong>Receptor:</strong>
         <?= e($delivery['recipient_label_snapshot']) ?> · <strong>Fecha:</strong>
         <?= e((string) $receiptEvidence['captured_at']) ?></p>
+    <p><strong>Almacén:</strong> <?= e($delivery['p4_name'] ?: $delivery['p4_code']) ?> ·
+        <strong>Responsable:</strong> <?= e($delivery['delivered_by_label_snapshot']) ?></p>
+    <div class="receipt-item-lines">
+        <strong>Artículos entregados</strong>
+        <?php foreach ($deliveryItems as $item): ?>
+            <p><?= e($item['product_name']) ?> · <?= e($item['size_name'] ?: 'Sin talla') ?>
+                · Cantidad <?= e(number_format((float) $item['quantity'], 3, '.', ',')) ?></p>
+        <?php endforeach; ?>
+    </div>
     <img style="max-width:100%;width:500px;background:white;border-radius:8px;padding:12px"
          alt="Firma manuscrita capturada del receptor"
          src="data:image/png;base64,<?= e(base64_encode((string) $receiptEvidence['signature_png'])) ?>">
