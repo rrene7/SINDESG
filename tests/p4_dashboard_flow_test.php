@@ -38,8 +38,9 @@ if (!sindesg_role_action_allowed('dashboard', 'index', 'GET', $p4)
     || !sindesg_role_action_allowed('admin', 'index', 'GET', $admin)) {
     throw new RuntimeException('P4 dashboard or existing administrative functions incorrectly blocked.');
 }
-if (!str_contains($view, 'Solicitudes y entregas nominales habilitadas para almacenes autorizados')
-    || !str_contains($view, 'Solicitudes, recepción y entregas nominales')) {
+if (!str_contains($view, 'MI PANEL DE TRABAJO')
+    || !str_contains($view, '¿Qué está pasando?')
+    || !str_contains($view, 'Registros visibles de mis almacenes')) {
     throw new RuntimeException('P4 dashboard must display operational scope accurately.');
 }
 if (!sindesg_role_action_allowed('requests', 'new', 'GET', $p4)
