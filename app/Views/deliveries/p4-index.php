@@ -8,7 +8,13 @@ foreach (($nominalQueue ?? []) as $line) {
     $size = trim((string) ($line['size_name'] ?? ''));
     $request = trim((string) ($line['request_code'] ?? ''));
     if ($size !== '') $sizeOptions[$size] = true;
-    if ($request !== '') $requestOptions[$request] = true;
+    if ($request !== '') {
+        $date = trim((string) ($line['requested_at'] ?? ''));
+        $dateLabel = $date !== '' ? substr($date, 0, 10) : '';
+        $requestOptions[$request] = 'Dotación de ' . (string) ($line['product_name'] ?? 'artículos')
+            . ' · ' . (string) ($line['p4_name'] ?: 'P4')
+            . ($dateLabel !== '' ? ' · ' . $dateLabel : '');
+    }
 }
 uksort($sizeOptions, 'strnatcasecmp');
 ksort($requestOptions, SORT_NATURAL);
@@ -44,8 +50,8 @@ ksort($requestOptions, SORT_NATURAL);
             <span>Solicitud</span>
             <select data-p4-filter-request>
                 <option value="">Todas las solicitudes</option>
-                <?php foreach (array_keys($requestOptions) as $request): ?>
-                    <option value="<?= e($request) ?>"><?= e($request) ?></option>
+                <?php foreach ($requestOptions as $request => $label): ?>
+                    <option value="<?= e($request) ?>" title="<?= e($request) ?>"><?= e($label) ?></option>
                 <?php endforeach; ?>
             </select>
         </label>
@@ -75,11 +81,11 @@ ksort($requestOptions, SORT_NATURAL);
                     ]))) ?>">
                     <div class="p4-delivery-person">
                         <strong><?= e($line['beneficiary_label_snapshot'] ?: 'Funcionario') ?></strong>
-                        <small><?= e($line['beneficiary_document_snapshot'] ?: 'Sin documento') ?> · <?= e($line['request_code']) ?></small>
+                        <small><?= e($line['beneficiary_document_snapshot'] ?: 'Sin documento') ?></small>
                     </div>
                     <div class="p4-delivery-product">
                         <span><?= e($line['product_name']) ?></span>
-                        <small><?= e($line['variant_code']) ?></small>
+                        <small title="<?= e($line['request_code'] . ' · ' . $line['variant_code']) ?>"><?= e('Dotación · ' . ($line['p4_name'] ?: 'P4')) ?></small>
                     </div>
                     <div class="p4-delivery-size">
                         <span class="p4-delivery-cell-label">Talla</span>
