@@ -111,40 +111,14 @@ $descriptions = [
   <?php endif; ?>
 </div>
 
-<section class="p4-home-panel" aria-labelledby="p4-workflow-title">
-    <div class="p4-home-heading">
-        <div>
-            <span class="eyebrow">FLUJO OPERATIVO</span>
-            <h2 id="p4-workflow-title">Etapas del P4</h2>
-        </div>
-        <small>Solicitudes, recepción y entregas nominales: cada acción verifica el almacén autorizado.</small>
-    </div>
-    <div class="p4-home-grid">
-        <?php foreach ($steps as $step): ?>
-            <?php
-            $canAccess = in_array($step['number'], ['01', '04'], true)
-                && !empty($p4ScopeReady)
-                && !empty($p4AssignedWarehouses)
-                && sindesg_can($step['permission'])
-                && sindesg_role_action_allowed($step['module'], $step['action'], 'GET', (array) sindesg_user());
-            $url = '?module=' . $step['module']
-                . ($step['action'] !== 'index' ? '&action=' . $step['action'] : '');
-            ?>
-            <article class="p4-step-card">
-                <span class="p4-step-number"><?= e($step['number']) ?></span>
-                <h3><?= e($step['title']) ?></h3>
-                <p><?= e($step['description']) ?></p>
-                <?php if ($canAccess): ?>
-                    <a href="<?= e(sindesg_url($url)) ?>">Abrir etapa <span aria-hidden="true">→</span></a>
-                <?php else: ?>
-                    <span class="p4-step-locked">Disponible tras completar controles de acceso</span>
-                <?php endif; ?>
-            </article>
-        <?php endforeach; ?>
-    </div>
-</section>
-<section class="p4-home-panel">
-    <span class="eyebrow">TRAZABILIDAD</span>
-    <h2>Responsabilidades</h2>
-    <p>El P4 registra sus necesidades, confirma la recepción física y documenta las entregas. El Almacén Central revisa, autoriza y despacha las transferencias. Esta pantalla no presupone cantidades aprobadas, stock ni solicitudes existentes.</p>
+
+<section class="p4-home-panel" aria-labelledby="p4-next-heading">
+  <span class="eyebrow">¿QUÉ DEBO HACER?</span>
+  <h2 id="p4-next-heading">Mi proceso de dotación</h2>
+  <div class="p4-home-grid">
+    <article class="p4-step-card"><h3>1. Solicitar</h3><p>Registra las necesidades del personal y envía la solicitud al Almacén Central.</p></article>
+    <article class="p4-step-card"><h3>2. Esperar aprobación</h3><p>Central revisa las cantidades, prepara y despacha las prendas autorizadas.</p></article>
+    <article class="p4-step-card"><h3>3. Recibir</h3><p>Consulta tus transferencias y confirma físicamente lo recibido en tu almacén.</p></article>
+    <article class="p4-step-card"><h3>4. Entregar</h3><p>Selecciona al funcionario, registra su firma y confirma la entrega.</p></article>
+  </div>
 </section>
