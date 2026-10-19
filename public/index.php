@@ -12,6 +12,7 @@ use App\Controllers\DeliveryController;
 use App\Controllers\AdjustmentController;
 use App\Controllers\ReportsController;
 use App\Controllers\AuthController;
+use App\Controllers\ProfileController;
 use App\Controllers\AdminController;
 use App\Controllers\AuditController;
 use App\Controllers\HistoricalImportController;
@@ -55,6 +56,13 @@ $modules = [
         'icon' => 'DP',
         'phase' => 'Fase 8',
         'description' => 'Transferencias desde el Almacén Central hacia los almacenes/P4.',
+    ],
+    'profile' => [
+        'label' => 'Mi firma P4',
+        'short' => 'Mi firma',
+        'icon' => 'PF',
+        'phase' => 'Perfil',
+        'description' => 'Registro personal de firma institucional del responsable P4.',
     ],
     'deliveries' => [
         'label' => 'Despacho individual',
@@ -391,6 +399,17 @@ if ($currentModule === 'dashboard'
             $_SERVER['REQUEST_METHOD'] ?? 'GET'
         );
 
+        $pageTitle = $result['title'];
+        $contentView = $result['view'];
+        extract($result['data'], EXTR_SKIP);
+    }
+} elseif ($currentModule === 'profile') {
+    if (!$health['sindesg']['ok']) {
+        $pageTitle = 'Mi firma P4';
+        $contentView = dirname(__DIR__) . '/app/Views/auth/forbidden.php';
+    } else {
+        $controller = new ProfileController($database);
+        $result = $controller->handle($currentAction, $currentMethod, $_POST, $_FILES);
         $pageTitle = $result['title'];
         $contentView = $result['view'];
         extract($result['data'], EXTR_SKIP);
