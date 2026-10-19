@@ -115,7 +115,7 @@ $ready = !empty($p4ScopeReady) && !empty($p4OperationsReadable)
             <article class="p4-v2-metric"><strong><?= e(number_format($totals['transfers_to_receive'],0,',','.')) ?></strong><span>Transferencias por recibir</span><small>Despachadas, aún sin recepción confirmada</small></article>
             <article class="p4-v2-metric"><strong><?= e(number_format($totals['beneficiaries_pending'],0,',','.')) ?></strong><span>Funcionarios pendientes</span><small>Con prendas recibidas aún sin entregar</small></article>
             <article class="p4-v2-metric"><strong><?= e(number_format($totals['deliveries_confirmed'],0,',','.')) ?></strong><span>Entregas confirmadas</span><small>Total histórico de mis almacenes</small></article>
-            <article class="p4-v2-metric"><strong><?= e(number_format($totals['physical_units'],3,',','.')) ?></strong><span>Unidades físicas</span><small>Saldo en inventario P4, incluye dotación reservada</small></article>
+            <article class="p4-v2-metric"><strong><?= e(\App\Services\P4QuantityDisplay::units((float)$totals['physical_units'])) ?></strong><span>Unidades físicas</span><small>Unidades, no miles · Incluye dotación reservada</small></article>
         </section>
         <section class="p4-v2-panel">
             <div class="p4-v2-heading">
@@ -134,7 +134,7 @@ $ready = !empty($p4ScopeReady) && !empty($p4OperationsReadable)
                             <div class="p4-v2-stock-row">
                                 <span><?= e($line['product_name']) ?></span>
                                 <span><?= e($line['size_name']) ?></span>
-                                <strong><?= e(number_format((float)$line['physical_quantity'],3,',','.')) ?></strong>
+                                <strong><?= e(\App\Services\P4QuantityDisplay::units((float)$line['physical_quantity'])) ?></strong>
                             </div>
                         <?php endforeach; ?>
                     <?php endif; ?>
