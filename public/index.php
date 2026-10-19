@@ -212,11 +212,30 @@ if ($currentModule === 'dashboard'
         $pageTitle = 'Panel operativo P4';
         $p4AssignedWarehouses = [];
         $p4ScopeReady = false;
+        $p4OperationalSummary = [];
+        $p4OperationsReadable = false;
         try {
             $p4AssignedWarehouses = (new \App\Services\P4AssignedWarehouses(
                 $database->connection('sindesg')
             ))->listForUser((int) (sindesg_user()['id'] ?? 0));
             $p4ScopeReady = true;
+            $p4OperationalSummary = [];
+            $p4OperationsReadable = true;
+            foreach ($p4AssignedWarehouses as $assignedP4) {
+                try {
+                    $p4OperationalSummary[(int) $assignedP4['id']] =
+                        (new \App\Services\P4OperationalSummary(
+                            $database->connection('sindesg')
+                        ))->forWarehouse(
+                            (int) (sindesg_user()['id'] ?? 0),
+                            (int) $assignedP4['id']
+                        );
+                } catch (\Throwable $exception) {
+                    $p4OperationsReadable = false;
+                    $p4OperationalSummary = [];
+                    break;
+                }
+            }
         } catch (\PDOException $exception) {
             // The table may be absent in another local database. Deny by default.
             $p4AssignedWarehouses = [];
