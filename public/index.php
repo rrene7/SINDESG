@@ -214,6 +214,8 @@ if ($currentModule === 'dashboard'
         $p4ScopeReady = false;
         $p4OperationalSummary = [];
         $p4OperationsReadable = false;
+        $p4DashboardData = [];
+        $p4DashboardDataReady = false;
         try {
             $p4AssignedWarehouses = (new \App\Services\P4AssignedWarehouses(
                 $database->connection('sindesg')
@@ -221,8 +223,17 @@ if ($currentModule === 'dashboard'
             $p4ScopeReady = true;
             $p4OperationalSummary = [];
             $p4OperationsReadable = true;
+            $p4DashboardData = [];
+            $p4DashboardDataReady = true;
             foreach ($p4AssignedWarehouses as $assignedP4) {
                 try {
+                    $p4DashboardData[(int) $assignedP4['id']] =
+                        (new \App\Services\P4DashboardData(
+                            $database->connection('sindesg')
+                        ))->forWarehouse(
+                            (int) (sindesg_user()['id'] ?? 0),
+                            (int) $assignedP4['id']
+                        );
                     $p4OperationalSummary[(int) $assignedP4['id']] =
                         (new \App\Services\P4OperationalSummary(
                             $database->connection('sindesg')
@@ -233,6 +244,8 @@ if ($currentModule === 'dashboard'
                 } catch (\Throwable $exception) {
                     $p4OperationsReadable = false;
                     $p4OperationalSummary = [];
+                    $p4DashboardDataReady = false;
+                    $p4DashboardData = [];
                     break;
                 }
             }
