@@ -329,6 +329,15 @@ $totalQuantity = array_sum(array_map(
 </div>
 
 <?php if (!empty($receiptEvidence)): ?>
+<style>
+@media print {
+ body * {visibility:hidden!important}
+ #signed-receipt, #signed-receipt * {visibility:visible!important}
+ #signed-receipt {position:absolute;left:0;top:0;width:100%;background:white!important;color:black!important;border:0!important;box-shadow:none!important}
+ #signed-receipt * {color:black!important;background:transparent!important}
+ #signed-receipt button {display:none!important}
+}
+</style>
 <section class="delivery-panel" id="signed-receipt">
     <div class="delivery-section-head">
         <div><span class="eyebrow">COMPROBANTE DE RECIBIDO</span>
