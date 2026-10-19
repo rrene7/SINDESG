@@ -11,7 +11,7 @@ $db->sqliteCreateFunction('GREATEST', static fn (...$n) => max($n), -1);
 $db->exec(<<<'SQL'
 CREATE TABLE warehouses(id INTEGER,warehouse_type TEXT,is_active INTEGER);
 CREATE TABLE security_user_p4_scopes(user_id INTEGER,warehouse_id INTEGER);
-CREATE TABLE service_requests(id INTEGER,request_code TEXT,p4_warehouse_id INTEGER,status TEXT);
+CREATE TABLE service_requests(id INTEGER,request_code TEXT,p4_warehouse_id INTEGER,status TEXT,requested_at TEXT);
 CREATE TABLE service_request_items(id INTEGER,request_id INTEGER,product_variant_id INTEGER,beneficiary_employee_id INTEGER,beneficiary_label_snapshot TEXT,beneficiary_document_snapshot TEXT,quantity_received REAL,quantity_delivered REAL);
 CREATE TABLE individual_deliveries(id INTEGER,p4_warehouse_id INTEGER,recipient_employee_id INTEGER);
 CREATE TABLE individual_delivery_items(id INTEGER,delivery_id INTEGER,request_item_id INTEGER);
