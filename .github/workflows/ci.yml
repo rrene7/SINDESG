@@ -88,6 +88,15 @@ jobs:
       - name: P4 nominal delivery isolation test
         run: php tests/p4_nominal_delivery_isolation_test.php
 
+      - name: P4 nominal delivery PHP syntax
+        run: |
+          php -l app/Controllers/DeliveryController.php
+          php -l app/Repositories/DeliveryRepository.php
+          php -l app/Services/P4DeliveryGuard.php
+          php -l app/Views/deliveries/form.php
+          php -l app/Views/deliveries/show.php
+          php -l app/Views/deliveries/p4-index.php
+
       - name: UTF-8 repair test
         run: php tests/utf8_repair_test.php
 
