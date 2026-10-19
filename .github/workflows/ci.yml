@@ -88,6 +88,11 @@ jobs:
       - name: P4 nominal delivery isolation test
         run: php tests/p4_nominal_delivery_isolation_test.php
 
+      - name: P4 compact delivery view test
+        run: |
+          php -l app/Views/deliveries/p4-index.php
+          php tests/p4_delivery_compact_ui_test.php
+
       - name: P4 nominal delivery PHP syntax
         run: |
           php -l app/Controllers/DeliveryController.php
