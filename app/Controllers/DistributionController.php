@@ -47,6 +47,10 @@ final class DistributionController
                 (new \App\Services\P4DistributionGuard(
                     $this->database->connection('sindesg')
                 ))->assertAssigned((int) ($user['id'] ?? 0), $transferId);
+                if ($postRequest) {
+                    // Receiver identity is always the authenticated P4 official.
+                    $post['received_by_employee_id'] = (int) ($user['employee_id'] ?? 0);
+                }
             }
             if (strtoupper($method) === 'POST') {
                 if (!csrf_valid(isset($post['_token']) ? (string) $post['_token'] : null)) {
