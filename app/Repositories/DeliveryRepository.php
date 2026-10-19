@@ -168,6 +168,40 @@ final class DeliveryRepository
             LIMIT ' . $limit)->fetchAll();
     }
 
+    /**
+     * Nominal P4 queue: scope in SQL, before pagination.
+     * Reuse the existing catalogue joins without loading another unit's rows.
+     */
+    public function pendingNominalForUser(int $userId, int $limit = 100): array
+    {
+        if ($userId <= 0) return [];
+        $limit = max(1, min($limit, 100));
+        $sql = <<<'SQL'
+            SELECT i.id AS request_item_id,
+                   i.beneficiary_label_snapshot, i.beneficiary_document_snapshot,
+                   GREATEST(i.quantity_received-i.quantity_delivered,0) AS pending_quantity,
+                   r.request_code, r.p4_warehouse_id,
+                   pv.internal_code AS variant_code, p.name AS product_name,
+                   sz.name AS size_name
+            FROM service_request_items i
+            JOIN service_requests r ON r.id=i.request_id
+            JOIN warehouses w ON w.id=r.p4_warehouse_id
+            JOIN security_user_p4_scopes scope ON scope.warehouse_id=r.p4_warehouse_id
+            JOIN product_variants pv ON pv.id=i.product_variant_id
+            JOIN products p ON p.id=pv.product_id
+            LEFT JOIN sizes sz ON sz.id=pv.size_id
+            WHERE scope.user_id=:user_id AND w.warehouse_type='P4' AND w.is_active=1
+              AND i.beneficiary_employee_id IS NOT NULL
+              AND i.quantity_received > i.quantity_delivered
+              AND r.status IN ('approved','partially_approved','fulfilled')
+            ORDER BY i.id ASC
+            LIMIT 
+SQL;
+        $stmt = $this->pdo->prepare($sql . $limit);
+        $stmt->execute(['user_id' => $userId]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
     public function pendingNominalLine(int $requestItemId): ?array
     {
         $statement = $this->pdo->prepare(<<<'SQL'
