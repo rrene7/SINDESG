@@ -169,6 +169,8 @@ final class DeliveryController
                 'title' => (string) $delivery['delivery_code'],
                 'data' => [
                     'delivery' => $delivery,
+                    'receiptEvidence' => $delivery['status'] === 'confirmed'
+                        ? $this->repository->receiptEvidence($deliveryId) : null,
                     'deliveryItems' => $this->repository->items($deliveryId),
                     'deliveryVerification' => $delivery['status'] === 'confirmed'
                         ? $this->repository->confirmationEvidence($deliveryId)
