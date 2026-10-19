@@ -70,7 +70,18 @@ $totalQuantity = array_sum(array_map(
             <form method="post" action="<?= e(sindesg_url('?module=deliveries&action=confirm')) ?>">
                 <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
                 <input type="hidden" name="delivery_id" value="<?= e($delivery['id']) ?>">
-                <button class="primary-button delivery-full-button" type="submit" <?= $deliveryItems === [] ? 'disabled' : '' ?>>Confirmar despacho</button>
+                <?php if ($deliveryP4Only): ?>
+                    <div class="p4-signature-wrap" data-p4-signature>
+                        <strong>Firma del funcionario que recibe</strong>
+                        <p>Verifique la identidad del beneficiario antes de capturar su firma.</p>
+                        <canvas width="650" height="180" aria-label="Área para firma manuscrita de recibido" data-p4-signature-canvas></canvas>
+                        <input type="hidden" name="recipient_signature_png" data-p4-signature-value>
+                        <button type="button" class="secondary-button" data-p4-signature-clear>Limpiar firma</button>
+                        <label class="p4-signature-ack"><input type="checkbox" data-p4-signature-ack required> Confirmo que el receptor identificado firmó el comprobante al recibir los artículos.</label>
+                        <small>La firma capturada es una constancia manuscrita digitalizada, no una firma electrónica certificada.</small>
+                    </div>
+                <?php endif; ?>
+                <button class="primary-button delivery-full-button" type="submit" data-p4-confirm-submit <?= $deliveryItems === [] ? 'disabled' : '' ?>>Confirmar despacho</button>
             </form>
 
             <?php if (!$deliveryP4Only): ?>
@@ -316,3 +327,36 @@ $totalQuantity = array_sum(array_map(
     <a class="secondary-button" href="<?= e(sindesg_url('?module=deliveries')) ?>">← Despachos</a>
     <a class="secondary-button" href="<?= e(sindesg_url('?module=warehouses&action=show&id=' . (int) $delivery['p4_warehouse_id'])) ?>">Ver P4</a>
 </div>
+
+<?php if ($deliveryP4Only && $delivery['status'] === 'draft'): ?>
+<style>
+.p4-signature-wrap{display:grid;gap:9px;margin:18px 0;padding:16px;border:1px solid #245779;border-radius:12px;background:#061b30}
+.p4-signature-wrap p,.p4-signature-wrap small{color:#9fc1d8;font-size:.82rem}
+.p4-signature-wrap canvas{width:100%;height:180px;background:#fff;border-radius:8px;touch-action:none;cursor:crosshair}
+.p4-signature-ack{display:flex;gap:9px;align-items:start;font-size:.87rem}
+</style>
+<script>
+(() => {
+ const root=document.querySelector('[data-p4-signature]');
+ if(!root) return;
+ const canvas=root.querySelector('canvas'),ctx=canvas.getContext('2d'),form=root.closest('form');
+ const input=root.querySelector('[data-p4-signature-value]');
+ const ack=root.querySelector('[data-p4-signature-ack]');
+ const submit=form.querySelector('[data-p4-confirm-submit]');
+ let drawing=false,drawn=false;
+ ctx.strokeStyle='#142b47';ctx.lineWidth=2.7;ctx.lineCap='round';ctx.lineJoin='round';
+ function pos(ev){const r=canvas.getBoundingClientRect();return {x:(ev.clientX-r.left)*canvas.width/r.width,y:(ev.clientY-r.top)*canvas.height/r.height};}
+ canvas.addEventListener('pointerdown',ev=>{drawing=true;const p=pos(ev);ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(p.x+.1,p.y+.1);ctx.stroke();drawn=true;canvas.setPointerCapture(ev.pointerId);});
+ canvas.addEventListener('pointermove',ev=>{if(!drawing)return;const p=pos(ev);ctx.lineTo(p.x,p.y);ctx.stroke();});
+ canvas.addEventListener('pointerup',()=>{drawing=false;});
+ canvas.addEventListener('pointercancel',()=>{drawing=false;});
+ root.querySelector('[data-p4-signature-clear]').addEventListener('click',()=>{ctx.clearRect(0,0,canvas.width,canvas.height);drawn=false;input.value='';ack.checked=false;});
+ form.addEventListener('submit',ev=>{
+   if(!drawn || !ack.checked){ev.preventDefault();alert('Capture la firma del receptor y confirme su identidad.');return;}
+   input.value=canvas.toDataURL('image/png');
+   if(input.value.length>220000){ev.preventDefault();alert('La firma excede el tamaño permitido. Límpiela e intente nuevamente.');input.value='';return;}
+   submit.disabled=true;
+ });
+})();
+</script>
+<?php endif; ?>
