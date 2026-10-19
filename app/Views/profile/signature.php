@@ -55,10 +55,13 @@ declare(strict_types=1);
   const canvas=form.querySelector('canvas'),ctx=canvas.getContext('2d'),value=form.querySelector('[data-issuer-value]'),upload=form.querySelector('[data-issuer-upload]');
   let drawing=false,drawn=false;ctx.lineWidth=2.8;ctx.lineCap='round';ctx.lineJoin='round';ctx.strokeStyle='#132940';
   const pos=e=>{const r=canvas.getBoundingClientRect();return {x:(e.clientX-r.left)*canvas.width/r.width,y:(e.clientY-r.top)*canvas.height/r.height}};
-  canvas.addEventListener('pointerdown',e=>{drawing=true;const p=pos(e);ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(p.x+.1,p.y+.1);ctx.stroke();drawn=true;canvas.setPointerCapture(e.pointerId);});
+  canvas.addEventListener('pointerdown',e=>{upload.value='';drawing=true;const p=pos(e);ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(p.x+.1,p.y+.1);ctx.stroke();drawn=true;canvas.setPointerCapture(e.pointerId);});
   canvas.addEventListener('pointermove',e=>{if(drawing){const p=pos(e);ctx.lineTo(p.x,p.y);ctx.stroke();}});
   ['pointerup','pointercancel'].forEach(name=>canvas.addEventListener(name,()=>drawing=false));
   form.querySelector('[data-issuer-clear]').addEventListener('click',()=>{ctx.clearRect(0,0,canvas.width,canvas.height);drawn=false;value.value='';});
+  upload.addEventListener('change',()=>{
+    if(upload.files.length){ctx.clearRect(0,0,canvas.width,canvas.height);drawn=false;value.value='';}
+  });
   form.addEventListener('submit',e=>{
     if(!drawn && !upload.files.length){e.preventDefault();alert('Dibuja o selecciona tu firma en PNG.');return;}
     if(drawn){value.value=canvas.toDataURL('image/png');if(value.value.length>220000){e.preventDefault();alert('Firma demasiado grande. Intenta nuevamente.');}}
