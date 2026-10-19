@@ -21,4 +21,12 @@ foreach (['p4-delivery-row[hidden]', '@media(max-width:640px)', '.p4-delivery-ac
 if (str_contains($view, 'p4-home-grid') || str_contains($view, 'p4-step-card')) {
     throw new RuntimeException('Legacy oversized grid unexpectedly remains');
 }
+$repo = (string) file_get_contents($root . '/app/Repositories/DeliveryRepository.php');
+if (!str_contains($repo, 'w.organization_unit_name_snapshot AS p4_name')
+    || !str_contains($repo, 'r.requested_at')
+    || !str_contains($view, "Dotación de ")
+    || !str_contains($view, "Dotación · ")
+    || str_contains($view, "e($line['variant_code']) ?></small>")) {
+    throw new RuntimeException('Human-readable item and request labels missing.');
+}
 echo "[OK] Compact searchable P4 delivery list wiring and responsive styles.\n";
