@@ -79,6 +79,11 @@ $totalQuantity = array_sum(array_map(
                         <button type="button" class="secondary-button" data-p4-signature-clear>Limpiar firma</button>
                         <label class="p4-signature-ack"><input type="checkbox" data-p4-signature-ack required> Confirmo que el receptor identificado firmó el comprobante al recibir los artículos.</label>
                         <small>La firma capturada es una constancia manuscrita digitalizada, no una firma electrónica certificada.</small>
+                        <label class="p4-signature-ack">
+                            <input type="checkbox" name="issuer_ack" value="1" required>
+                            Yo, responsable P4 autenticado, autorizo expresamente asociar mi firma institucional registrada a esta entrega.
+                        </label>
+                        <a href="<?= e(sindesg_url('?module=profile&action=signature')) ?>">Registrar o actualizar mi firma P4</a>
                     </div>
                 <?php endif; ?>
                 <button class="primary-button delivery-full-button" type="submit" data-p4-confirm-submit <?= $deliveryItems === [] ? 'disabled' : '' ?>>Confirmar despacho</button>
@@ -419,6 +424,11 @@ $totalQuantity = array_sum(array_map(
             <small><?= e($delivery['recipient_label_snapshot']) ?></small>
         </div>
         <div class="receipt-signature-box">
+            <?php if (!empty($issuerReceiptEvidence)): ?>
+                <img alt="Firma histórica del responsable P4" src="data:image/png;base64,<?= e(base64_encode((string)$issuerReceiptEvidence['signature_png'])) ?>">
+            <?php else: ?>
+                <div style="height:90px;display:grid;place-items:end center;color:#60758a;font-size:10px">Sin firma personal archivada en esta entrega histórica</div>
+            <?php endif; ?>
             <div class="receipt-line">Funcionario responsable de la entrega</div>
             <small><?= e($delivery['delivered_by_label_snapshot']) ?></small>
             <small>Identificado mediante sesión institucional</small>
@@ -427,6 +437,10 @@ $totalQuantity = array_sum(array_map(
     <div class="receipt-integrity">
         <strong>Control de integridad de la firma</strong>
         <div>SHA-256: <code><?= e($receiptEvidence['signature_sha256']) ?></code></div>
+        <?php if (!empty($issuerReceiptEvidence)): ?>
+            <div>Firma del responsable P4 · SHA-256:
+                <code><?= e($issuerReceiptEvidence['signature_sha256']) ?></code></div>
+        <?php endif; ?>
         <div>Esta huella identifica la imagen de firma almacenada; no constituye por sí sola certificación electrónica.</div>
     </div>
     <div class="receipt-footer">
