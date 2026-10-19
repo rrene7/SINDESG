@@ -72,6 +72,11 @@ final class DeliveryController
             return $this->handleGet($action, $query);
         } catch (InvalidArgumentException|RuntimeException $exception) {
             flash('error', $exception->getMessage());
+            if ($this->isP4Only()) {
+                // Reject direct foreign-warehouse URLs without redirect loops.
+                $this->redirect('?module=deliveries');
+            }
+
 
             $deliveryId = (int) ($post['delivery_id'] ?? $query['id'] ?? 0);
             if ($deliveryId > 0) {
