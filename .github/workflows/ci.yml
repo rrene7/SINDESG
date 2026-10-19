@@ -108,6 +108,13 @@ jobs:
           php -l app/Repositories/DeliveryRepository.php
           php tests/p4_signature_receipt_contract_test.php
           php -l scripts/install_p4_signed_receipts.php
+      - name: P4 personal issuer signature
+        run: |
+          php -l app/Services/P4IssuerSignature.php
+          php -l app/Controllers/ProfileController.php
+          php -l app/Views/profile/signature.php
+          php -l scripts/install_p4_issuer_signatures.php
+          php tests/p4_issuer_signature_flow_test.php
 
       - name: P4 nominal delivery PHP syntax
         run: |
