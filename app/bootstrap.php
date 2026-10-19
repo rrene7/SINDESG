@@ -215,7 +215,12 @@ function sindesg_role_action_allowed(string $module, string $action, string $met
     // warehouse scopes. Until that is complete, P4 may only view its home.
     if (in_array('P4', $roles, true) && !in_array('ADMIN', $roles, true)
         && !in_array('CENTRAL', $roles, true)) {
-        return $module === 'dashboard' || $module === 'auth';
+        if ($module === 'dashboard' || $module === 'auth') return true;
+        if ($module !== 'requests') return false;
+        $allowed = strtoupper($method) === 'POST'
+            ? ['save', 'add-item', 'remove-item', 'submit']
+            : ['new', 'show'];
+        return in_array($action, $allowed, true);
     }
 
     $isWrite = strtoupper($method) === 'POST';
