@@ -12,7 +12,7 @@ $authUser = sindesg_user();
     <meta name="theme-color" content="#06172c">
     <title><?= e($pageTitle) ?> · <?= e(sindesg_config('name')) ?></title>
     <link rel="stylesheet" href="<?= e(sindesg_asset('css/app.css')) ?>">
-    <?php if ($currentModule === 'dashboard' && ($currentAction === 'p4-preview' || in_array('P4', (array) ($authUser['role_codes'] ?? []), true))): ?>
+    <?php if (($currentModule === 'dashboard' && ($currentAction === 'p4-preview' || in_array('P4', (array) ($authUser['role_codes'] ?? []), true))) || ($currentModule === 'deliveries' && in_array('P4', (array) ($authUser['role_codes'] ?? []), true))): ?>
         <link rel="stylesheet" href="<?= e(sindesg_asset('css/dashboard-p4.css')) ?>">
     <?php endif; ?>
     <link rel="stylesheet" href="<?= e(sindesg_asset('css/inventory.css')) ?>">
