@@ -31,7 +31,7 @@ $security=(string)file_get_contents($root.'/app/bootstrap.php');
 $auth=(string)file_get_contents($root.'/app/Services/AuthService.php');
 $schema=(string)file_get_contents($root.'/database/schema/022_p4_issuer_signatures.sql');
 foreach ([
- [$ctrl, "issuer_ack"],[$ctrl,"'issuer_user_id' => $actorId"],
+ [$ctrl, "issuer_ack"],[$ctrl,"'issuer_user_id' => \$actorId"],
  [$deliveryRepo, "FOR UPDATE"],[$deliveryRepo, "INSERT INTO individual_delivery_issuer_signatures"],
  [$view,"!empty(\$issuerReceiptEvidence)"],[$view,'name="issuer_ack"'],
  [$profile,"password_verify("],[$profile,"P4IssuerSignature::decodePng"],
