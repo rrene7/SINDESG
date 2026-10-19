@@ -93,6 +93,13 @@ jobs:
           php -l app/Views/deliveries/p4-index.php
           php tests/p4_delivery_compact_ui_test.php
 
+      - name: P4 signed receipt contract
+        run: |
+          php -l app/Views/deliveries/show.php
+          php -l app/Controllers/DeliveryController.php
+          php -l app/Repositories/DeliveryRepository.php
+          php tests/p4_signature_receipt_contract_test.php
+
       - name: P4 nominal delivery PHP syntax
         run: |
           php -l app/Controllers/DeliveryController.php
