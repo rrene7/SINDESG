@@ -10,7 +10,7 @@ foreach (($nominalQueue ?? []) as $line) {
     if ($size !== '') $sizeOptions[$size] = true;
     if ($request !== '') $requestOptions[$request] = true;
 }
-natcasesort($sizeOptions); // Keys remain source-provided values.
+uksort($sizeOptions, 'strnatcasecmp');
 ksort($requestOptions, SORT_NATURAL);
 ?>
 <section class="p4-delivery-workspace" data-p4-delivery-list>
@@ -66,13 +66,13 @@ ksort($requestOptions, SORT_NATURAL);
                     data-p4-delivery-row
                     data-size="<?= e((string) ($line['size_name'] ?? '')) ?>"
                     data-request="<?= e((string) ($line['request_code'] ?? '')) ?>"
-                    data-search="<?= e(mb_strtolower(implode(' ', [
+                    data-search="<?= e(strtolower(implode(' ', [
                         (string) ($line['beneficiary_label_snapshot'] ?? ''),
                         (string) ($line['beneficiary_document_snapshot'] ?? ''),
                         (string) ($line['product_name'] ?? ''),
                         (string) ($line['variant_code'] ?? ''),
                         (string) ($line['request_code'] ?? ''),
-                    ]), 'UTF-8')) ?>">
+                    ]))) ?>">
                     <div class="p4-delivery-person">
                         <strong><?= e($line['beneficiary_label_snapshot'] ?: 'Funcionario') ?></strong>
                         <small><?= e($line['beneficiary_document_snapshot'] ?: 'Sin documento') ?> · <?= e($line['request_code']) ?></small>
