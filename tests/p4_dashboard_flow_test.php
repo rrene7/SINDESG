@@ -27,7 +27,7 @@ require $root . '/app/bootstrap.php';
 $p4 = ['role_codes' => ['P4']];
 $central = ['role_codes' => ['CENTRAL']];
 $admin = ['role_codes' => ['ADMIN']];
-foreach (['distribution', 'deliveries', 'inventory', 'warehouses', 'admin', 'people', 'reports', 'audit'] as $module) {
+foreach (['distribution', 'inventory', 'warehouses', 'admin', 'people', 'reports', 'audit'] as $module) {
     if (sindesg_role_action_allowed($module, 'index', 'GET', $p4)
         || sindesg_role_action_allowed($module, 'save', 'POST', $p4)) {
         throw new RuntimeException('P4 pilot must fail closed for unscoped module: ' . $module);
@@ -39,7 +39,7 @@ if (!sindesg_role_action_allowed('dashboard', 'index', 'GET', $p4)
     throw new RuntimeException('P4 dashboard or existing administrative functions incorrectly blocked.');
 }
 if (!str_contains($view, 'Solicitudes P4: creación y envío habilitados')
-    || !str_contains($view, 'Solo solicitudes habilitadas')) {
+    || !str_contains($view, 'Solicitudes, recepción y entregas nominales')) {
     throw new RuntimeException('P4 pilot must visibly identify unavailable operations.');
 }
 if (!sindesg_role_action_allowed('requests', 'new', 'GET', $p4)
@@ -48,5 +48,13 @@ if (!sindesg_role_action_allowed('requests', 'new', 'GET', $p4)
     || sindesg_role_action_allowed('requests', 'index', 'GET', $p4)
     || sindesg_role_action_allowed('requests', 'decide', 'POST', $p4)) {
     throw new RuntimeException('P4 requests allowlist is too broad or too narrow.');
+}
+if (!sindesg_role_action_allowed('deliveries','index','GET',$p4)
+    || !sindesg_role_action_allowed('deliveries','save','POST',$p4)
+    || !sindesg_role_action_allowed('deliveries','confirm','POST',$p4)
+    || sindesg_role_action_allowed('deliveries','history','GET',$p4)
+    || sindesg_role_action_allowed('deliveries','add-item','POST',$p4)
+    || sindesg_role_action_allowed('deliveries','cancel','POST',$p4)) {
+    throw new RuntimeException('P4 delivery role allowlist is incorrect.');
 }
 echo "[OK] P4 workflow dashboard is permission-aware with no global data.\n";
