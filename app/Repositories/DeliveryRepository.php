@@ -673,7 +673,7 @@ SQL;
         ]);
     }
 
-    public function confirm(int $deliveryId): array
+    public function confirm(int $deliveryId, ?array $signatureEvidence = null): array
     {
         $this->pdo->beginTransaction();
 
@@ -835,6 +835,20 @@ SQL;
                         'request_item_id' => $item['request_item_id'],
                     ]);
                 }
+            }
+
+            if ($signatureEvidence !== null) {
+                $this->pdo->prepare(
+                    'INSERT INTO individual_delivery_receipts
+                     (delivery_id, recipient_employee_id, signature_png, signature_sha256, captured_by_user_id)
+                     VALUES (:delivery, :recipient, :png, :hash, :actor)'
+                )->execute([
+                    'delivery' => $deliveryId,
+                    'recipient' => (int) $delivery['recipient_employee_id'],
+                    'png' => $signatureEvidence['png'],
+                    'hash' => hash('sha256', $signatureEvidence['png']),
+                    'actor' => (int) $signatureEvidence['actor'],
+                ]);
             }
 
             $this->pdo->prepare(
