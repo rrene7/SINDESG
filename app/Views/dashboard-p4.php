@@ -12,7 +12,7 @@ $steps = [
     <span class="eyebrow">SINDESG · OPERACIÓN LOGÍSTICA P4</span>
     <h1>Mi flujo de trabajo P4</h1>
     <p>Desde la solicitud al Almacén Central hasta la entrega documentada al funcionario.</p>
-    <div class="p4-home-status">Solicitudes P4: creación y envío habilitados únicamente para almacenes autorizados. Recepción y entregas siguen bloqueadas.</div>
+    <div class="p4-home-status">Solicitudes y entregas nominales habilitadas para almacenes autorizados; sin acceso a otros P4.</div>
 </section>
 
 <section class="p4-home-panel" aria-labelledby="p4-unit-heading">
@@ -32,7 +32,7 @@ $steps = [
                 </article>
             <?php endforeach; ?>
         </div>
-        <p>Almacenes validados. Las solicitudes requieren autorización del servidor; transferencias y entregas permanecen en solo lectura.</p>
+        <p>Almacenes validados. Las solicitudes y las entregas nominales requieren autorización del servidor por almacén. Los movimientos se validan al confirmarse.</p>
     <?php endif; ?>
 </section>
 <section class="p4-home-panel">
@@ -105,12 +105,12 @@ $steps = [
             <span class="eyebrow">FLUJO OPERATIVO</span>
             <h2 id="p4-workflow-title">Etapas del P4</h2>
         </div>
-        <small>Solo solicitudes habilitadas; recepción y entregas continúan protegidas.</small>
+        <small>Solicitudes, recepción y entregas nominales: cada acción verifica el almacén autorizado.</small>
     </div>
     <div class="p4-home-grid">
         <?php foreach ($steps as $step): ?>
             <?php
-            $canAccess = $step['number'] === '01'
+            $canAccess = in_array($step['number'], ['01', '04'], true)
                 && !empty($p4ScopeReady)
                 && !empty($p4AssignedWarehouses)
                 && sindesg_can($step['permission'])
