@@ -59,6 +59,10 @@ $steps = [
                             <?php foreach ($operations[$key] as $record): ?>
                                 <p><?php if ($key === 'requests' && sindesg_can('requests.view')): ?>
                                     <a href="<?= e(sindesg_url('?module=requests&action=show&id=' . (int) $record['id'])) ?>"><?= e($record['code']) ?></a>
+                                <?php elseif ($key === 'transfers'
+                                    && sindesg_can('distribution.view')
+                                    && sindesg_role_action_allowed('distribution', 'show', 'GET', (array) sindesg_user())): ?>
+                                    <a href="<?= e(sindesg_url('?module=distribution&action=show&id=' . (int) $record['id'])) ?>"><?= e($record['code']) ?></a>
                                 <?php else: ?><strong><?= e($record['code']) ?></strong><?php endif; ?>
                                 · <?= e(match ((string) $record['status']) {
                                     'draft' => 'Borrador',
