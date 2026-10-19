@@ -216,6 +216,11 @@ function sindesg_role_action_allowed(string $module, string $action, string $met
     if (in_array('P4', $roles, true) && !in_array('ADMIN', $roles, true)
         && !in_array('CENTRAL', $roles, true)) {
         if ($module === 'dashboard' || $module === 'auth') return true;
+        if ($module === 'deliveries') {
+            return strtoupper($method) === 'POST'
+                ? in_array($action, ['save', 'confirm'], true)
+                : in_array($action, ['index', 'new', 'show'], true);
+        }
         if ($module === 'distribution') {
             return strtoupper($method) === 'POST'
                 ? $action === 'receive'
