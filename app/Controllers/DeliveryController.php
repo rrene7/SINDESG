@@ -291,7 +291,14 @@ final class DeliveryController
                 }
                 $actorId = (int) (sindesg_user()['id'] ?? 0);
                 if ($actorId <= 0) throw new InvalidArgumentException('Sesión inválida.');
-                $evidence = ['png' => $png, 'actor' => $actorId, 'issuer_user_id' => $actorId];
+                $employeeId = (int) (sindesg_user()['employee_id'] ?? 0);
+                if ($employeeId <= 0) throw new InvalidArgumentException('Funcionario responsable sin identidad válida.');
+                $evidence = [
+                    'png' => $png,
+                    'actor' => $actorId,
+                    'issuer_user_id' => $actorId,
+                    'issuer_employee_id' => $employeeId,
+                ];
             }
             $result = $this->service->confirm($deliveryId, $evidence);
             flash(
