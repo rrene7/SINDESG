@@ -31,6 +31,34 @@ final class DeliveryController
         string $method
     ): array {
         try {
+            $user = (array) sindesg_user();
+            $roles = (array) ($user['role_codes'] ?? []);
+            $p4Only = in_array('P4', $roles, true)
+                && !in_array('ADMIN', $roles, true)
+                && !in_array('CENTRAL', $roles, true);
+            if ($p4Only) {
+                $guard = new \App\Services\P4DeliveryGuard($this->database->connection('sindesg'));
+                $userId = (int) ($user['id'] ?? 0);
+                $isPost = strtoupper($method) === 'POST';
+                $allowed = $isPost ? ['save', 'confirm'] : ['index', 'new', 'show'];
+                if (!in_array($action, $allowed, true)) {
+                    throw new InvalidArgumentException('Operación no habilitada para este P4.');
+                }
+                if ($isPost && $action === 'save') {
+                    $itemId = (int) ($post['request_item_id'] ?? 0);
+                    $line = $guard->assertNominal($userId, $itemId);
+                    $post['p4_warehouse_id'] = (int) $line['p4_warehouse_id'];
+                    $post['delivered_by_employee_id'] = (int) ($user['employee_id'] ?? 0);
+                    // Never allow P4 to bypass the recipient's active RRHH assignment.
+                    $post['allow_out_of_scope'] = '0';
+                    $post['scope_override_reason'] = '';
+                } elseif ($isPost || $action === 'show') {
+                    $id = (int) ($isPost ? ($post['delivery_id'] ?? 0) : ($query['id'] ?? 0));
+                    $guard->assertDelivery($userId, $id);
+                } elseif ($action === 'new') {
+                    $guard->assertNominal($userId, (int) ($query['request_item_id'] ?? 0));
+                }
+            }
             if (strtoupper($method) === 'POST') {
                 if (!csrf_valid(isset($post['_token']) ? (string) $post['_token'] : null)) {
                     throw new InvalidArgumentException(
@@ -106,16 +134,16 @@ final class DeliveryController
                 'view' => SINDESG_ROOT . '/app/Views/deliveries/form.php',
                 'title' => 'Nuevo despacho individual',
                 'data' => [
-                    'activeP4s' => $this->repository->activeP4s(),
+                    'activeP4s' => $this->isP4Only() ? [] : $this->repository->activeP4s(),
                     'pendingLine' => $pendingLine,
                     'recipientOutOfScope' => $recipientOutOfScope,
                     'pendingRecipientCurrent' => $pendingRecipientCurrent,
-                    'priorHistory' => $pendingLine
-                        ? $this->repository->historySummaryForEmployee(
-                            (int) $pendingLine['beneficiary_employee_id'],
-                            10
-                        )
-                        : [],
+                    'priorHistory' => $this->isP4Only()
+                        ? []
+                        : ($pendingLine
+                            ? $this->repository->historySummaryForEmployee(
+                                (int) $pendingLine['beneficiary_employee_id'], 10
+                            ) : []),
                     'employeeSearchUrl' => sindesg_url('public/api/employees.php'),
                     'historyApiUrl' => sindesg_url('public/api/delivery-history.php'),
                     'defaultDeliveredAt' => date('Y-m-d\TH:i'),
@@ -150,10 +178,11 @@ final class DeliveryController
                             (int) $delivery['p4_warehouse_id']
                         )
                         : [],
-                    'recipientHistory' => $this->repository->historyForEmployee(
-                        (int) $delivery['recipient_employee_id'],
-                        20
-                    ),
+                    'recipientHistory' => $this->isP4Only()
+                        ? []
+                        : $this->repository->historyForEmployee(
+                            (int) $delivery['recipient_employee_id'], 20
+                        ),
                 ],
             ];
         }
@@ -174,6 +203,18 @@ final class DeliveryController
                     'historyEmployee' => $employee,
                     'deliveryHistory' => $history,
                     'historyEmployeeId' => $employeeId,
+                ],
+            ];
+        }
+
+        if ($this->isP4Only()) {
+            return [
+                'view' => SINDESG_ROOT . '/app/Views/deliveries/p4-index.php',
+                'title' => 'Entregas de mi P4',
+                'data' => [
+                    'nominalQueue' => $this->repository->pendingNominalForUser(
+                        (int) (sindesg_user()['id'] ?? 0)
+                    ),
                 ],
             ];
         }
@@ -237,6 +278,14 @@ final class DeliveryController
         }
 
         throw new InvalidArgumentException('La operación solicitada no es válida.');
+    }
+
+    private function isP4Only(): bool
+    {
+        $roles = (array) (sindesg_user()['role_codes'] ?? []);
+        return in_array('P4', $roles, true)
+            && !in_array('ADMIN', $roles, true)
+            && !in_array('CENTRAL', $roles, true);
     }
 
     private function redirect(string $path): never
