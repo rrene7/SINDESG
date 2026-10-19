@@ -145,6 +145,9 @@ function sindesg_permission_for(string $module, string $action = 'index', string
     if ($module === 'dashboard') {
         return 'dashboard.view';
     }
+    if ($module === 'profile') {
+        return 'dashboard.view';
+    }
 
     if ($module === 'admin') {
         return 'admin.manage';
@@ -209,6 +212,14 @@ function sindesg_role_action_allowed(string $module, string $action, string $met
     $roles = (array) ($user['role_codes'] ?? []);
     if (in_array('ADMIN', $roles, true)) {
         return true;
+    }
+
+    if ($module === 'profile') {
+        return $action === 'signature'
+            && in_array(strtoupper($method), ['GET','POST'], true)
+            && in_array('P4', $roles, true)
+            && !in_array('ADMIN', $roles, true)
+            && !in_array('CENTRAL', $roles, true);
     }
 
     // Safe local pilot: the legacy controllers do not enforce row-level
