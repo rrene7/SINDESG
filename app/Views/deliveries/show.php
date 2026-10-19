@@ -330,37 +330,109 @@ $totalQuantity = array_sum(array_map(
 
 <?php if (!empty($receiptEvidence)): ?>
 <style>
-@media print {
- body * {visibility:hidden!important}
- #signed-receipt, #signed-receipt * {visibility:visible!important}
- #signed-receipt {position:absolute;left:0;top:0;width:100%;background:white!important;color:black!important;border:0!important;box-shadow:none!important}
- #signed-receipt * {color:black!important;background:transparent!important}
- #signed-receipt button {display:none!important}
+/* Institutional receipt: fully scoped and printable without surrounding dashboard. */
+#signed-receipt{background:#fff;color:#15263b;border:1px solid #ced8e3;border-radius:10px;padding:28px 32px;max-width:900px;margin:22px auto;font-family:Arial,Helvetica,sans-serif;box-shadow:0 8px 26px rgba(0,0,0,.12)}
+#signed-receipt *{box-sizing:border-box}
+#signed-receipt .receipt-top{display:flex;justify-content:space-between;align-items:start;gap:20px;padding-bottom:17px;border-bottom:3px solid #143e63}
+#signed-receipt .receipt-mark{display:flex;gap:13px;align-items:center}
+#signed-receipt .receipt-emblem{height:53px;width:53px;display:grid;place-items:center;border:2px solid #143e63;border-radius:10px;font-size:19px;font-weight:800;letter-spacing:-1px;color:#143e63}
+#signed-receipt .receipt-agency{font-size:13px;font-weight:800;letter-spacing:.07em;color:#143e63}
+#signed-receipt .receipt-subagency{font-size:10px;letter-spacing:.09em;color:#526378;margin-top:4px}
+#signed-receipt .receipt-number{text-align:right;color:#3c5064;font-size:11px}
+#signed-receipt .receipt-number strong{display:block;color:#152f4d;font-size:16px;margin-top:4px}
+#signed-receipt .receipt-title{margin:20px 0 4px;font-size:22px;line-height:1.25;color:#142e49;font-weight:800}
+#signed-receipt .receipt-intro{color:#586b7c;font-size:11px;margin:0 0 19px}
+#signed-receipt .receipt-block-heading{font-size:11px;font-weight:800;letter-spacing:.08em;color:#163e61;text-transform:uppercase;border-bottom:1px solid #dce5ed;padding-bottom:8px;margin:19px 0 10px}
+#signed-receipt .receipt-facts{display:grid;grid-template-columns:1fr 1fr;gap:12px 22px}
+#signed-receipt .receipt-fact{min-width:0}
+#signed-receipt .receipt-fact label{display:block;font-size:10px;color:#64778b;margin-bottom:3px}
+#signed-receipt .receipt-fact strong{font-size:12px;color:#1a2939;overflow-wrap:anywhere}
+#signed-receipt table{border-collapse:collapse;width:100%;font-size:12px;color:#1b2a3a}
+#signed-receipt thead{background:#eaf0f6}
+#signed-receipt th,#signed-receipt td{padding:10px 12px;text-align:left;border-bottom:1px solid #dce6ee}
+#signed-receipt th:last-child,#signed-receipt td:last-child{text-align:right}
+#signed-receipt .receipt-signoff{display:grid;grid-template-columns:1fr 1fr;gap:30px;margin-top:23px}
+#signed-receipt .receipt-signature-box{min-height:125px;display:flex;flex-direction:column;justify-content:end;align-items:center;text-align:center}
+#signed-receipt .receipt-signature-box img{display:block;height:90px;max-width:100%;object-fit:contain}
+#signed-receipt .receipt-signature-box .receipt-line{border-top:1px solid #4d5a6b;width:100%;padding-top:7px;font-size:11px;font-weight:700}
+#signed-receipt .receipt-signature-box small{display:block;font-size:10px;color:#5c7082;margin-top:5px}
+#signed-receipt .receipt-integrity{margin-top:22px;background:#f2f6fa;border-radius:6px;padding:10px 12px;font-size:9px;color:#485e72}
+#signed-receipt .receipt-integrity code{overflow-wrap:anywhere;white-space:normal;font-size:9px;color:#284057}
+#signed-receipt .receipt-footer{border-top:1px solid #dce5ed;padding-top:10px;margin-top:16px;color:#657587;font-size:10px;display:flex;justify-content:space-between;gap:12px}
+#signed-receipt .receipt-print-action{background:#153f62;color:white;border:0;border-radius:7px;padding:10px 15px;cursor:pointer;font-size:12px;font-weight:700}
+@media(max-width:580px){#signed-receipt{padding:17px}#signed-receipt .receipt-facts{grid-template-columns:1fr}#signed-receipt .receipt-signoff{gap:12px}#signed-receipt .receipt-emblem{height:40px;width:40px}}
+@media print{
+ @page{size:A4 portrait;margin:13mm}
+ html,body{background:white!important}
+ body *{visibility:hidden!important}
+ #signed-receipt,#signed-receipt *{visibility:visible!important}
+ #signed-receipt{position:absolute!important;left:0!important;top:0!important;width:100%!important;max-width:none!important;margin:0!important;padding:0!important;border:0!important;border-radius:0!important;box-shadow:none!important;background:white!important;color:#15263b!important}
+ #signed-receipt .receipt-print-action{display:none!important}
+ #signed-receipt .receipt-integrity,#signed-receipt thead{print-color-adjust:exact;-webkit-print-color-adjust:exact}
+ #signed-receipt .receipt-signoff,#signed-receipt .receipt-integrity{break-inside:avoid}
 }
 </style>
-<section class="delivery-panel" id="signed-receipt">
-    <div class="delivery-section-head">
-        <div><span class="eyebrow">COMPROBANTE DE RECIBIDO</span>
-        <h2>Constancia firmada de dotación</h2></div>
-        <button type="button" class="secondary-button" onclick="window.print()">Imprimir / guardar PDF</button>
+<section id="signed-receipt" aria-label="Comprobante institucional de recibido">
+    <div class="receipt-top">
+        <div class="receipt-mark">
+            <div class="receipt-emblem" aria-hidden="true">PN</div>
+            <div>
+                <div class="receipt-agency">POLICÍA NACIONAL DE PANAMÁ</div>
+                <div class="receipt-subagency">SINDESG · SERVICIOS GENERALES</div>
+            </div>
+        </div>
+        <div class="receipt-number">
+            CONSTANCIA DE RECIBIDO
+            <strong><?= e($delivery['delivery_code']) ?></strong>
+            <button type="button" class="receipt-print-action" onclick="window.print()">Imprimir / guardar PDF</button>
+        </div>
     </div>
-    <p><strong>Comprobante:</strong> <?= e($delivery['delivery_code']) ?> · <strong>Receptor:</strong>
-        <?= e($delivery['recipient_label_snapshot']) ?> · <strong>Fecha:</strong>
-        <?= e((string) $receiptEvidence['captured_at']) ?></p>
-    <p><strong>Almacén:</strong> <?= e($delivery['p4_name'] ?: $delivery['p4_code']) ?> ·
-        <strong>Responsable:</strong> <?= e($delivery['delivered_by_label_snapshot']) ?></p>
-    <div class="receipt-item-lines">
-        <strong>Artículos entregados</strong>
+    <h2 class="receipt-title">Comprobante de entrega de dotación</h2>
+    <p class="receipt-intro">Constancia institucional de recepción física de artículos asignados.</p>
+    <h3 class="receipt-block-heading">Datos de la entrega</h3>
+    <div class="receipt-facts">
+        <div class="receipt-fact"><label>Unidad / almacén</label><strong><?= e($delivery['p4_name'] ?: $delivery['p4_code']) ?></strong></div>
+        <div class="receipt-fact"><label>Fecha y hora de registro</label><strong><?= e((string) $receiptEvidence['captured_at']) ?></strong></div>
+        <div class="receipt-fact"><label>Funcionario receptor</label><strong><?= e($delivery['recipient_label_snapshot']) ?></strong></div>
+        <div class="receipt-fact"><label>Documento de identidad</label><strong><?= e($delivery['recipient_document_snapshot'] ?: 'No registrado') ?></strong></div>
+        <div class="receipt-fact"><label>Funcionario que entrega</label><strong><?= e($delivery['delivered_by_label_snapshot']) ?></strong></div>
+        <div class="receipt-fact"><label>Estado</label><strong>Entrega confirmada</strong></div>
+    </div>
+    <h3 class="receipt-block-heading">Detalle de artículos entregados</h3>
+    <table aria-label="Detalle de artículos entregados">
+        <thead><tr><th>Artículo</th><th>Talla</th><th>Cantidad</th></tr></thead>
+        <tbody>
         <?php foreach ($deliveryItems as $item): ?>
-            <p><?= e($item['product_name']) ?> · <?= e($item['size_name'] ?: 'Sin talla') ?>
-                · Cantidad <?= e(number_format((float) $item['quantity'], 3, '.', ',')) ?></p>
+            <tr>
+                <td><?= e($item['product_name']) ?></td>
+                <td><?= e($item['size_name'] ?: '—') ?></td>
+                <td><?= e(number_format((float) $item['quantity'], 3, '.', ',')) ?></td>
+            </tr>
         <?php endforeach; ?>
+        </tbody>
+    </table>
+    <h3 class="receipt-block-heading">Conformidad y recepción</h3>
+    <div class="receipt-signoff">
+        <div class="receipt-signature-box">
+            <img alt="Firma manuscrita registrada del funcionario receptor" src="data:image/png;base64,<?= e(base64_encode((string) $receiptEvidence['signature_png'])) ?>">
+            <div class="receipt-line">Firma del funcionario receptor</div>
+            <small><?= e($delivery['recipient_label_snapshot']) ?></small>
+        </div>
+        <div class="receipt-signature-box">
+            <div class="receipt-line">Funcionario responsable de la entrega</div>
+            <small><?= e($delivery['delivered_by_label_snapshot']) ?></small>
+            <small>Identificado mediante sesión institucional</small>
+        </div>
     </div>
-    <img style="max-width:100%;width:500px;background:white;border-radius:8px;padding:12px"
-         alt="Firma manuscrita capturada del receptor"
-         src="data:image/png;base64,<?= e(base64_encode((string) $receiptEvidence['signature_png'])) ?>">
-    <p><small>Huella SHA-256 de la firma: <?= e($receiptEvidence['signature_sha256']) ?></small></p>
-    <p><small>Constancia manuscrita digitalizada. Verificación institucional sujeta a revisión del registro en SINDESG.</small></p>
+    <div class="receipt-integrity">
+        <strong>Control de integridad de la firma</strong>
+        <div>SHA-256: <code><?= e($receiptEvidence['signature_sha256']) ?></code></div>
+        <div>Esta huella identifica la imagen de firma almacenada; no constituye por sí sola certificación electrónica.</div>
+    </div>
+    <div class="receipt-footer">
+        <span>Documento generado desde SINDESG · Registro sujeto a auditoría institucional</span>
+        <span><?= e($delivery['delivery_code']) ?></span>
+    </div>
 </section>
 <?php endif; ?>
 
