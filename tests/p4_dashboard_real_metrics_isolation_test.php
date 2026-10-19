@@ -63,7 +63,7 @@ $view = (string)file_get_contents(dirname(__DIR__).'/app/Views/dashboard-p4.php'
 $router = (string)file_get_contents(dirname(__DIR__).'/public/index.php');
 if (!str_contains($view, 'Inventario por artículo y talla')
     || !str_contains($view, 'Funcionarios pendientes')
-    || !str_contains($view, 'Mi firma institucional: función pendiente de activación')
+    || !str_contains($view, 'Mi firma institucional →')
     || !str_contains($router, 'P4DashboardData')
     || str_contains($view, 'Solicitudes recientes')) {
     throw new RuntimeException('Dashboard UI/SQL wiring is incomplete.');
