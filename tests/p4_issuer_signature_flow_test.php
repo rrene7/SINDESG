@@ -9,6 +9,22 @@ foreach (['','data:text/plain;base64,QQ==','data:image/png;base64,not-base64'] a
     try { P4IssuerSignature::decodePng($bad); throw new LogicException('Accepted malformed signature'); }
     catch (InvalidArgumentException $expected) {}
 }
+// Exercise a real PNG payload, not only static source wiring.
+$chunk=static function(string $type,string $data):string {
+    return pack('N',strlen($data)).$type.$data.pack('N',crc32($type.$data));
+};
+$png="\x89PNG\r\n\x1a\n";
+$png.=$chunk('IHDR',pack('NNCCCCC',100,60,8,6,0,0,0));
+$png.=$chunk('IDAT',gzcompress(str_repeat("\x00".str_repeat("\xff",400),60)));
+$png.=$chunk('IEND','');
+if (P4IssuerSignature::decodePng('data:image/png;base64,'.base64_encode($png))!==$png) {
+    throw new RuntimeException('Valid issuer signature PNG rejected.');
+}
+try {
+    P4IssuerSignature::validatePng("NOTPNG".$png);
+    throw new LogicException('Disguised image accepted');
+} catch (InvalidArgumentException $expected) {}
+
 if (!in_array('sqlite',PDO::getAvailableDrivers(),true)) throw new RuntimeException('sqlite required');
 $pdo=new PDO('sqlite::memory:');
 $pdo->setAttribute(PDO::ATTR_ERRMODE,PDO::ERRMODE_EXCEPTION);
