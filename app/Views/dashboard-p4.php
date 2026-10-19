@@ -60,7 +60,23 @@ $steps = [
                                 <p><?php if ($key === 'requests' && sindesg_can('requests.view')): ?>
                                     <a href="<?= e(sindesg_url('?module=requests&action=show&id=' . (int) $record['id'])) ?>"><?= e($record['code']) ?></a>
                                 <?php else: ?><strong><?= e($record['code']) ?></strong><?php endif; ?>
-                                · <?= e($record['status']) ?>
+                                · <?= e(match ((string) $record['status']) {
+                                    'draft' => 'Borrador',
+                                    'submitted' => 'Enviada a Central',
+                                    'in_review' => 'En revisión por Central',
+                                    'approved' => 'Aprobada',
+                                    'partially_approved' => 'Aprobación parcial',
+                                    'rejected' => 'Rechazada',
+                                    'fulfilled' => 'Atendida',
+                                    'closed' => 'Cerrada',
+                                    'prepared' => 'Preparada',
+                                    'authorized' => 'Autorizada',
+                                    'dispatched' => 'Despachada',
+                                    'received' => 'Recibida',
+                                    'confirmed' => 'Confirmada',
+                                    'cancelled' => 'Cancelada',
+                                    default => (string) $record['status'],
+                                }) ?>
                                 · <?= e($record['event_at'] ?? '') ?></p>
                             <?php endforeach; ?>
                         <?php endif; ?>
@@ -69,6 +85,13 @@ $steps = [
             </div>
         <?php endforeach; ?>
     <?php endif; ?>
+    <?php foreach (($p4OperationalSummary ?? []) as $warehouseId => $operations): ?>
+        <?php foreach ($operations['requests'] ?? [] as $request): ?>
+            <?php if (($request['status'] ?? '') === 'in_review'): ?>
+                <p>La solicitud <strong><?= e($request['code']) ?></strong> del almacén <?= e((int) $warehouseId) ?> está en revisión del Almacén Central. El P4 debe esperar la decisión; no debe crear una solicitud duplicada para el mismo requerimiento.</p>
+            <?php endif; ?>
+        <?php endforeach; ?>
+    <?php endforeach; ?>
     <p>Vista de seguimiento de solo lectura, filtrada en la base de datos por almacén. No autoriza movimientos de inventario.</p>
 </section>
 
