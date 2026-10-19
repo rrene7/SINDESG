@@ -35,6 +35,41 @@ $steps = [
         <p>Las asignaciones se muestran para validación. Las operaciones continúan bloqueadas hasta integrar los controles de acceso a cada registro.</p>
     <?php endif; ?>
 </section>
+<section class="p4-home-panel">
+    <span class="eyebrow">SEGUIMIENTO POR ALMACÉN</span>
+    <h2>Mis solicitudes, transferencias y entregas</h2>
+    <?php if (empty($p4OperationsReadable)): ?>
+        <p>No fue posible validar los registros del P4. Información no disponible por seguridad.</p>
+    <?php elseif (empty($p4OperationalSummary)): ?>
+        <p>Asigne primero un almacén P4 autorizado.</p>
+    <?php else: ?>
+        <?php foreach ($p4OperationalSummary as $warehouseId => $operations): ?>
+            <h3>Almacén P4 #<?= e((int) $warehouseId) ?></h3>
+            <div class="p4-home-grid">
+                <?php foreach ([
+                    'requests' => 'Solicitudes',
+                    'transfers' => 'Transferencias',
+                    'deliveries' => 'Entregas',
+                ] as $key => $label): ?>
+                    <article class="p4-step-card">
+                        <span class="p4-step-number"><?= e($label) ?></span>
+                        <?php if ($operations[$key] === []): ?>
+                            <p>Sin registros en este almacén.</p>
+                        <?php else: ?>
+                            <?php foreach ($operations[$key] as $record): ?>
+                                <p><strong><?= e($record['code']) ?></strong>
+                                · <?= e($record['status']) ?>
+                                · <?= e($record['event_at'] ?? '') ?></p>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </article>
+                <?php endforeach; ?>
+            </div>
+        <?php endforeach; ?>
+    <?php endif; ?>
+    <p>Vista de seguimiento de solo lectura, filtrada en la base de datos por almacén. No autoriza movimientos de inventario.</p>
+</section>
+
 <section class="p4-home-panel" aria-labelledby="p4-workflow-title">
     <div class="p4-home-heading">
         <div>
