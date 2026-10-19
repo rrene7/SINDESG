@@ -13,7 +13,7 @@ $cases = [
     ['requests','start-review','POST',$p4,false],
     ['requests','decide','POST',$p4,false],
     ['requests','decide','POST',$central,true],
-    ['requests','submit','POST',$p4,false],
+    ['requests','submit','POST',$p4,true],
     ['distribution','new','GET',$p4,false],
     ['distribution','prepare','POST',$p4,false],
     ['distribution','authorize','POST',$p4,false],
