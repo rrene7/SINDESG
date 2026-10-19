@@ -20,7 +20,7 @@ CREATE TABLE products(id INTEGER,name TEXT);
 CREATE TABLE sizes(id INTEGER,name TEXT);
 INSERT INTO warehouses VALUES(6,'P4',1),(4,'P4',1),(9,'P4',0);
 INSERT INTO security_user_p4_scopes VALUES(101,6),(202,4),(101,9);
-INSERT INTO service_requests VALUES(1,'PACORA',6,'fulfilled'),(2,'COLON',4,'fulfilled'),(3,'INACTIVE',9,'fulfilled');
+INSERT INTO service_requests VALUES(1,'PACORA',6,'fulfilled','2026-10-14'),(2,'COLON',4,'fulfilled','2026-10-14'),(3,'INACTIVE',9,'fulfilled','2026-10-14');
 INSERT INTO service_request_items VALUES(11,1,1,321,'Receptor P','P',1,0),(12,2,1,654,'Receptor C','C',1,0),(13,3,1,987,'Inactivo','X',1,0);
 INSERT INTO individual_deliveries VALUES(41,6,321),(42,4,654),(43,6,321);
 INSERT INTO individual_delivery_items VALUES(1,41,11),(2,42,12),(3,43,NULL);
