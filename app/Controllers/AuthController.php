@@ -40,6 +40,33 @@ final class AuthController
             return $this->setup($post, $method);
         }
 
+        if ($action === 'p4-signature') {
+            $user = $this->auth->currentUser();
+            $roles = (array) ($user['role_codes'] ?? []);
+            if (!$user || !in_array('P4', $roles, true)) {
+                throw new InvalidArgumentException('Solo usuarios P4 autenticados.');
+            }
+            $service = new \App\Services\P4IssuerSignature($this->database->connection('sindesg'));
+            if (strtoupper($method) === 'POST') {
+                if (!csrf_valid($post['_token'] ?? null)) {
+                    throw new InvalidArgumentException('Formulario vencido.');
+                }
+                if (!password_verify((string) ($post['password'] ?? ''), (string) ($user['password_hash'] ?? ''))) {
+                    throw new InvalidArgumentException('Contraseña incorrecta.');
+                }
+                $service->save((int) $user['id'], \App\Services\P4IssuerSignature::decodePng(
+                    (string) ($post['signature_png'] ?? '')
+                ));
+                flash('success', 'Firma personal P4 registrada con auditoría.');
+                $this->redirect('?module=auth&action=p4-signature');
+            }
+            return [
+                'view' => SINDESG_ROOT . '/app/Views/auth/p4-signature.php',
+                'title' => 'Mi firma P4',
+                'data' => ['currentSignature' => $service->current((int) $user['id'])],
+            ];
+        }
+
         if ($this->auth->currentUser() !== null) {
             header('Location: ' . sindesg_url(), true, 303);
             exit;
