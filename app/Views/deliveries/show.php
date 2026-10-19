@@ -328,6 +328,24 @@ $totalQuantity = array_sum(array_map(
     <a class="secondary-button" href="<?= e(sindesg_url('?module=warehouses&action=show&id=' . (int) $delivery['p4_warehouse_id'])) ?>">Ver P4</a>
 </div>
 
+<?php if (!empty($receiptEvidence)): ?>
+<section class="delivery-panel" id="signed-receipt">
+    <div class="delivery-section-head">
+        <div><span class="eyebrow">COMPROBANTE DE RECIBIDO</span>
+        <h2>Constancia firmada de dotación</h2></div>
+        <button type="button" class="secondary-button" onclick="window.print()">Imprimir / guardar PDF</button>
+    </div>
+    <p><strong>Comprobante:</strong> <?= e($delivery['delivery_code']) ?> · <strong>Receptor:</strong>
+        <?= e($delivery['recipient_label_snapshot']) ?> · <strong>Fecha:</strong>
+        <?= e((string) $receiptEvidence['captured_at']) ?></p>
+    <img style="max-width:100%;width:500px;background:white;border-radius:8px;padding:12px"
+         alt="Firma manuscrita capturada del receptor"
+         src="data:image/png;base64,<?= e(base64_encode((string) $receiptEvidence['signature_png'])) ?>">
+    <p><small>Huella SHA-256 de la firma: <?= e($receiptEvidence['signature_sha256']) ?></small></p>
+    <p><small>Constancia manuscrita digitalizada. Verificación institucional sujeta a revisión del registro en SINDESG.</small></p>
+</section>
+<?php endif; ?>
+
 <?php if ($deliveryP4Only && $delivery['status'] === 'draft'): ?>
 <style>
 .p4-signature-wrap{display:grid;gap:9px;margin:18px 0;padding:16px;border:1px solid #245779;border-radius:12px;background:#061b30}
