@@ -262,7 +262,6 @@ final class AuthService
             'recipient_signature_png',
             'signature_png',
             'signature_file',
-            'issuer_ack',
             'issuer_password',
         ];
 
