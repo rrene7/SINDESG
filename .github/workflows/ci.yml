@@ -99,6 +99,7 @@ jobs:
           php -l app/Controllers/DeliveryController.php
           php -l app/Repositories/DeliveryRepository.php
           php tests/p4_signature_receipt_contract_test.php
+          php -l scripts/install_p4_signed_receipts.php
 
       - name: P4 nominal delivery PHP syntax
         run: |
