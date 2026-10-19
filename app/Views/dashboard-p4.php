@@ -176,7 +176,11 @@ $ready = !empty($p4ScopeReady) && !empty($p4OperationsReadable)
                 <span>3 · Recibir en P4</span>
                 <span>4 · Entregar y firmar</span>
             </div>
-            <p class="p4-v2-signature-note">Mi firma institucional: función pendiente de activación. No reemplaza la firma que el receptor debe registrar en cada entrega.</p>
+            <p class="p4-v2-signature-note">
+                <a href="<?= e(sindesg_url('?module=profile&action=signature')) ?>">Mi firma institucional →</a>
+                · Registra tu firma personal y autoriza su uso en cada nueva entrega.
+                La firma del receptor continúa siendo obligatoria.
+            </p>
         </section>
     <?php endif; ?>
 </div>
