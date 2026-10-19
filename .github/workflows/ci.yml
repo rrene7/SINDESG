@@ -84,6 +84,8 @@ jobs:
           php -l app/Services/P4DashboardData.php
           php -l app/Views/dashboard-p4.php
           php tests/p4_dashboard_real_metrics_isolation_test.php
+          php -l app/Services/P4QuantityDisplay.php
+          php tests/p4_quantity_display_test.php
 
       - name: P4 request ownership guard integration test
         run: php tests/p4_request_guard_integration_test.php
