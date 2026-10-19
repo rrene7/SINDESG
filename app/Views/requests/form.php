@@ -50,6 +50,12 @@ declare(strict_types=1);
             <div><span class="eyebrow">SOLICITANTE</span><h2>Funcionario que remite la solicitud</h2></div>
         </div>
 
+        <?php if (in_array('P4', (array) (sindesg_user()['role_codes'] ?? []), true)
+            && !in_array('ADMIN', (array) (sindesg_user()['role_codes'] ?? []), true)
+            && !in_array('CENTRAL', (array) (sindesg_user()['role_codes'] ?? []), true)): ?>
+            <p>Funcionario solicitante: <strong><?= e(sindesg_user()['display_name'] ?? 'Usuario P4') ?></strong>.
+            Se utiliza la identidad de la sesión y se valida en RRHH2029.</p>
+        <?php else: ?>
         <div class="request-employee-picker" data-request-employee-picker data-search-url="<?= e($employeeSearchUrl) ?>">
             <label>
                 <span>Buscar funcionario *</span>
@@ -59,6 +65,8 @@ declare(strict_types=1);
             <div class="request-picker-results" data-request-employee-results hidden></div>
             <div class="request-picker-selection" data-request-employee-selection hidden></div>
         </div>
+
+        <?php endif; ?>
 
         <label class="request-notes-field">
             <span>Observaciones</span>
