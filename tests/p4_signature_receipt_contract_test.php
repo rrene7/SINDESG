@@ -15,7 +15,9 @@ foreach ([
  [$controller,'base64_decode('],
  [$view,'data-p4-signature-canvas'],
  [$view,'data-p4-signature-ack'],
- [$view,'canvas.toDataURL(\'image/png\')']
+ [$view,'canvas.toDataURL(\'image/png\')'],
+ [$repository,'public function receiptEvidence('],
+ [$view,'Imprimir / guardar PDF']
 ] as [$source,$term]) {
  if(!str_contains($source,$term)) throw new RuntimeException('Missing P4 receipt evidence: '.$term);
 }
