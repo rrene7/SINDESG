@@ -2,6 +2,8 @@
 declare(strict_types=1);
 
 $isNominal = is_array($pendingLine);
+$roles = (array) (sindesg_user()['role_codes'] ?? []);
+$p4Only = in_array('P4', $roles, true) && !in_array('ADMIN', $roles, true) && !in_array('CENTRAL', $roles, true);
 ?>
 <section class="delivery-hero compact">
     <div>
@@ -92,6 +94,7 @@ $isNominal = is_array($pendingLine);
         <?php endif; ?>
     </section>
 
+    <?php if (!$p4Only): ?>
     <section class="delivery-panel delivery-scope-panel <?= !empty($recipientOutOfScope) ? 'warning' : '' ?>"
              data-scope-override>
         <div class="delivery-section-head">
@@ -142,12 +145,16 @@ $isNominal = is_array($pendingLine);
         </label>
     </section>
 
+    <?php endif; ?>
     <section class="delivery-panel">
         <div class="delivery-section-head">
             <div><span class="eyebrow">RESPONSABLE</span><h2>Funcionario que entrega</h2></div>
         </div>
 
         <div class="delivery-form-grid">
+            <?php if ($p4Only): ?>
+                <p>Responsable: <strong><?= e(sindesg_user()['display_name'] ?? 'Funcionario P4') ?></strong>. La identidad se valida desde la sesión en RRHH2029.</p>
+            <?php else: ?>
             <div class="delivery-employee-picker"
                  data-delivery-picker
                  data-search-url="<?= e($employeeSearchUrl) ?>">
@@ -159,6 +166,8 @@ $isNominal = is_array($pendingLine);
                 <div class="delivery-picker-results" data-delivery-results hidden></div>
                 <div class="delivery-picker-selection" data-delivery-selection hidden></div>
             </div>
+
+            <?php endif; ?>
 
             <label>
                 <span>Fecha y hora *</span>
