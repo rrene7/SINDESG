@@ -11,10 +11,10 @@ declare(strict_types=1);
 </section>
 
 <section class="warehouse-stats">
-    <article><span>Almacén Central</span><strong><?= e($warehouseStats['central_active']) ?></strong><small><?= e(number_format((float) $warehouseStats['central_stock'], 0, '.', ',')) ?> unidades</small></article>
+    <article><span>Almacén Central</span><strong><?= e($warehouseStats['central_active']) ?></strong><small><?= e(sindesg_units((float) $warehouseStats['central_stock'])) ?> unidades</small></article>
     <article><span>P4 activos</span><strong><?= e($warehouseStats['p4_active']) ?></strong><small>Habilitados para operar</small></article>
     <article><span>P4 inactivos</span><strong><?= e($warehouseStats['p4_inactive']) ?></strong><small>Historial conservado</small></article>
-    <article><span>Stock en P4</span><strong><?= e(number_format((float) $warehouseStats['p4_stock'], 0, '.', ',')) ?></strong><small>Separado del Central</small></article>
+    <article><span>Stock en P4</span><strong><?= e(sindesg_units((float) $warehouseStats['p4_stock'])) ?></strong><small>Separado del Central</small></article>
 </section>
 
 <?php if (!$rrhhAvailable): ?>
@@ -51,7 +51,7 @@ declare(strict_types=1);
                 <p>Servicios Generales · recepción y distribución institucional</p>
             <?php endif; ?>
             <div class="warehouse-card-metrics">
-                <span><strong><?= e(number_format((float) $warehouse['stock_total'], 0, '.', ',')) ?></strong><small>unidades</small></span>
+                <span><strong><?= e(sindesg_units((float) $warehouse['stock_total'])) ?></strong><small>unidades</small></span>
                 <span><strong><?= e((int) $warehouse['variants_with_stock']) ?></strong><small>variantes</small></span>
             </div>
         </a>

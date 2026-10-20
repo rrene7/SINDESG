@@ -13,10 +13,10 @@ $heroLabel = $isCentral ? 'ALMACÉN CENTRAL' : ($isTransit ? 'INVENTARIO EN TRÁ
     <div>
         <span class="eyebrow"><?= e($heroLabel) ?></span>
         <h1><?= e($currentName) ?></h1>
-        <p><?= e($warehouse['code']) ?> · <?= (int) $warehouse['is_active'] === 1 ? 'Activo' : 'Inactivo' ?></p>
+        <p><?= (int) $warehouse['is_active'] === 1 ? 'Almacén activo' : 'Almacén inactivo' ?></p>
     </div>
     <div class="warehouse-detail-stock">
-        <strong><?= e(number_format((float) $warehouse['stock_total'], 0, '.', ',')) ?></strong>
+        <strong><?= e(sindesg_units((float) $warehouse['stock_total'])) ?></strong>
         <small>unidades en este almacén</small>
     </div>
 </section>
@@ -26,13 +26,13 @@ $heroLabel = $isCentral ? 'ALMACÉN CENTRAL' : ($isTransit ? 'INVENTARIO EN TRÁ
         <span class="eyebrow">IDENTIFICACIÓN</span>
         <h2><?= e($isP4 ? 'Vínculo institucional' : 'Datos del almacén') ?></h2>
         <dl class="warehouse-dl">
-            <div><dt>Código SINDESG</dt><dd><?= e($warehouse['code']) ?></dd></div>
+            <div><dt>Referencia para auditoría</dt><dd><details><summary>Ver código interno</summary><?= e($warehouse['code']) ?></details></dd></div>
             <div><dt>Tipo</dt><dd><?= e($warehouse['warehouse_type']) ?></dd></div>
             <div><dt>Estado</dt><dd><?= (int) $warehouse['is_active'] === 1 ? 'Activo' : 'Inactivo' ?></dd></div>
             <div><dt>Variantes con stock</dt><dd><?= e((int) $warehouse['variants_with_stock']) ?></dd></div>
 
             <?php if ($isP4): ?>
-                <div><dt>Unidad RRHH ID</dt><dd><?= e($warehouse['organization_unit_id'] ?: '—') ?></dd></div>
+                
                 <div><dt>Unidad actual</dt><dd><?= e($currentUnit['official_name'] ?? 'RRHH no disponible') ?></dd></div>
                 <div><dt>Tipo actual</dt><dd><?= e($currentUnit['unit_type'] ?? '—') ?></dd></div>
                 <div><dt>Código actual</dt><dd><?= e($currentUnit['system_code'] ?? $currentUnit['institutional_code'] ?? '—') ?></dd></div>
@@ -61,7 +61,7 @@ $heroLabel = $isCentral ? 'ALMACÉN CENTRAL' : ($isTransit ? 'INVENTARIO EN TRÁ
             <span class="eyebrow">RESPONSABLE</span>
             <h2><?= e($warehouse['responsible_label_snapshot'] ?: 'Sin responsable') ?></h2>
             <dl class="warehouse-dl single">
-                <div><dt>Employee ID</dt><dd><?= e($warehouse['responsible_employee_id'] ?: '—') ?></dd></div>
+                
                 <div><dt>Cédula al crear</dt><dd><?= e($warehouse['responsible_document_snapshot'] ?: '—') ?></dd></div>
                 <div><dt>Posición al crear</dt><dd><?= e($warehouse['responsible_position_snapshot'] ?: '—') ?></dd></div>
                 <div><dt>Rango al crear</dt><dd><?= e($warehouse['responsible_rank_snapshot'] ?: '—') ?></dd></div>
@@ -113,10 +113,10 @@ $heroLabel = $isCentral ? 'ALMACÉN CENTRAL' : ($isTransit ? 'INVENTARIO EN TRÁ
                     <tr>
                         <td><?= e($row['category_name']) ?></td>
                         <td><a class="warehouse-link" href="<?= e(sindesg_url('?module=inventory&action=product&id=' . (int) $row['product_id'])) ?>"><?= e($row['product_name']) ?></a></td>
-                        <td><code><?= e($row['variant_code']) ?></code></td>
+                        <td><?= e(($row['size_name'] ?? '') ? 'Talla ' . $row['size_name'] : 'Presentación estándar') ?></td>
                         <td><?= e($row['size_name'] ?: '—') ?></td>
                         <td><?= e($row['brand_name'] ?: '—') ?></td>
-                        <td class="warehouse-qty"><?= e(number_format((float) $row['quantity_on_hand'], 3, '.', ',')) ?></td>
+                        <td class="warehouse-qty"><?= e(sindesg_units((float) $row['quantity_on_hand'])) ?></td>
                         <td><?= e($row['last_movement_at'] ? date('d/m/Y H:i', strtotime((string) $row['last_movement_at'])) : '—') ?></td>
                     </tr>
                 <?php endforeach; ?>
@@ -168,13 +168,13 @@ $heroLabel = $isCentral ? 'ALMACÉN CENTRAL' : ($isTransit ? 'INVENTARIO EN TRÁ
                     };
                     ?>
                     <tr>
-                        <td><strong><?= e($requestRow['request_code']) ?></strong></td>
+                        <td><strong>Solicitud de dotación</strong></td>
                         <td><?= e(date('d/m/Y', strtotime((string) $requestRow['requested_at']))) ?></td>
                         <td><?= (int) $requestRow['nominal_count'] ?></td>
-                        <td><?= e(number_format((float) $requestRow['requested_total'], 0, '.', ',')) ?></td>
-                        <td><?= e(number_format((float) $requestRow['approved_total'], 0, '.', ',')) ?></td>
-                        <td><?= e(number_format((float) $requestRow['received_total'], 0, '.', ',')) ?></td>
-                        <td><?= e(number_format((float) $requestRow['delivered_total'], 0, '.', ',')) ?></td>
+                        <td><?= e(sindesg_units((float) $requestRow['requested_total'])) ?></td>
+                        <td><?= e(sindesg_units((float) $requestRow['approved_total'])) ?></td>
+                        <td><?= e(sindesg_units((float) $requestRow['received_total'])) ?></td>
+                        <td><?= e(sindesg_units((float) $requestRow['delivered_total'])) ?></td>
                         <td><strong><?= e($stage) ?></strong></td>
                         <td><a class="warehouse-link" href="<?= e(sindesg_url('?module=requests&action=show&id=' . (int) $requestRow['id'] . '#seguimiento-p4')) ?>">Ver seguimiento →</a></td>
                     </tr>

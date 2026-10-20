@@ -154,8 +154,8 @@ foreach ($cards as $category) {
                 </div>
                 <div class="category-card-copy">
                     <strong><?= e($category['name']) ?></strong>
-                    <span class="stock-placeholder"><?= e(number_format($categoryAvailableStock, 0, '.', ',')) ?> disponibles</span>
-                    <small><?= e((int) ($category['product_count'] ?? 0)) ?> artículos · <?= e(number_format($categoryInstitutionalStock, 0, '.', ',')) ?> institucionales</small>
+                    <span class="stock-placeholder"><?= e(sindesg_units($categoryAvailableStock)) ?> disponibles</span>
+                    <small><?= e((int) ($category['product_count'] ?? 0)) ?> artículos · <?= e(sindesg_units($categoryInstitutionalStock)) ?> institucionales</small>
                     <a class="category-enter-link" href="<?= e($categoryHref) ?>">Entrar a categoría →</a>
                 </div>
             </article>
@@ -194,9 +194,9 @@ foreach ($cards as $category) {
                 <p data-feature-description><?= e($featuredDescription) ?></p>
                 <div class="feature-tags" data-feature-tags>
                     <?php if ($featuredProduct): ?>
-                        <span><?= e($featuredProduct['internal_code']) ?></span>
-                        <span><?= e(number_format($featuredAvailableStock, 0, '.', ',')) ?> disponibles</span>
-                        <span><?= e(number_format($featuredInstitutionalStock, 0, '.', ',')) ?> unidades institucionales</span>
+                        <span>Artículo del catálogo institucional</span>
+                        <span><?= e(sindesg_units($featuredAvailableStock)) ?> disponibles</span>
+                        <span><?= e(sindesg_units($featuredInstitutionalStock)) ?> unidades institucionales</span>
                         <span><?= e($featuredProduct['sex'] ?? 'no aplica') ?></span>
                     <?php else: ?>
                         <span>Sin movimientos</span>
@@ -222,15 +222,15 @@ foreach ($cards as $category) {
                 <span>STOCK DISPONIBLE</span>
             </div>
             <div class="metric-main">
-                <strong data-feature-available><?= e(number_format($featuredAvailableStock, 0, '.', ',')) ?></strong>
+                <strong data-feature-available><?= e(sindesg_units($featuredAvailableStock)) ?></strong>
                 <span>unidades libres para nuevas entregas</span>
             </div>
             <div class="metric-note" data-feature-breakdown>
-                Central físico <?= e(number_format($featuredCentralStock, 0, '.', ',')) ?>
-                · Comprometido <?= e(number_format($featuredCommittedStock, 0, '.', ',')) ?>
-                · P4 <?= e(number_format((float) ($featuredStockBreakdown['p4'] ?? 0), 0, '.', ',')) ?>
-                · Tránsito <?= e(number_format((float) ($featuredStockBreakdown['transit'] ?? 0), 0, '.', ',')) ?>
-                · Institucional <?= e(number_format($featuredInstitutionalStock, 0, '.', ',')) ?>
+                Central físico <?= e(sindesg_units($featuredCentralStock)) ?>
+                · Comprometido <?= e(sindesg_units($featuredCommittedStock)) ?>
+                · P4 <?= e(sindesg_units((float) ($featuredStockBreakdown['p4'] ?? 0))) ?>
+                · Tránsito <?= e(sindesg_units((float) ($featuredStockBreakdown['transit'] ?? 0))) ?>
+                · Institucional <?= e(sindesg_units($featuredInstitutionalStock)) ?>
             </div>
         </article>
 
@@ -244,7 +244,7 @@ foreach ($cards as $category) {
                     <span>—<small>Sin tallas con stock</small></span>
                 <?php else: ?>
                     <?php foreach ($featuredSizes as $size): ?>
-                        <span><?= e($size['size_name'] ?: 'S/T') ?><small><?= e(number_format((float) $size['quantity_on_hand'], 0, '.', ',')) ?></small></span>
+                        <span><?= e($size['size_name'] ?: 'S/T') ?><small><?= e(sindesg_units((float) $size['quantity_on_hand'])) ?></small></span>
                     <?php endforeach; ?>
                 <?php endif; ?>
             </div>
@@ -274,7 +274,7 @@ foreach ($cards as $category) {
                 <?php foreach ($recentDashboardReceipts as $row): ?>
                     <a href="<?= e(sindesg_url('?module=receipts&action=show&id=' . (int) $row['id'])) ?>">
                         <span><strong><?= e($row['receipt_code']) ?></strong><small><?= e($row['lot_code']) ?> · <?= e($row['supplier_or_origin']) ?></small></span>
-                        <span><strong><?= e(number_format((float) $row['total_quantity'], 0, '.', ',')) ?></strong><small><?= e($row['status'] === 'confirmed' ? 'Confirmada' : 'Borrador') ?></small></span>
+                        <span><strong><?= e(sindesg_units((float) $row['total_quantity'])) ?></strong><small><?= e($row['status'] === 'confirmed' ? 'Confirmada' : 'Borrador') ?></small></span>
                     </a>
                 <?php endforeach; ?>
             </div>
@@ -316,16 +316,16 @@ foreach ($cards as $category) {
                     ?>
                     <a href="<?= e(sindesg_url('?module=requests&action=show&id=' . (int) $row['id'])) ?>">
                         <span>
-                            <strong><?= e($row['request_code']) ?></strong>
-                            <small><?= e($row['p4_code']) ?> · <?= e($row['p4_name']) ?></small>
+                            <strong>Solicitud de dotación</strong>
+                            <small><?= e($row['p4_name']) ?></small>
                         </span>
                         <span>
                             <strong><?= e($requestStatusLabels[$row['status']] ?? $row['status']) ?></strong>
                             <small>
                                 <?= e((int) ($row['item_count'] ?? 0)) ?> renglones
-                                · <?= e(number_format((float) ($row['quantity_requested'] ?? 0), 0, '.', ',')) ?> solicitadas
+                                · <?= e(sindesg_units((float) ($row['quantity_requested'] ?? 0))) ?> solicitadas
                                 <?php if ($approvedPending > 0): ?>
-                                    · <?= e(number_format($approvedPending, 0, '.', ',')) ?> por distribuir
+                                    · <?= e(sindesg_units($approvedPending)) ?> por distribuir
                                 <?php endif; ?>
                             </small>
                         </span>
