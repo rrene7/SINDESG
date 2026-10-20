@@ -87,6 +87,9 @@ jobs:
           php -l app/Services/P4QuantityDisplay.php
           php tests/p4_quantity_display_test.php
 
+      - name: Human-readable SINDESG quantities and labels
+        run: php tests/ui_human_readability_test.php
+
       - name: P4 request ownership guard integration test
         run: php tests/p4_request_guard_integration_test.php
 
