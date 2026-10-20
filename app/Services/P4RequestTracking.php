@@ -30,6 +30,17 @@ final class P4RequestTracking
         $delivered = (float) ($quantities['delivered'] ?? 0);
         $preparations = (int) ($transfers['prepared_count'] ?? 0);
         $authorized = (int) ($transfers['authorized_count'] ?? 0);
+        // Approval is the request's obligation; received stock is not the full target.
+        $pendingDelivery = max(0.0, $approved - $delivered);
+        $deliveryComplete = $approved > 0 && $delivered > 0 && $pendingDelivery < 0.0005;
+        $deliveryStarted = $delivered > 0 && !$deliveryComplete;
+        $deliveryDetail = $approved > 0
+            ? P4QuantityDisplay::units($delivered) . ' de ' . P4QuantityDisplay::units($approved)
+                . ' unidades aprobadas entregadas'
+                . ($pendingDelivery >= 0.0005
+                    ? ' · ' . P4QuantityDisplay::units($pendingDelivery) . ' pendientes'
+                    : ' · dotación aprobada completada')
+            : P4QuantityDisplay::units($delivered) . ' unidades entregadas a funcionarios';
         $latest = static function (mixed $value): ?string {
             return is_string($value) && trim($value) !== '' ? $value : null;
         };
@@ -55,14 +66,20 @@ final class P4RequestTracking
             ['key'=>'received','label'=>'Recepción confirmada en P4','done'=>$received > 0,
                 'date'=>$latest($transfers['last_received_at'] ?? null),
                 'detail'=>P4QuantityDisplay::units($received) . ' unidades recibidas'],
-            ['key'=>'delivered','label'=>'Entrega individual','done'=>$delivered > 0,
+            ['key'=>'delivered','label'=>'Entrega individual','done'=>$deliveryComplete,
+                'in_progress'=>$deliveryStarted,
                 'date'=>null,
-                'detail'=>P4QuantityDisplay::units($delivered) . ' unidades entregadas a funcionarios'],
+                'detail'=>$deliveryDetail],
         ];
         $summary = match (true) {
             $status === 'draft' => 'Borrador P4: falta enviar al Almacén Central.',
             $status === 'rejected' => 'La solicitud fue rechazada por Central.',
-            $delivered > 0 => 'El P4 registra entregas individuales.',
+            $deliveryComplete => 'Entrega de la dotación aprobada completada.',
+            $deliveryStarted && $approved > 0 => 'Entrega parcial: '
+                . P4QuantityDisplay::units($delivered) . ' de ' . P4QuantityDisplay::units($approved)
+                . ' unidades aprobadas entregadas; '
+                . P4QuantityDisplay::units($pendingDelivery) . ' pendientes.',
+            $deliveryStarted => 'Hay entregas individuales registradas que requieren conciliación con la cantidad aprobada.',
             $received > 0 => 'El P4 confirmó recepción; puede continuar entregando.',
             $sentToTransit > 0 => 'La dotación salió de Central y se encuentra en tránsito o entrega parcial.',
             $preparations > 0 => 'Transferencia en preparación o autorización en el Central.',

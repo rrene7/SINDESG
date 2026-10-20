@@ -8,7 +8,7 @@ $statusLabels = [
     'approved' => 'Aprobada',
     'partially_approved' => 'Aprobada parcial',
     'rejected' => 'Rechazada',
-    'fulfilled' => 'Atendida',
+    'fulfilled' => 'Atendida por Central',
     'closed' => 'Cerrada',
 ];
 
