@@ -23,7 +23,7 @@ declare(strict_types=1);
     </article>
     <article>
         <span>Cantidad recibida</span>
-        <strong><?= e(number_format((float) $receiptStats['received_quantity'], 0, '.', ',')) ?></strong>
+        <strong><?= e(sindesg_units((float) $receiptStats['received_quantity'])) ?></strong>
         <small>Solo recepciones confirmadas</small>
     </article>
 </section>
@@ -63,7 +63,7 @@ declare(strict_types=1);
                     <tr>
                         <td>
                             <a class="receipt-link" href="<?= e(sindesg_url('?module=receipts&action=show&id=' . (int) $row['id'])) ?>">
-                                <?= e($row['receipt_code']) ?>
+                                Recepción de artículos
                             </a>
                         </td>
                         <td><code><?= e($row['lot_code']) ?></code></td>
@@ -71,7 +71,7 @@ declare(strict_types=1);
                         <td><?= e($sourceTypes[$row['source_type']] ?? $row['source_type']) ?></td>
                         <td><?= e($row['supplier_or_origin']) ?></td>
                         <td><?= e($row['item_count']) ?></td>
-                        <td><?= e(number_format((float) $row['total_quantity'], 0, '.', ',')) ?></td>
+                        <td><?= e(sindesg_units((float) $row['total_quantity'])) ?></td>
                         <td><span class="receipt-status <?= e($row['status']) ?>"><?= e($row['status'] === 'confirmed' ? 'Confirmada' : 'Borrador') ?></span></td>
                     </tr>
                 <?php endforeach; ?>

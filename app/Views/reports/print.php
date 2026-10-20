@@ -23,8 +23,8 @@ declare(strict_types=1);
     </header>
 
     <div class="report-print-summary">
-        <span>Renglones: <?= e(number_format((int) $reportTotals['rows'], 0, '.', ',')) ?></span>
-        <span>Total referencial: <?= e(number_format((float) $reportTotals['quantity'], 3, '.', ',')) ?></span>
+        <span>Renglones: <?= e(sindesg_units((int) $reportTotals['rows'])) ?></span>
+        <span>Total referencial: <?= e(sindesg_units((float) $reportTotals['quantity'])) ?></span>
         <?php if ($reportFilters['date_from'] !== '' || $reportFilters['date_to'] !== ''): ?>
             <span>Período: <?= e($reportFilters['date_from'] ?: 'inicio') ?> → <?= e($reportFilters['date_to'] ?: 'actual') ?></span>
         <?php endif; ?>
@@ -43,7 +43,7 @@ declare(strict_types=1);
             <?php foreach ($reportRows as $row): ?>
                 <tr>
                     <?php foreach (array_keys($reportColumns) as $key): ?>
-                        <td><?= e((string) ($row[$key] ?? '')) ?></td>
+                        <td><?= e(sindesg_report_value($row, (string) $key)) ?></td>
                     <?php endforeach; ?>
                 </tr>
             <?php endforeach; ?>

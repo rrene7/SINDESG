@@ -82,18 +82,17 @@ final class SecurityRepository
         )->fetchAll();
     }
 
-    /** @return list<array<string, mixed>> */
-    public function activeP4Warehouses(): array
+    /** Only active official P4 stores, never inferred from RRHH user labels. */
+    public function activeP4WarehouseOptions(): array
     {
         return $this->pdo->query(
             "SELECT id, code, name, organization_unit_name_snapshot
              FROM warehouses WHERE warehouse_type = 'P4' AND is_active = 1
              ORDER BY organization_unit_name_snapshot, code"
-        )->fetchAll();
+        )->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    /** @return list<int> */
-    public function p4ScopesForUser(int $userId): array
+    public function p4WarehouseIdsForUser(int $userId): array
     {
         $stmt = $this->pdo->prepare(
             'SELECT warehouse_id FROM security_user_p4_scopes WHERE user_id = :user_id ORDER BY warehouse_id'
@@ -102,35 +101,39 @@ final class SecurityRepository
         return array_map('intval', $stmt->fetchAll(PDO::FETCH_COLUMN));
     }
 
-    public function setP4ScopesForUser(int $userId, array $warehouseIds, array $actor): void
+    /**
+     * Scope assignment + audit must commit/rollback together.
+     * A role P4 is required; no grants to missing/inactive/non-P4 warehouses.
+     */
+    public function assignP4WarehousesWithAudit(int $userId, array $rawIds, array $actor): void
     {
-        if ($this->findUser($userId) === null) {
-            throw new RuntimeException('Usuario no encontrado.');
+        if ($userId <= 0 || $this->findUser($userId) === null) {
+            throw new RuntimeException('Usuario inexistente.');
         }
-        $roles = $this->roleCodesForUser($userId);
-        if ($warehouseIds !== [] && !in_array('P4', $roles, true)) {
-            throw new RuntimeException('Solo se asignan P4 a usuarios con rol P4.');
+        if (!in_array('P4', $this->roleCodesForUser($userId), true)) {
+            throw new RuntimeException('Primero asigne el rol P4 a este usuario.');
         }
-        $before = $this->p4ScopesForUser($userId);
         $ids = [];
-        foreach ($warehouseIds as $id) {
-            if (!is_scalar($id) || !ctype_digit((string) $id) || (int) $id <= 0) {
-                throw new RuntimeException('Identificador P4 inválido.');
+        foreach ($rawIds as $raw) {
+            if (!is_scalar($raw) || !ctype_digit((string) $raw) || (int) $raw <= 0) {
+                throw new RuntimeException('Identificador de almacén P4 inválido.');
             }
-            $ids[(int) $id] = (int) $id;
+            $ids[(int) $raw] = (int) $raw;
         }
-        $allowed = array_map('intval', array_column($this->activeP4Warehouses(), 'id'));
+        $allowed = array_map('intval', array_column($this->activeP4WarehouseOptions(), 'id'));
         foreach ($ids as $id) {
             if (!in_array($id, $allowed, true)) {
-                throw new RuntimeException('El P4 seleccionado no existe o no está activo.');
+                throw new RuntimeException('El almacén solicitado no es un P4 activo.');
             }
         }
+        $previous = $this->p4WarehouseIdsForUser($userId);
         $this->pdo->beginTransaction();
         try {
-            $delete = $this->pdo->prepare('DELETE FROM security_user_p4_scopes WHERE user_id = :id');
-            $delete->execute(['id' => $userId]);
+            $this->pdo->prepare(
+                'DELETE FROM security_user_p4_scopes WHERE user_id = :id'
+            )->execute(['id' => $userId]);
             $insert = $this->pdo->prepare(
-                'INSERT INTO security_user_p4_scopes (user_id,warehouse_id) VALUES (:user_id,:warehouse_id)'
+                'INSERT INTO security_user_p4_scopes (user_id, warehouse_id) VALUES (:user_id, :warehouse_id)'
             );
             foreach ($ids as $id) {
                 $insert->execute(['user_id' => $userId, 'warehouse_id' => $id]);
@@ -142,17 +145,15 @@ final class SecurityRepository
                 'action_code' => 'p4_scope_updated',
                 'record_type' => 'security_user',
                 'record_id' => (string) $userId,
-                'before' => ['p4_warehouses' => $before],
-                'after' => ['p4_warehouses' => array_values($ids)],
+                'before' => ['p4_warehouse_ids' => $previous],
+                'after' => ['p4_warehouse_ids' => array_values($ids)],
                 'ip_address' => $_SERVER['REMOTE_ADDR'] ?? null,
                 'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? null,
             ]);
             $this->pdo->commit();
-        } catch (\Throwable $e) {
-            if ($this->pdo->inTransaction()) {
-                $this->pdo->rollBack();
-            }
-            throw $e;
+        } catch (\Throwable $exception) {
+            if ($this->pdo->inTransaction()) $this->pdo->rollBack();
+            throw $exception;
         }
     }
 
@@ -267,13 +268,6 @@ final class SecurityRepository
         try {
             $userId = $this->insertUser($employee, $username, $passwordHash, 'active');
             $this->assignRoles($userId, $roleIds);
-            // Never retain a dormant unit grant after the P4 role is revoked.
-            if (!in_array('P4', $this->roleCodesForUser($userId), true)) {
-                $revoke = $this->pdo->prepare(
-                    'DELETE FROM security_user_p4_scopes WHERE user_id = :user_id'
-                );
-                $revoke->execute(['user_id' => $userId]);
-            }
             $this->pdo->commit();
 
             return $userId;

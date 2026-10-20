@@ -2,11 +2,24 @@
 declare(strict_types=1);
 
 $isNominal = is_array($pendingLine);
+$roles = (array) (sindesg_user()['role_codes'] ?? []);
+$p4Only = in_array('P4', $roles, true) && !in_array('ADMIN', $roles, true) && !in_array('CENTRAL', $roles, true);
 ?>
+<?php if ($p4Only && $isNominal): ?>
+<style>
+.delivery-hero.compact{padding:18px 24px;margin-bottom:12px}
+.delivery-hero.compact h1{font-size:clamp(1.5rem,2.2vw,2rem)}
+.delivery-form .delivery-panel{padding:18px 20px;margin-bottom:12px}
+.delivery-form .delivery-fixed-grid{gap:9px}
+.delivery-form .delivery-fixed-grid article{padding:11px 13px;min-height:0}
+.delivery-form .delivery-section-head{margin-bottom:12px}
+.delivery-form .delivery-section-head h2{font-size:1.15rem}
+</style>
+<?php endif; ?>
 <section class="delivery-hero compact">
     <div>
         <span class="eyebrow"><?= $isNominal ? 'ENTREGA NOMINAL' : 'NUEVO DESPACHO' ?></span>
-        <h1><?= $isNominal ? 'Entregar prenda reservada' : 'Crear borrador de despacho' ?></h1>
+        <h1><?= $isNominal && $p4Only ? 'Preparar constancia de entrega' : ($isNominal ? 'Entregar prenda reservada' : 'Crear borrador de despacho') ?></h1>
         <p><?= $isNominal
             ? 'La prenda ya fue recibida en el P4 para este beneficiario. Confirme quién entrega y la cantidad.'
             : 'Seleccione el P4 y el funcionario receptor. Después podrá agregar artículos disponibles en ese P4.' ?></p>
@@ -32,8 +45,8 @@ $isNominal = is_array($pendingLine);
             <div class="delivery-fixed-grid">
                 <article>
                     <span>P4</span>
-                    <strong><?= e($pendingLine['p4_code']) ?></strong>
-                    <small><?= e($pendingLine['p4_name'] ?: 'P4') ?></small>
+                    <strong><?= e($pendingLine['p4_name'] ?: 'Almacén P4') ?></strong>
+                    <small><?= e($p4Only ? 'Unidad logística autorizada' : ($pendingLine['p4_name'] ?: 'P4')) ?></small>
                 </article>
                 <article>
                     <span>Funcionario receptor</span>
@@ -43,12 +56,12 @@ $isNominal = is_array($pendingLine);
                 <article>
                     <span>Artículo reservado</span>
                     <strong><?= e($pendingLine['product_name']) ?></strong>
-                    <small><?= e($pendingLine['variant_code'] . ($pendingLine['size_name'] ? ' · Talla ' . $pendingLine['size_name'] : '')) ?></small>
+                    <small><?= e(($pendingLine['size_name'] ? 'Talla ' . $pendingLine['size_name'] : 'Variante sin talla') ) ?></small>
                 </article>
                 <article>
                     <span>Origen logístico</span>
-                    <strong><?= e($pendingLine['request_code']) ?></strong>
-                    <small><?= e($pendingLine['transfer_code'] ?: 'Transferencia recibida') ?></small>
+                    <strong><?= e('Dotación autorizada') ?></strong>
+                    <small><?= e('Recibida en el almacén') ?></small>
                 </article>
             </div>
 
@@ -61,7 +74,7 @@ $isNominal = is_array($pendingLine);
                        step="0.001"
                        value="<?= e($pendingLine['pending_quantity']) ?>"
                        required>
-                <small>Máximo pendiente: <?= e(number_format((float) $pendingLine['pending_quantity'], 3, '.', ',')) ?></small>
+                <small>Máximo pendiente: <?= e(sindesg_units((float) $pendingLine['pending_quantity'])) ?></small>
             </label>
         <?php else: ?>
             <div class="delivery-form-grid">
@@ -92,6 +105,7 @@ $isNominal = is_array($pendingLine);
         <?php endif; ?>
     </section>
 
+    <?php if (!$p4Only): ?>
     <section class="delivery-panel delivery-scope-panel <?= !empty($recipientOutOfScope) ? 'warning' : '' ?>"
              data-scope-override>
         <div class="delivery-section-head">
@@ -142,12 +156,16 @@ $isNominal = is_array($pendingLine);
         </label>
     </section>
 
+    <?php endif; ?>
     <section class="delivery-panel">
         <div class="delivery-section-head">
             <div><span class="eyebrow">RESPONSABLE</span><h2>Funcionario que entrega</h2></div>
         </div>
 
         <div class="delivery-form-grid">
+            <?php if ($p4Only): ?>
+                <p>Responsable: <strong><?= e(sindesg_user()['display_name'] ?? 'Funcionario P4') ?></strong>. La identidad se valida desde la sesión en RRHH2029.</p>
+            <?php else: ?>
             <div class="delivery-employee-picker"
                  data-delivery-picker
                  data-search-url="<?= e($employeeSearchUrl) ?>">
@@ -159,6 +177,8 @@ $isNominal = is_array($pendingLine);
                 <div class="delivery-picker-results" data-delivery-results hidden></div>
                 <div class="delivery-picker-selection" data-delivery-selection hidden></div>
             </div>
+
+            <?php endif; ?>
 
             <label>
                 <span>Fecha y hora *</span>
@@ -190,8 +210,8 @@ $isNominal = is_array($pendingLine);
                 <?php foreach ($priorHistory as $row): ?>
                     <div class="history-preview-row">
                         <strong><?= e($row['product_name']) ?></strong>
-                        <span><?= e($row['variant_code'] . ($row['size_name'] ? ' · Talla ' . $row['size_name'] : '')) ?></span>
-                        <span><?= e(number_format((float) $row['quantity'], 3, '.', ',')) ?> · <?= e(date('d/m/Y', strtotime((string) $row['delivered_at']))) ?></span>
+                        <span><?= e($row['product_name'] . ($row['size_name'] ? ' · Talla ' . $row['size_name'] : '')) ?></span>
+                        <span><?= e(sindesg_units((float) $row['quantity'])) ?> · <?= e(date('d/m/Y', strtotime((string) $row['delivered_at']))) ?></span>
                     </div>
                 <?php endforeach; ?>
             <?php endif; ?>

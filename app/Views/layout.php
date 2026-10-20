@@ -12,6 +12,9 @@ $authUser = sindesg_user();
     <meta name="theme-color" content="#06172c">
     <title><?= e($pageTitle) ?> · <?= e(sindesg_config('name')) ?></title>
     <link rel="stylesheet" href="<?= e(sindesg_asset('css/app.css')) ?>">
+    <?php if (($currentModule === 'dashboard' && ($currentAction === 'p4-preview' || in_array('P4', (array) ($authUser['role_codes'] ?? []), true))) || ($currentModule === 'deliveries' && in_array('P4', (array) ($authUser['role_codes'] ?? []), true))): ?>
+        <link rel="stylesheet" href="<?= e(sindesg_asset('css/dashboard-p4.css')) ?>">
+    <?php endif; ?>
     <link rel="stylesheet" href="<?= e(sindesg_asset('css/inventory.css')) ?>">
     <?php if ($currentModule === 'receipts'): ?>
         <link rel="stylesheet" href="<?= e(sindesg_asset('css/receipts.css')) ?>">
@@ -85,7 +88,7 @@ $authUser = sindesg_user();
     <nav class="main-nav" aria-label="Módulos principales">
         <a class="<?= $currentModule === 'dashboard' ? 'active' : '' ?>" href="<?= e(sindesg_url()) ?>">Dashboard</a>
         <?php foreach (['inventory', 'receipts', 'requests', 'distribution', 'reports'] as $navKey): ?>
-            <?php if ((sindesg_can(sindesg_permission_for($navKey, 'index', 'GET') ?? 'dashboard.view') && sindesg_role_action_allowed($navKey, 'index', 'GET', (array) $authUser))): ?>
+            <?php if (sindesg_can(sindesg_permission_for($navKey, 'index', 'GET') ?? 'dashboard.view') && sindesg_role_action_allowed($navKey, 'index', 'GET', (array) $authUser)): ?>
                 <a class="<?= $currentModule === $navKey ? 'active' : '' ?>"
                    href="<?= e(sindesg_url('?module=' . $navKey)) ?>">
                     <?= e($modules[$navKey]['short']) ?>
@@ -97,7 +100,7 @@ $authUser = sindesg_user();
 
     <div class="more-menu" data-more-menu hidden>
         <?php foreach (['production', 'deliveries', 'adjustments', 'warehouses', 'people', 'migration', 'audit', 'admin'] as $navKey): ?>
-            <?php if ((sindesg_can(sindesg_permission_for($navKey, 'index', 'GET') ?? 'dashboard.view') && sindesg_role_action_allowed($navKey, 'index', 'GET', (array) $authUser))): ?>
+            <?php if (sindesg_can(sindesg_permission_for($navKey, 'index', 'GET') ?? 'dashboard.view') && sindesg_role_action_allowed($navKey, 'index', 'GET', (array) $authUser)): ?>
                 <a href="<?= e(sindesg_url('?module=' . $navKey)) ?>">
                     <span class="mini-icon"><?= e($modules[$navKey]['icon']) ?></span>
                     <span><strong><?= e($modules[$navKey]['label']) ?></strong><small><?= e($modules[$navKey]['phase']) ?></small></span>
@@ -169,7 +172,7 @@ window.SINDESG_SEARCH_ITEMS = <?= json_encode(array_merge(
             'meta' => 'Categoría',
             'url' => sindesg_url('?module=inventory&category_id=' . (int) ($item['id'] ?? 0)),
         ],
-        $categories ?? []
+        sindesg_role_action_allowed('inventory', 'index', 'GET', (array) $authUser) ? ($categories ?? []) : []
     )
 ), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
 </script>

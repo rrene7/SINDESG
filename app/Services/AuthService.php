@@ -259,6 +259,10 @@ final class AuthService
             'new_password',
             'new_password_confirmation',
             'current_password',
+            'recipient_signature_png',
+            'signature_png',
+            'signature_file',
+            'issuer_password',
         ];
 
         $clean = [];

@@ -13,7 +13,7 @@ $statusLabel = $productionOrder['status'] === 'confirmed' ? 'Confirmada' : ucfir
     </div>
     <div class="production-detail-status">
         <span class="production-status <?= e($productionOrder['status']) ?>"><?= e($statusLabel) ?></span>
-        <strong><?= e(number_format($totalOutput, 0, '.', ',')) ?></strong>
+        <strong><?= e(sindesg_units($totalOutput)) ?></strong>
         <small>cantidad producida</small>
     </div>
 </section>
@@ -27,8 +27,8 @@ $statusLabel = $productionOrder['status'] === 'confirmed' ? 'Confirmada' : ucfir
             <div><dt>Lote interno</dt><dd><?= e($productionOrder['internal_lot_code']) ?></dd></div>
             <div><dt>Almacén</dt><dd><?= e($productionOrder['warehouse_name']) ?></dd></div>
             <div><dt>Responsable</dt><dd><?= e($productionOrder['responsible_label']) ?></dd></div>
-            <div><dt>Producto terminado</dt><dd><?= e(number_format($totalOutput, 3, '.', ',')) ?></dd></div>
-            <div><dt>Insumos registrados</dt><dd><?= e(number_format($totalInput, 3, '.', ',')) ?></dd></div>
+            <div><dt>Producto terminado</dt><dd><?= e(sindesg_units($totalOutput)) ?></dd></div>
+            <div><dt>Insumos registrados</dt><dd><?= e(sindesg_units($totalInput)) ?></dd></div>
         </dl>
         <?php if (!empty($productionOrder['notes'])): ?>
             <div class="production-notes"><strong>Observaciones</strong><p><?= e($productionOrder['notes']) ?></p></div>
@@ -63,9 +63,9 @@ $statusLabel = $productionOrder['status'] === 'confirmed' ? 'Confirmada' : ucfir
             <tbody>
             <?php foreach ($productionOutputs as $row): ?>
                 <tr>
-                    <td><?= e($row['category_name']) ?></td><td><?= e($row['product_name']) ?></td><td><code><?= e($row['variant_code']) ?></code></td>
+                    <td><?= e($row['category_name']) ?></td><td><?= e($row['product_name']) ?></td><td><?= e(($row['size_name'] ?? '') ? 'Talla ' . $row['size_name'] : 'Presentación estándar') ?></td>
                     <td><?= e($row['size_name'] ?: '—') ?></td><td><?= e($row['brand_name'] ?: '—') ?></td>
-                    <td class="production-qty output"><?= e(number_format((float) $row['quantity'], 3, '.', ',')) ?></td><td><?= e($row['notes'] ?: '—') ?></td>
+                    <td class="production-qty output"><?= e(sindesg_units((float) $row['quantity'])) ?></td><td><?= e($row['notes'] ?: '—') ?></td>
                 </tr>
             <?php endforeach; ?>
             </tbody>
@@ -86,7 +86,7 @@ $statusLabel = $productionOrder['status'] === 'confirmed' ? 'Confirmada' : ucfir
                     <tr>
                         <td><?= e($row['category_name']) ?></td><td><?= e($row['product_name']) ?></td><td><code><?= e($row['variant_code']) ?></code></td>
                         <td><?= e($row['size_name'] ?: '—') ?></td><td><?= e($row['brand_name'] ?: '—') ?></td>
-                        <td class="production-qty input"><?= e(number_format((float) $row['quantity'], 3, '.', ',')) ?></td><td><?= e($row['notes'] ?: '—') ?></td>
+                        <td class="production-qty input"><?= e(sindesg_units((float) $row['quantity'])) ?></td><td><?= e($row['notes'] ?: '—') ?></td>
                     </tr>
                 <?php endforeach; ?>
                 </tbody>

@@ -173,13 +173,13 @@ final class DeliveryService
         $this->repository->removeItem($deliveryId, $itemId);
     }
 
-    public function confirm(int $deliveryId): array
+    public function confirm(int $deliveryId, ?array $signatureEvidence = null): array
     {
         if ($deliveryId <= 0) {
             throw new InvalidArgumentException('El despacho seleccionado no es válido.');
         }
 
-        return $this->repository->confirm($deliveryId);
+        return $this->repository->confirm($deliveryId, $signatureEvidence);
     }
 
     public function cancel(int $deliveryId): void

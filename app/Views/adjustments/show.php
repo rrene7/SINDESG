@@ -40,7 +40,7 @@ $expectedText = match ($type) {
     </div>
     <div class="adjustment-detail-status">
         <span class="adjustment-status <?= e($adjustment['status']) ?>"><?= e($statusLabels[$adjustment['status']] ?? $adjustment['status']) ?></span>
-        <strong><?= e(number_format((float) $adjustment['quantity'], 3, '.', ',')) ?></strong>
+        <strong><?= e(sindesg_units((float) $adjustment['quantity'])) ?></strong>
         <small><?= $type === 'cycle_count' && !$isConfirmed ? 'diferencia al confirmar' : 'unidades de impacto' ?></small>
     </div>
 </section>
@@ -83,10 +83,10 @@ $expectedText = match ($type) {
         <?php if ($adjustment['status'] === 'draft'): ?>
             <p class="adjustment-current-stock">
                 Stock actual principal:
-                <strong><?= e(number_format((float) $currentPrimaryStock, 3, '.', ',')) ?></strong>
+                <strong><?= e(sindesg_units((float) $currentPrimaryStock)) ?></strong>
                 <?php if ($currentReplacementStock !== null): ?>
                     · Reemplazo:
-                    <strong><?= e(number_format((float) $currentReplacementStock, 3, '.', ',')) ?></strong>
+                    <strong><?= e(sindesg_units((float) $currentReplacementStock)) ?></strong>
                 <?php endif; ?>
             </p>
             <form method="post" action="<?= e(sindesg_url('?module=adjustments&action=confirm')) ?>">
@@ -117,12 +117,12 @@ $expectedText = match ($type) {
         <article>
             <span>Variante principal</span>
             <strong><?= e($adjustment['product_name']) ?></strong>
-            <small><?= e($adjustment['variant_code'] . ($adjustment['size_name'] ? ' · Talla ' . $adjustment['size_name'] : '')) ?></small>
+            <small><?= e(($adjustment['product_name'] ?? 'Artículo') . ($adjustment['size_name'] ? ' · Talla ' . $adjustment['size_name'] : '')) ?></small>
             <?php if ($isConfirmed): ?>
                 <div class="adjustment-stock-pair">
-                    <b><?= e(number_format((float) $adjustment['primary_stock_before'], 3, '.', ',')) ?></b>
+                    <b><?= e(sindesg_units((float) $adjustment['primary_stock_before'])) ?></b>
                     <span>→</span>
-                    <b><?= e(number_format((float) $adjustment['primary_stock_after'], 3, '.', ',')) ?></b>
+                    <b><?= e(sindesg_units((float) $adjustment['primary_stock_after'])) ?></b>
                 </div>
             <?php endif; ?>
         </article>
@@ -134,9 +134,9 @@ $expectedText = match ($type) {
                 <small><?= e($adjustment['replacement_variant_code'] . ($adjustment['replacement_size_name'] ? ' · Talla ' . $adjustment['replacement_size_name'] : '')) ?></small>
                 <?php if ($isConfirmed): ?>
                     <div class="adjustment-stock-pair">
-                        <b><?= e(number_format((float) $adjustment['replacement_stock_before'], 3, '.', ',')) ?></b>
+                        <b><?= e(sindesg_units((float) $adjustment['replacement_stock_before'])) ?></b>
                         <span>→</span>
-                        <b><?= e(number_format((float) $adjustment['replacement_stock_after'], 3, '.', ',')) ?></b>
+                        <b><?= e(sindesg_units((float) $adjustment['replacement_stock_after'])) ?></b>
                     </div>
                 <?php endif; ?>
             </article>
@@ -145,10 +145,10 @@ $expectedText = match ($type) {
         <?php if ($type === 'cycle_count'): ?>
             <article>
                 <span>Conteo físico</span>
-                <strong><?= e(number_format((float) $adjustment['counted_quantity'], 3, '.', ',')) ?></strong>
+                <strong><?= e(sindesg_units((float) $adjustment['counted_quantity'])) ?></strong>
                 <small>
                     <?php if ($isConfirmed): ?>
-                        Sistema al confirmar: <?= e(number_format((float) $adjustment['system_quantity_snapshot'], 3, '.', ',')) ?>
+                        Sistema al confirmar: <?= e(sindesg_units((float) $adjustment['system_quantity_snapshot'])) ?>
                     <?php else: ?>
                         El sistema calculará la diferencia al confirmar.
                     <?php endif; ?>

@@ -45,33 +45,14 @@ final class DeliveryRepository
         ];
     }
 
-    /**
-     * Scope in SQL before LIMIT. Null means unrestricted; [] fails closed.
-     * Values are cast to integers to avoid dynamic SQL injection.
-     */
-    private function deliveryScopeClause(?array $warehouseIds, string $column): ?string
-    {
-        if ($warehouseIds === null) return '';
-        $ids = array_values(array_unique(array_filter(
-            array_map('intval', $warehouseIds),
-            static fn (int $id): bool => $id > 0
-        )));
-        if ($ids === []) return null;
-        return 'AND ' . $column . ' IN (' . implode(',', $ids) . ')';
-    }
-
-    public function recent(int $limit = 50, ?array $allowedP4Ids = null): array
+    public function recent(int $limit = 50): array
     {
         $limit = max(1, min($limit, 100));
-
-        $scope = $this->deliveryScopeClause($allowedP4Ids, 'd.p4_warehouse_id');
-        if ($scope === null) return [];
 
         return $this->pdo->query('
             SELECT
                 d.id,
                 d.delivery_code,
-                d.p4_warehouse_id,
                 d.delivered_at,
                 d.status,
                 d.recipient_employee_id,
@@ -84,7 +65,6 @@ final class DeliveryRepository
             FROM individual_deliveries d
             INNER JOIN warehouses w ON w.id = d.p4_warehouse_id
             LEFT JOIN individual_delivery_items di ON di.delivery_id = d.id
-            WHERE 1 = 1 ' . $scope . '
             GROUP BY d.id
             ORDER BY d.delivered_at DESC, d.id DESC
             LIMIT ' . $limit)->fetchAll();
@@ -136,12 +116,9 @@ final class DeliveryRepository
         return $value === false || $value === null ? null : (int) $value;
     }
 
-    public function pendingNominal(int $limit = 40, ?array $allowedP4Ids = null): array
+    public function pendingNominal(int $limit = 40): array
     {
         $limit = max(1, min($limit, 100));
-
-        $scope = $this->deliveryScopeClause($allowedP4Ids, 'r.p4_warehouse_id');
-        if ($scope === null) return [];
 
         return $this->pdo->query('
             SELECT
@@ -187,9 +164,43 @@ final class DeliveryRepository
               AND r.status IN ("approved", "partially_approved", "fulfilled")
               AND w.warehouse_type = "P4"
               AND w.is_active = 1
-              ' . $scope . '
             ORDER BY r.requested_at, i.id
             LIMIT ' . $limit)->fetchAll();
+    }
+
+    /**
+     * Nominal P4 queue: scope in SQL, before pagination.
+     * Reuse the existing catalogue joins without loading another unit's rows.
+     */
+    public function pendingNominalForUser(int $userId, int $limit = 100): array
+    {
+        if ($userId <= 0) return [];
+        $limit = max(1, min($limit, 100));
+        $sql = <<<'SQL'
+            SELECT i.id AS request_item_id,
+                   i.beneficiary_label_snapshot, i.beneficiary_document_snapshot,
+                   GREATEST(i.quantity_received-i.quantity_delivered,0) AS pending_quantity,
+                   r.request_code, r.requested_at, r.p4_warehouse_id,
+                   w.organization_unit_name_snapshot AS p4_name,
+                   pv.internal_code AS variant_code, p.name AS product_name,
+                   sz.name AS size_name
+            FROM service_request_items i
+            JOIN service_requests r ON r.id=i.request_id
+            JOIN warehouses w ON w.id=r.p4_warehouse_id
+            JOIN security_user_p4_scopes scope ON scope.warehouse_id=r.p4_warehouse_id
+            JOIN product_variants pv ON pv.id=i.product_variant_id
+            JOIN products p ON p.id=pv.product_id
+            LEFT JOIN sizes sz ON sz.id=pv.size_id
+            WHERE scope.user_id=:user_id AND w.warehouse_type='P4' AND w.is_active=1
+              AND i.beneficiary_employee_id IS NOT NULL
+              AND i.quantity_received > i.quantity_delivered
+              AND r.status IN ('approved','partially_approved','fulfilled')
+            ORDER BY i.id ASC
+            LIMIT 
+SQL;
+        $stmt = $this->pdo->prepare($sql . $limit);
+        $stmt->execute(['user_id' => $userId]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
     public function pendingNominalLine(int $requestItemId): ?array
@@ -369,6 +380,33 @@ final class DeliveryRepository
             }
             throw $exception;
         }
+    }
+
+    public function receiptEvidence(int $deliveryId): ?array
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT r.delivery_id, r.recipient_employee_id, r.signature_png,
+                    r.signature_sha256, r.captured_at,
+                    r.captured_by_user_id
+             FROM individual_delivery_receipts r
+             INNER JOIN individual_deliveries d ON d.id=r.delivery_id
+             WHERE r.delivery_id=:id AND d.status=\'confirmed\' LIMIT 1'
+        );
+        $stmt->execute(['id' => $deliveryId]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $row ?: null;
+    }
+
+    public function issuerReceiptEvidence(int $deliveryId): ?array
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT i.issuer_user_id, i.signature_png, i.signature_sha256, i.captured_at
+             FROM individual_delivery_issuer_signatures i
+             JOIN individual_deliveries d ON d.id=i.delivery_id
+             WHERE i.delivery_id=:id AND d.status=\'confirmed\' LIMIT 1'
+        );
+        $stmt->execute(['id' => $deliveryId]);
+        return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
     }
 
     public function find(int $deliveryId): ?array
@@ -662,7 +700,7 @@ final class DeliveryRepository
         ]);
     }
 
-    public function confirm(int $deliveryId): array
+    public function confirm(int $deliveryId, ?array $signatureEvidence = null): array
     {
         $this->pdo->beginTransaction();
 
@@ -826,6 +864,49 @@ final class DeliveryRepository
                 }
             }
 
+            if ($signatureEvidence !== null && !empty($signatureEvidence['issuer_user_id'])) {
+                $issuerId = (int)$signatureEvidence['issuer_user_id'];
+                $issuerEmployee = (int)($signatureEvidence['issuer_employee_id'] ?? 0);
+                if ($issuerEmployee <= 0
+                    || (int)$delivery['delivered_by_employee_id'] !== $issuerEmployee) {
+                    throw new RuntimeException('La firma debe pertenecer al funcionario que figura como responsable de esta entrega.');
+                }
+                // Lock current signature so replacement cannot race with this receipt.
+                $statement = $this->pdo->prepare(
+                    'SELECT signature_png, signature_sha256 FROM p4_user_signatures
+                     WHERE user_id=:id FOR UPDATE'
+                );
+                $statement->execute(['id'=>$issuerId]);
+                $issuer = $statement->fetch(PDO::FETCH_ASSOC);
+                if (!$issuer || $issuerId !== (int)$signatureEvidence['actor']) {
+                    throw new RuntimeException('Registre primero su firma P4 y vuelva a confirmar.');
+                }
+                $this->pdo->prepare(
+                    'INSERT INTO individual_delivery_issuer_signatures
+                     (delivery_id,issuer_user_id,signature_png,signature_sha256)
+                     VALUES (:delivery,:user,:png,:sha)'
+                )->execute([
+                    'delivery'=>$deliveryId,
+                    'user'=>$issuerId,
+                    'png'=>$issuer['signature_png'],
+                    'sha'=>$issuer['signature_sha256'],
+                ]);
+            }
+
+            if ($signatureEvidence !== null) {
+                $this->pdo->prepare(
+                    'INSERT INTO individual_delivery_receipts
+                     (delivery_id, recipient_employee_id, signature_png, signature_sha256, captured_by_user_id)
+                     VALUES (:delivery, :recipient, :png, :hash, :actor)'
+                )->execute([
+                    'delivery' => $deliveryId,
+                    'recipient' => (int) $delivery['recipient_employee_id'],
+                    'png' => $signatureEvidence['png'],
+                    'hash' => hash('sha256', $signatureEvidence['png']),
+                    'actor' => (int) $signatureEvidence['actor'],
+                ]);
+            }
+
             $this->pdo->prepare(
                 'UPDATE individual_deliveries
                  SET status = "confirmed", confirmed_at = NOW()
@@ -868,15 +949,9 @@ final class DeliveryRepository
         }
     }
 
-    public function historyForEmployee(int $employeeId, int $limit = 100, ?array $allowedP4Ids = null): array
+    public function historyForEmployee(int $employeeId, int $limit = 100): array
     {
         $limit = max(1, min($limit, 200));
-        if ($allowedP4Ids !== null && $allowedP4Ids === []) {
-            return [];
-        }
-        $ids = $allowedP4Ids === null ? [] : array_values(array_unique(array_map('intval', $allowedP4Ids)));
-        $ids = array_values(array_filter($ids, static fn (int $id): bool => $id > 0));
-        $scopeSql = $allowedP4Ids === null ? '' : ' AND d.p4_warehouse_id IN (' . implode(',', $ids) . ')';
 
         $statement = $this->pdo->prepare('
             SELECT
@@ -912,7 +987,6 @@ final class DeliveryRepository
             LEFT JOIN service_requests sr ON sr.id = sri.request_id
             WHERE d.recipient_employee_id = :employee_id
               AND d.status = "confirmed"
-            ' . $scopeSql . '
             ORDER BY d.delivered_at DESC, d.id DESC, di.id
             LIMIT ' . $limit
         );
@@ -929,7 +1003,7 @@ final class DeliveryRepository
      * @param list<int> $employeeIds
      * @return array<int,string> employee_id => fecha DATETIME
      */
-    public function lastConfirmedDatesForProduct(int $productId, array $employeeIds, ?array $allowedP4Ids = null): array
+    public function lastConfirmedDatesForProduct(int $productId, array $employeeIds): array
     {
         if ($productId <= 0 || count($employeeIds) > 100) {
             throw new \InvalidArgumentException('Producto o lote de funcionarios no válido.');
@@ -945,9 +1019,6 @@ final class DeliveryRepository
         if (!$ids) {
             return [];
         }
-
-        $p4SqlScope = $this->deliveryScopeClause($allowedP4Ids, 'd.p4_warehouse_id');
-        if ($p4SqlScope === null) return [];
 
         $bind = ['product_id' => $productId];
         $holders = [];
@@ -965,7 +1036,6 @@ final class DeliveryRepository
             WHERE d.status = "confirmed"
               AND pv.product_id = :product_id
               AND d.recipient_employee_id IN (' . implode(', ', $holders) . ')
-            ' . $p4SqlScope . '
             GROUP BY d.recipient_employee_id';
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute($bind);
@@ -976,9 +1046,9 @@ final class DeliveryRepository
         return $dates;
     }
 
-    public function historySummaryForEmployee(int $employeeId, int $limit = 12, ?array $allowedP4Ids = null): array
+    public function historySummaryForEmployee(int $employeeId, int $limit = 12): array
     {
-        $rows = $this->historyForEmployee($employeeId, $limit, $allowedP4Ids);
+        $rows = $this->historyForEmployee($employeeId, $limit);
 
         return array_map(
             static fn (array $row): array => [

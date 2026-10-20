@@ -12,6 +12,7 @@ use App\Controllers\DeliveryController;
 use App\Controllers\AdjustmentController;
 use App\Controllers\ReportsController;
 use App\Controllers\AuthController;
+use App\Controllers\ProfileController;
 use App\Controllers\AdminController;
 use App\Controllers\AuditController;
 use App\Controllers\HistoricalImportController;
@@ -177,7 +178,7 @@ if ($health['sindesg']['ok']) {
     }
 }
 
-if ($currentModule !== 'dashboard' && !isset($modules[$currentModule])) {
+if (!in_array($currentModule, ['dashboard','profile'], true) && !isset($modules[$currentModule])) {
     http_response_code(404);
     $currentModule = 'not-found';
 }
@@ -192,65 +193,70 @@ if (($requiredPermission !== null && !$authService->can($requiredPermission))
     exit;
 }
 
-// Enforce P4 record scope before controller dispatch (GET and POST).
-if (in_array($currentModule, ['requests', 'distribution', 'deliveries', 'warehouses'], true)) {
-    $scope = \App\Services\P4WarehouseScope::current($database);
-    if (!$scope['unrestricted']) {
-        $pdoScope = $database->connection('sindesg');
-        $inputScope = $currentMethod === 'POST' ? $_POST : $_GET;
-        $table = null;
-        $id = 0;
-        $sql = null;
-        if ($currentModule === 'requests') {
-            $id = (int) ($inputScope['request_id'] ?? $inputScope['id'] ?? 0);
-            $sql = 'SELECT p4_warehouse_id FROM service_requests WHERE id = :id';
-        } elseif ($currentModule === 'distribution') {
-            $id = (int) ($inputScope['distribution_id'] ?? $inputScope['id'] ?? 0);
-            $sql = 'SELECT destination_warehouse_id FROM distributions WHERE id = :id';
-        } elseif ($currentModule === 'warehouses') {
-            $id = (int) ($inputScope['warehouse_id'] ?? $inputScope['id'] ?? 0);
-            $sql = 'SELECT id FROM warehouses WHERE id = :id AND warehouse_type = "P4"';
-        } else {
-            $id = (int) ($inputScope['delivery_id'] ?? $inputScope['id'] ?? 0);
-            $sql = 'SELECT p4_warehouse_id FROM individual_deliveries WHERE id = :id';
-        }
-        if ($currentModule === 'deliveries' && $id === 0 && isset($inputScope['request_item_id'])) {
-            $id = (int) $inputScope['request_item_id'];
-            $sql = 'SELECT r.p4_warehouse_id FROM service_request_items i
-                    JOIN service_requests r ON r.id = i.request_id WHERE i.id = :id';
-        }
-        if ($id > 0) {
-            $stmtScope = $pdoScope->prepare($sql);
-            $stmtScope->execute(['id' => $id]);
-            $warehouseScope = (int) ($stmtScope->fetchColumn() ?: 0);
-            if (!\App\Services\P4WarehouseScope::authorized($scope['roles'], $scope['warehouses'], $warehouseScope)) {
-                http_response_code(403);
-                $pageTitle = 'Acceso denegado';
-                $contentView = dirname(__DIR__) . '/app/Views/auth/forbidden.php';
-                require dirname(__DIR__) . '/app/Views/layout.php';
-                exit;
-            }
-        }
-        if ($currentModule === 'requests' && $currentAction === 'save' && $currentMethod === 'POST') {
-            \App\Services\P4WarehouseScope::assertAuthorized(
-                $scope['roles'], $scope['warehouses'],
-                (int) ($_POST['p4_warehouse_id'] ?? 0)
-            );
-        }
-        if ($currentModule === 'deliveries' && $currentAction === 'save' && $currentMethod === 'POST') {
-            \App\Services\P4WarehouseScope::assertAuthorized(
-                $scope['roles'], $scope['warehouses'],
-                (int) ($_POST['p4_warehouse_id'] ?? 0)
-            );
-        }
-    }
-}
-
 if ($currentMethod === 'POST') {
     $authService->registerRequestAudit($currentModule, $currentAction, $_POST);
 }
 
-if ($currentModule === 'dashboard') {
+if ($currentModule === 'dashboard'
+    && ($currentAction === 'p4-preview'
+        || in_array('P4', (array) (sindesg_user()['role_codes'] ?? []), true))) {
+    // Isolated UI only: never query/show institution-wide metrics on P4 home.
+    // This does not activate multi-P4 data isolation in operational modules.
+    $roles = (array) (sindesg_user()['role_codes'] ?? []);
+    if ($currentAction === 'p4-preview'
+        && !in_array('P4', $roles, true)
+        && !in_array('ADMIN', $roles, true)) {
+        http_response_code(403);
+        $pageTitle = 'Acceso denegado';
+        $contentView = dirname(__DIR__) . '/app/Views/auth/forbidden.php';
+    } else {
+        $pageTitle = 'Panel operativo P4';
+        $p4AssignedWarehouses = [];
+        $p4ScopeReady = false;
+        $p4OperationalSummary = [];
+        $p4OperationsReadable = false;
+        $p4DashboardData = [];
+        $p4DashboardDataReady = false;
+        try {
+            $p4AssignedWarehouses = (new \App\Services\P4AssignedWarehouses(
+                $database->connection('sindesg')
+            ))->listForUser((int) (sindesg_user()['id'] ?? 0));
+            $p4ScopeReady = true;
+            $p4OperationalSummary = [];
+            $p4OperationsReadable = true;
+            $p4DashboardData = [];
+            $p4DashboardDataReady = true;
+            foreach ($p4AssignedWarehouses as $assignedP4) {
+                try {
+                    $p4DashboardData[(int) $assignedP4['id']] =
+                        (new \App\Services\P4DashboardData(
+                            $database->connection('sindesg')
+                        ))->forWarehouse(
+                            (int) (sindesg_user()['id'] ?? 0),
+                            (int) $assignedP4['id']
+                        );
+                    $p4OperationalSummary[(int) $assignedP4['id']] =
+                        (new \App\Services\P4OperationalSummary(
+                            $database->connection('sindesg')
+                        ))->forWarehouse(
+                            (int) (sindesg_user()['id'] ?? 0),
+                            (int) $assignedP4['id']
+                        );
+                } catch (\Throwable $exception) {
+                    $p4OperationsReadable = false;
+                    $p4OperationalSummary = [];
+                    $p4DashboardDataReady = false;
+                    $p4DashboardData = [];
+                    break;
+                }
+            }
+        } catch (\PDOException $exception) {
+            // The table may be absent in another local database. Deny by default.
+            $p4AssignedWarehouses = [];
+        }
+        $contentView = dirname(__DIR__) . '/app/Views/dashboard-p4.php';
+    }
+} elseif ($currentModule === 'dashboard') {
     $pageTitle = 'Dashboard';
     $dashboardCategories = [];
     $featuredProduct = null;
@@ -298,24 +304,7 @@ if ($currentModule === 'dashboard') {
         }
     }
 
-    $dashboardScope = \App\Services\P4WarehouseScope::current($database);
-    if (!$dashboardScope['unrestricted']) {
-        $p4DashboardRequests = \App\Services\P4WarehouseScope::filter(
-            (new \App\Repositories\RequestRepository($database->connection('sindesg')))->recent(100),
-            $dashboardScope, 'p4_warehouse_id'
-        );
-        $p4DashboardTransfers = \App\Services\P4WarehouseScope::filter(
-            (new \App\Repositories\DistributionRepository($database->connection('sindesg')))->recent(100),
-            $dashboardScope, 'destination_warehouse_id'
-        );
-        $p4DashboardDeliveries = \App\Services\P4WarehouseScope::filter(
-            (new \App\Repositories\DeliveryRepository($database->connection('sindesg')))->recent(100),
-            $dashboardScope, 'p4_warehouse_id'
-        );
-        $contentView = dirname(__DIR__) . '/app/Views/dashboard-p4.php';
-    } else {
-        $contentView = dirname(__DIR__) . '/app/Views/dashboard.php';
-    }
+    $contentView = dirname(__DIR__) . '/app/Views/dashboard.php';
 } elseif ($currentModule === 'inventory') {
     if (!$health['sindesg']['ok']) {
         $pageTitle = 'Inventario';
@@ -403,6 +392,17 @@ if ($currentModule === 'dashboard') {
             $_SERVER['REQUEST_METHOD'] ?? 'GET'
         );
 
+        $pageTitle = $result['title'];
+        $contentView = $result['view'];
+        extract($result['data'], EXTR_SKIP);
+    }
+} elseif ($currentModule === 'profile') {
+    if (!$health['sindesg']['ok']) {
+        $pageTitle = 'Mi firma P4';
+        $contentView = dirname(__DIR__) . '/app/Views/auth/forbidden.php';
+    } else {
+        $controller = new ProfileController($database);
+        $result = $controller->handle($currentAction, $currentMethod, $_POST, $_FILES);
         $pageTitle = $result['title'];
         $contentView = $result['view'];
         extract($result['data'], EXTR_SKIP);

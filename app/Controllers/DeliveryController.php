@@ -31,6 +31,34 @@ final class DeliveryController
         string $method
     ): array {
         try {
+            $user = (array) sindesg_user();
+            $roles = (array) ($user['role_codes'] ?? []);
+            $p4Only = in_array('P4', $roles, true)
+                && !in_array('ADMIN', $roles, true)
+                && !in_array('CENTRAL', $roles, true);
+            if ($p4Only) {
+                $guard = new \App\Services\P4DeliveryGuard($this->database->connection('sindesg'));
+                $userId = (int) ($user['id'] ?? 0);
+                $isPost = strtoupper($method) === 'POST';
+                $allowed = $isPost ? ['save', 'confirm'] : ['index', 'new', 'show'];
+                if (!in_array($action, $allowed, true)) {
+                    throw new InvalidArgumentException('Operación no habilitada para este P4.');
+                }
+                if ($isPost && $action === 'save') {
+                    $itemId = (int) ($post['request_item_id'] ?? 0);
+                    $line = $guard->assertNominal($userId, $itemId);
+                    $post['p4_warehouse_id'] = (int) $line['p4_warehouse_id'];
+                    $post['delivered_by_employee_id'] = (int) ($user['employee_id'] ?? 0);
+                    // Never allow P4 to bypass the recipient's active RRHH assignment.
+                    $post['allow_out_of_scope'] = '0';
+                    $post['scope_override_reason'] = '';
+                } elseif ($isPost || $action === 'show') {
+                    $id = (int) ($isPost ? ($post['delivery_id'] ?? 0) : ($query['id'] ?? 0));
+                    $guard->assertDelivery($userId, $id);
+                } elseif ($action === 'new') {
+                    $guard->assertNominal($userId, (int) ($query['request_item_id'] ?? 0));
+                }
+            }
             if (strtoupper($method) === 'POST') {
                 if (!csrf_valid(isset($post['_token']) ? (string) $post['_token'] : null)) {
                     throw new InvalidArgumentException(
@@ -44,6 +72,11 @@ final class DeliveryController
             return $this->handleGet($action, $query);
         } catch (InvalidArgumentException|RuntimeException $exception) {
             flash('error', $exception->getMessage());
+            if ($this->isP4Only()) {
+                // Reject direct foreign-warehouse URLs without redirect loops.
+                $this->redirect('?module=deliveries');
+            }
+
 
             $deliveryId = (int) ($post['delivery_id'] ?? $query['id'] ?? 0);
             if ($deliveryId > 0) {
@@ -106,17 +139,16 @@ final class DeliveryController
                 'view' => SINDESG_ROOT . '/app/Views/deliveries/form.php',
                 'title' => 'Nuevo despacho individual',
                 'data' => [
-                    'activeP4s' => \App\Services\P4WarehouseScope::filter($this->repository->activeP4s(), \App\Services\P4WarehouseScope::current($this->database), 'id'),
+                    'activeP4s' => $this->isP4Only() ? [] : $this->repository->activeP4s(),
                     'pendingLine' => $pendingLine,
                     'recipientOutOfScope' => $recipientOutOfScope,
                     'pendingRecipientCurrent' => $pendingRecipientCurrent,
-                    'priorHistory' => $pendingLine
-                        ? $this->repository->historySummaryForEmployee(
-                            (int) $pendingLine['beneficiary_employee_id'],
-                            10,
-                            (\App\Services\P4WarehouseScope::current($this->database)['unrestricted'] ? null : \App\Services\P4WarehouseScope::current($this->database)['warehouses'])
-                        )
-                        : [],
+                    'priorHistory' => $this->isP4Only()
+                        ? []
+                        : ($pendingLine
+                            ? $this->repository->historySummaryForEmployee(
+                                (int) $pendingLine['beneficiary_employee_id'], 10
+                            ) : []),
                     'employeeSearchUrl' => sindesg_url('public/api/employees.php'),
                     'historyApiUrl' => sindesg_url('public/api/delivery-history.php'),
                     'defaultDeliveredAt' => date('Y-m-d\TH:i'),
@@ -137,6 +169,10 @@ final class DeliveryController
                 'title' => (string) $delivery['delivery_code'],
                 'data' => [
                     'delivery' => $delivery,
+                    'receiptEvidence' => $delivery['status'] === 'confirmed'
+                        ? $this->repository->receiptEvidence($deliveryId) : null,
+                    'issuerReceiptEvidence' => $delivery['status'] === 'confirmed'
+                        ? $this->repository->issuerReceiptEvidence($deliveryId) : null,
                     'deliveryItems' => $this->repository->items($deliveryId),
                     'deliveryVerification' => $delivery['status'] === 'confirmed'
                         ? $this->repository->confirmationEvidence($deliveryId)
@@ -151,11 +187,11 @@ final class DeliveryController
                             (int) $delivery['p4_warehouse_id']
                         )
                         : [],
-                    'recipientHistory' => $this->repository->historyForEmployee(
-                        (int) $delivery['recipient_employee_id'],
-                        20,
-                        (\App\Services\P4WarehouseScope::current($this->database)['unrestricted'] ? null : \App\Services\P4WarehouseScope::current($this->database)['warehouses'])
-                    ),
+                    'recipientHistory' => $this->isP4Only()
+                        ? []
+                        : $this->repository->historyForEmployee(
+                            (int) $delivery['recipient_employee_id'], 20
+                        ),
                 ],
             ];
         }
@@ -166,7 +202,7 @@ final class DeliveryController
                 throw new InvalidArgumentException('Seleccione un funcionario.');
             }
 
-            $history = $this->repository->historyForEmployee($employeeId, 200, (\App\Services\P4WarehouseScope::current($this->database)['unrestricted'] ? null : \App\Services\P4WarehouseScope::current($this->database)['warehouses']));
+            $history = $this->repository->historyForEmployee($employeeId, 200);
             $employee = $this->employees->findEligibleEmployee($employeeId);
 
             return [
@@ -180,14 +216,25 @@ final class DeliveryController
             ];
         }
 
+        if ($this->isP4Only()) {
+            return [
+                'view' => SINDESG_ROOT . '/app/Views/deliveries/p4-index.php',
+                'title' => 'Entregas de mi P4',
+                'data' => [
+                    'nominalQueue' => $this->repository->pendingNominalForUser(
+                        (int) (sindesg_user()['id'] ?? 0)
+                    ),
+                ],
+            ];
+        }
+
         return [
             'view' => SINDESG_ROOT . '/app/Views/deliveries/index.php',
             'title' => 'Despacho individual',
             'data' => [
                 'deliveryStats' => $this->repository->stats(),
-                'deliveryStatsRestricted' => !\App\Services\P4WarehouseScope::current($this->database)['unrestricted'],
-                'pendingNominalDeliveries' => $this->repository->pendingNominal(100, \App\Services\P4WarehouseScope::current($this->database)['unrestricted'] ? null : \App\Services\P4WarehouseScope::current($this->database)['warehouses']),
-                'deliveries' => $this->repository->recent(100, \App\Services\P4WarehouseScope::current($this->database)['unrestricted'] ? null : \App\Services\P4WarehouseScope::current($this->database)['warehouses']),
+                'pendingNominalDeliveries' => $this->repository->pendingNominal(40),
+                'deliveries' => $this->repository->recent(60),
             ],
         ];
     }
@@ -222,7 +269,40 @@ final class DeliveryController
 
         if ($action === 'confirm') {
             $deliveryId = (int) ($post['delivery_id'] ?? 0);
-            $result = $this->service->confirm($deliveryId);
+            $evidence = null;
+            if ($this->isP4Only()) {
+                if (($post['issuer_ack'] ?? '') !== '1') {
+                    throw new InvalidArgumentException('Debe autorizar expresamente el uso de su firma para esta entrega.');
+                }
+                $currentIssuer = (new \App\Services\P4IssuerSignature(
+                    $this->database->connection('sindesg')
+                ))->current((int)(sindesg_user()['id'] ?? 0));
+                if (!$currentIssuer) {
+                    throw new InvalidArgumentException('Registre primero su firma en Mi firma institucional.');
+                }
+                $raw = (string) ($post['recipient_signature_png'] ?? '');
+                if (!str_starts_with($raw, 'data:image/png;base64,') || strlen($raw) > 220000) {
+                    throw new InvalidArgumentException('La firma de recibido es obligatoria y debe ser una imagen PNG válida.');
+                }
+                $png = base64_decode(substr($raw, strlen('data:image/png;base64,')), true);
+                if ($png === false || strlen($png) < 100 || strlen($png) > 160000
+                    || !str_starts_with($png, "\x89PNG\r\n\x1a\n")) {
+                    throw new InvalidArgumentException('Firma inválida. Capture nuevamente el recibido.');
+                }
+                // Validate the recipient image with the same structural PNG checks used for P4 signatures.
+                $png = \App\Services\P4IssuerSignature::validatePng($png);
+                $actorId = (int) (sindesg_user()['id'] ?? 0);
+                if ($actorId <= 0) throw new InvalidArgumentException('Sesión inválida.');
+                $employeeId = (int) (sindesg_user()['employee_id'] ?? 0);
+                if ($employeeId <= 0) throw new InvalidArgumentException('Funcionario responsable sin identidad válida.');
+                $evidence = [
+                    'png' => $png,
+                    'actor' => $actorId,
+                    'issuer_user_id' => $actorId,
+                    'issuer_employee_id' => $employeeId,
+                ];
+            }
+            $result = $this->service->confirm($deliveryId, $evidence);
             flash(
                 'success',
                 !empty($result['already_confirmed'])
@@ -240,6 +320,14 @@ final class DeliveryController
         }
 
         throw new InvalidArgumentException('La operación solicitada no es válida.');
+    }
+
+    private function isP4Only(): bool
+    {
+        $roles = (array) (sindesg_user()['role_codes'] ?? []);
+        return in_array('P4', $roles, true)
+            && !in_array('ADMIN', $roles, true)
+            && !in_array('CENTRAL', $roles, true);
     }
 
     private function redirect(string $path): never
