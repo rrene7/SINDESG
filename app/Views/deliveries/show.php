@@ -19,13 +19,13 @@ $totalQuantity = array_sum(array_map(
 ?>
 <section class="delivery-detail-hero">
     <div>
-        <span class="eyebrow">DESPACHO <?= e($delivery['delivery_code']) ?></span>
+        <span class="eyebrow">ENTREGA INDIVIDUAL</span>
         <h1><?= e($delivery['recipient_label_snapshot']) ?></h1>
-        <p><?= e($delivery['recipient_document_snapshot'] ?: 'Sin cédula histórica') ?> · <?= e($delivery['p4_code'] . ' · ' . ($delivery['p4_name'] ?: $delivery['p4_internal_name'])) ?></p>
+        <p><?= e($delivery['recipient_document_snapshot'] ?: 'Sin cédula histórica') ?> · <?= e($delivery['p4_name'] ?: $delivery['p4_internal_name']) ?></p>
     </div>
     <div class="delivery-detail-status">
         <span class="delivery-status <?= e($delivery['status']) ?>"><?= e($statusLabels[$delivery['status']] ?? $delivery['status']) ?></span>
-        <strong><?= e(number_format($totalQuantity, 3, '.', ',')) ?></strong>
+        <strong><?= e(sindesg_units($totalQuantity)) ?></strong>
         <small>unidades</small>
     </div>
 </section>
@@ -35,9 +35,9 @@ $totalQuantity = array_sum(array_map(
         <span class="eyebrow">COMPROBANTE</span>
         <h2>Datos del despacho</h2>
         <dl class="delivery-dl">
-            <div><dt>Código</dt><dd><?= e($delivery['delivery_code']) ?></dd></div>
+            <div><dt>Referencia para auditoría</dt><dd><details><summary>Ver folio interno</summary><?= e($delivery['delivery_code']) ?></details></dd></div>
             <div><dt>Fecha y hora</dt><dd><?= e(date('d/m/Y H:i', strtotime((string) $delivery['delivered_at']))) ?></dd></div>
-            <div><dt>P4</dt><dd><?= e($delivery['p4_code']) ?></dd></div>
+            <div><dt>Almacén</dt><dd><?= e($delivery['p4_name'] ?: $delivery['p4_internal_name']) ?></dd></div>
             <div><dt>Unidad P4</dt><dd><?= e($delivery['p4_name'] ?: '—') ?></dd></div>
             <div><dt>Funcionario receptor</dt><dd><?= e($delivery['recipient_label_snapshot']) ?></dd></div>
             <div><dt>Cédula</dt><dd><?= e($delivery['recipient_document_snapshot'] ?: '—') ?></dd></div>
@@ -149,25 +149,25 @@ $totalQuantity = array_sum(array_map(
                     <td>
                         <strong><?= e($row['product_name']) ?></strong>
                         <small class="delivery-cell-sub">
-                            <?= e($row['variant_code']) ?><?= !empty($row['size_name']) ? ' · Talla ' . e($row['size_name']) : '' ?>
+                            <?= !empty($row['size_name']) ? 'Talla ' . e($row['size_name']) : 'Presentación estándar' ?>
                         </small>
                     </td>
-                    <td class="delivery-qty"><?= e(number_format((float) $row['expected_quantity'], 3, '.', ',')) ?></td>
+                    <td class="delivery-qty"><?= e(sindesg_units((float) $row['expected_quantity'])) ?></td>
                     <td>
                         <?php if (!empty($row['movement_id'])): ?>
-                            <?= e(number_format((float) $row['movement_quantity'], 3, '.', ',')) ?>
-                            <small class="delivery-cell-sub">#<?= e($row['movement_id']) ?></small>
+                            <?= e(sindesg_units((float) $row['movement_quantity'])) ?>
+                            <small class="delivery-cell-sub" title="Movimiento de kardex #<?= e($row['movement_id']) ?>">Movimiento registrado</small>
                         <?php else: ?>
                             —
                         <?php endif; ?>
                     </td>
-                    <td><?= e(number_format((float) $row['p4_stock'], 3, '.', ',')) ?></td>
-                    <td><?= e($row['request_code'] ?: 'Stock libre P4') ?></td>
+                    <td><?= e(sindesg_units((float) $row['p4_stock'])) ?></td>
+                    <td><?= e($row['request_code'] ? 'Dotación solicitada' : 'Stock libre P4') ?></td>
                     <td>
                         <?php if ($row['request_item_id'] !== null): ?>
-                            <?= e(number_format((float) $row['request_received'], 3, '.', ',')) ?>
+                            <?= e(sindesg_units((float) $row['request_received'])) ?>
                             /
-                            <?= e(number_format((float) $row['request_delivered'], 3, '.', ',')) ?>
+                            <?= e(sindesg_units((float) $row['request_delivered'])) ?>
                         <?php else: ?>
                             —
                         <?php endif; ?>
@@ -223,10 +223,10 @@ $totalQuantity = array_sum(array_map(
                     <?php foreach ($freeOptions as $option): ?>
                         <option value="<?= e($option['id']) ?>">
                             <?= e($option['product_name']
-                                . ' · ' . $option['variant_code']
+                                
                                 . ($option['size_name'] ? ' · Talla ' . $option['size_name'] : '')
-                                . ' · Libre ' . number_format((float) $option['manual_available'], 3, '.', ',')
-                                . ' / Físico ' . number_format((float) $option['physical_stock'], 3, '.', ',')) ?>
+                                . ' · Libre ' . sindesg_units((float) $option['manual_available'])
+                                . ' / Físico ' . sindesg_units((float) $option['physical_stock'])) ?>
                         </option>
                     <?php endforeach; ?>
                 </select>
@@ -267,11 +267,11 @@ $totalQuantity = array_sum(array_map(
                 <?php foreach ($deliveryItems as $item): ?>
                     <tr>
                         <td><strong><?= e($item['product_name']) ?></strong><small class="delivery-cell-sub"><?= e($item['category_name']) ?></small></td>
-                        <td><code><?= e($item['variant_code']) ?></code></td>
+                        <td><?= e(($item['size_name'] ?? '') ? 'Talla ' . $item['size_name'] : 'Presentación estándar') ?></td>
                         <td><?= e($item['size_name'] ?: '—') ?></td>
-                        <td class="delivery-qty"><?= e(number_format((float) $item['quantity'], 3, '.', ',')) ?></td>
-                        <td><?= e($item['request_code'] ?: 'Stock libre P4') ?></td>
-                        <td><?= e($item['transfer_code'] ?: '—') ?></td>
+                        <td class="delivery-qty"><?= e(sindesg_units((float) $item['quantity'])) ?></td>
+                        <td><?= e($item['request_code'] ? 'Dotación solicitada' : 'Stock libre P4') ?></td>
+                        <td><?= e($item['transfer_code'] ? 'Transferencia desde Central' : '—') ?></td>
                         <?php if ($delivery['status'] === 'draft' && !$deliveryP4Only): ?>
                             <td>
                                 <form method="post" action="<?= e(sindesg_url('?module=deliveries&action=remove-item')) ?>">
@@ -320,8 +320,8 @@ $totalQuantity = array_sum(array_map(
             <?php foreach (array_slice($priorRows, 0, 8) as $row): ?>
                 <article>
                     <strong><?= e($row['product_name']) ?></strong>
-                    <span><?= e($row['variant_code'] . ($row['size_name'] ? ' · Talla ' . $row['size_name'] : '')) ?></span>
-                    <small><?= e(number_format((float) $row['quantity'], 3, '.', ',')) ?> · <?= e(date('d/m/Y', strtotime((string) $row['delivered_at']))) ?></small>
+                    <span><?= e($row['product_name'] . ($row['size_name'] ? ' · Talla ' . $row['size_name'] : '')) ?></span>
+                    <small><?= e(sindesg_units((float) $row['quantity'])) ?> · <?= e(date('d/m/Y', strtotime((string) $row['delivered_at']))) ?></small>
                 </article>
             <?php endforeach; ?>
         </div>
@@ -411,7 +411,7 @@ $totalQuantity = array_sum(array_map(
             <tr>
                 <td><?= e($item['product_name']) ?></td>
                 <td><?= e($item['size_name'] ?: '—') ?></td>
-                <td><?= e(number_format((float) $item['quantity'], 3, '.', ',')) ?></td>
+                <td><?= e(sindesg_units((float) $item['quantity'])) ?></td>
             </tr>
         <?php endforeach; ?>
         </tbody>

@@ -12,13 +12,13 @@ $totalQuantity = array_sum(array_map(static fn (array $row): float => (float) $r
 ?>
 <section class="distribution-detail-hero">
     <div>
-        <span class="eyebrow">TRANSFERENCIA <?= e($distribution['transfer_code']) ?></span>
-        <h1><?= e($distribution['destination_code'] . ' · ' . ($distribution['destination_name'] ?: $distribution['destination_internal_name'])) ?></h1>
-        <p>Solicitud <?= e($distribution['request_code']) ?> · <?= e($distribution['source_name']) ?> → <?= e($distribution['destination_name'] ?: $distribution['destination_internal_name']) ?></p>
+        <span class="eyebrow">TRANSFERENCIA DE DOTACIÓN</span>
+        <h1><?= e($distribution['destination_name'] ?: $distribution['destination_internal_name']) ?></h1>
+        <p>Dotación aprobada · <?= e($distribution['source_name']) ?> → <?= e($distribution['destination_name'] ?: $distribution['destination_internal_name']) ?></p>
     </div>
     <div class="distribution-detail-status">
         <span class="distribution-status <?= e($distribution['status']) ?>"><?= e($statusLabels[$distribution['status']] ?? $distribution['status']) ?></span>
-        <strong><?= e(number_format($totalQuantity, 0, '.', ',')) ?></strong>
+        <strong><?= e(sindesg_units($totalQuantity)) ?></strong>
         <small>unidades</small>
     </div>
 </section>
@@ -28,8 +28,8 @@ $totalQuantity = array_sum(array_map(static fn (array $row): float => (float) $r
         <span class="eyebrow">TRAZABILIDAD</span>
         <h2>Datos de transferencia</h2>
         <dl class="distribution-dl">
-            <div><dt>Código</dt><dd><?= e($distribution['transfer_code']) ?></dd></div>
-            <div><dt>Solicitud</dt><dd><?= e($distribution['request_code']) ?></dd></div>
+            <div><dt>Referencia para auditoría</dt><dd><details><summary>Ver folio interno</summary><?= e($distribution['transfer_code']) ?></details></dd></div>
+            <div><dt>Origen</dt><dd>Solicitud de dotación</dd></div>
             <div><dt>Origen</dt><dd><?= e($distribution['source_name']) ?></dd></div>
             <div><dt>Destino</dt><dd><?= e($distribution['destination_name'] ?: $distribution['destination_internal_name']) ?></dd></div>
             <div><dt>Documento</dt><dd><?= e($distribution['document_number'] ?: '—') ?></dd></div>
@@ -133,16 +133,16 @@ $totalQuantity = array_sum(array_map(static fn (array $row): float => (float) $r
                 <tr>
                     <td>
                         <strong><?= e($row['product_name']) ?></strong>
-                        <small class="table-subline"><?= e($row['variant_code']) ?><?= !empty($row['size_name']) ? ' · Talla ' . e($row['size_name']) : '' ?></small>
+                        <small class="table-subline"><?= !empty($row['size_name']) ? 'Talla ' . e($row['size_name']) : 'Presentación estándar' ?></small>
                     </td>
-                    <td class="distribution-qty"><?= e(number_format((float) $row['expected_quantity'], 3, '.', ',')) ?></td>
-                    <td><?= !empty($row['dispatch_central_id']) ? e(number_format((float) $row['dispatch_central_quantity'], 3, '.', ',')) : '—' ?></td>
-                    <td><?= !empty($row['dispatch_transit_id']) ? e(number_format((float) $row['dispatch_transit_quantity'], 3, '.', ',')) : '—' ?></td>
-                    <td><?= !empty($row['receive_transit_id']) ? e(number_format((float) $row['receive_transit_quantity'], 3, '.', ',')) : '—' ?></td>
-                    <td><?= !empty($row['receive_p4_id']) ? e(number_format((float) $row['receive_p4_quantity'], 3, '.', ',')) : '—' ?></td>
-                    <td><?= e(number_format((float) $row['central_stock'], 3, '.', ',')) ?></td>
-                    <td><?= e(number_format((float) $row['transit_stock'], 3, '.', ',')) ?></td>
-                    <td><?= e(number_format((float) $row['p4_stock'], 3, '.', ',')) ?></td>
+                    <td class="distribution-qty"><?= e(sindesg_units((float) $row['expected_quantity'])) ?></td>
+                    <td><?= !empty($row['dispatch_central_id']) ? e(sindesg_units((float) $row['dispatch_central_quantity'])) : '—' ?></td>
+                    <td><?= !empty($row['dispatch_transit_id']) ? e(sindesg_units((float) $row['dispatch_transit_quantity'])) : '—' ?></td>
+                    <td><?= !empty($row['receive_transit_id']) ? e(sindesg_units((float) $row['receive_transit_quantity'])) : '—' ?></td>
+                    <td><?= !empty($row['receive_p4_id']) ? e(sindesg_units((float) $row['receive_p4_quantity'])) : '—' ?></td>
+                    <td><?= e(sindesg_units((float) $row['central_stock'])) ?></td>
+                    <td><?= e(sindesg_units((float) $row['transit_stock'])) ?></td>
+                    <td><?= e(sindesg_units((float) $row['p4_stock'])) ?></td>
                     <td>
                         <span class="distribution-verification-status <?= !empty($row['verified']) ? 'ok' : 'warn' ?>">
                             <?= e($row['verification_label']) ?>
@@ -171,10 +171,10 @@ $totalQuantity = array_sum(array_map(static fn (array $row): float => (float) $r
                 <tr>
                     <td><?= e($item['category_name']) ?></td>
                     <td><?= e($item['product_name']) ?></td>
-                    <td><code><?= e($item['variant_code']) ?></code></td>
+                    <td><?= e(($item['size_name'] ?? '') ? 'Talla ' . $item['size_name'] : 'Presentación estándar') ?></td>
                     <td><?= e($item['size_name'] ?: '—') ?></td>
                     <td><?= e($item['beneficiary_label_snapshot'] ?: 'Cantidad consolidada') ?></td>
-                    <td class="distribution-qty"><?= e(number_format((float) $item['quantity'], 3, '.', ',')) ?></td>
+                    <td class="distribution-qty"><?= e(sindesg_units((float) $item['quantity'])) ?></td>
                 </tr>
             <?php endforeach; ?>
             </tbody>

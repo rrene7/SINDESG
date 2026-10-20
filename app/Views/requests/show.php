@@ -23,10 +23,10 @@ $remainingToDistribute = max(0.0, $totalApproved - $totalDispatched);
 // El filtro busca coincidencias en artículo, categoría, marca y códigos.
 $catalogVariantOptions = [];
 foreach ($variantOptions as $entry) {
-    $stock = number_format((float) $entry['central_stock'], 0, '.', ',');
+    $stock = sindesg_units((float) $entry['central_stock']);
     $label = $entry['category_name'] . ' · ' . $entry['product_name']
         . ' · Talla ' . ($entry['size_name'] ?: '—')
-        . ' · ' . $entry['variant_code']
+        
         . ' · Central: ' . $stock;
     $terms = implode(' ', array_filter([
         $entry['category_name'], $entry['product_name'], $entry['size_name'],
@@ -52,13 +52,13 @@ foreach ($nominalProducts ?? [] as $product) {
 ?>
 <section class="request-detail-hero">
     <div>
-        <span class="eyebrow">SOLICITUD <?= e($serviceRequest['request_code']) ?></span>
-        <h1><?= e($serviceRequest['p4_code'] . ' · ' . ($serviceRequest['p4_name_snapshot'] ?: $serviceRequest['p4_internal_name'])) ?></h1>
+        <span class="eyebrow">SOLICITUD DE DOTACIÓN</span>
+        <h1><?= e($serviceRequest['p4_name_snapshot'] ?: $serviceRequest['p4_internal_name']) ?></h1>
         <p><?= e($serviceRequest['requested_by_label_snapshot']) ?> · <?= e(date('d/m/Y H:i', strtotime((string) $serviceRequest['requested_at']))) ?></p>
     </div>
     <div class="request-detail-status">
         <span class="request-status <?= e($serviceRequest['status']) ?>"><?= e($statusLabels[$serviceRequest['status']] ?? $serviceRequest['status']) ?></span>
-        <strong><?= e(number_format($totalRequested, 0, '.', ',')) ?></strong>
+        <strong><?= e(sindesg_units($totalRequested)) ?></strong>
         <small>unidades solicitadas</small>
     </div>
 </section>
@@ -92,8 +92,8 @@ foreach ($nominalProducts ?? [] as $product) {
         <span class="eyebrow">CABECERA</span>
         <h2>Datos de la solicitud</h2>
         <dl class="request-dl">
-            <div><dt>Código</dt><dd><?= e($serviceRequest['request_code']) ?></dd></div>
-            <div><dt>P4</dt><dd><?= e($serviceRequest['p4_code']) ?></dd></div>
+            <div><dt>Referencia para auditoría</dt><dd><details><summary>Ver folio interno</summary><?= e($serviceRequest['request_code']) ?></details></dd></div>
+            <div><dt>Unidad solicitante</dt><dd><?= e($serviceRequest['p4_name_snapshot'] ?: $serviceRequest['p4_internal_name']) ?></dd></div>
             <div><dt>Unidad P4</dt><dd><?= e($serviceRequest['p4_name_snapshot'] ?: '—') ?></dd></div>
             <div><dt>Solicitante</dt><dd><?= e($serviceRequest['requested_by_label_snapshot']) ?></dd></div>
             <div><dt>Cédula</dt><dd><?= e($serviceRequest['requested_by_document_snapshot'] ?: '—') ?></dd></div>
@@ -134,7 +134,7 @@ foreach ($nominalProducts ?? [] as $product) {
             <a class="primary-button request-full-button" href="<?= e(sindesg_url('?module=requests&action=central-review&id=' . (int) $serviceRequest['id'])) ?>">Revisar y aprobar por talla →</a>
         <?php else: ?>
             <div class="request-decision-summary">
-                <span><strong><?= e(number_format($totalApproved, 0, '.', ',')) ?></strong><small>unidades aprobadas</small></span>
+                <span><strong><?= e(sindesg_units($totalApproved)) ?></strong><small>unidades aprobadas</small></span>
                 <span><strong><?= e($serviceRequest['reviewed_by_label_snapshot'] ?: '—') ?></strong><small>revisor</small></span>
             </div>
             <?php if (!empty($serviceRequest['review_notes'])): ?>
@@ -167,10 +167,10 @@ foreach ($nominalProducts ?? [] as $product) {
         <p class="request-cell-sub" role="status"><strong><?= e($nominalPreviewSuccess) ?></strong></p>
     <?php endif; ?>
     <div class="request-verification-summary">
-        <span><strong><?= e(number_format((float) ($requestCommitmentEvidence['approved'] ?? 0), 0, '.', ',')) ?></strong><small>Aprobado</small></span>
-        <span><strong><?= e(number_format((float) ($requestCommitmentEvidence['committed'] ?? 0), 0, '.', ',')) ?></strong><small>Comprometido</small></span>
-        <span><strong><?= e(number_format((float) ($requestCommitmentEvidence['dispatched'] ?? 0), 0, '.', ',')) ?></strong><small>Despachado</small></span>
-        <span><strong><?= e(number_format((float) ($requestCommitmentEvidence['received'] ?? 0), 0, '.', ',')) ?></strong><small>Recibido P4</small></span>
+        <span><strong><?= e(sindesg_units((float) ($requestCommitmentEvidence['approved'] ?? 0))) ?></strong><small>Aprobado</small></span>
+        <span><strong><?= e(sindesg_units((float) ($requestCommitmentEvidence['committed'] ?? 0))) ?></strong><small>Comprometido</small></span>
+        <span><strong><?= e(sindesg_units((float) ($requestCommitmentEvidence['dispatched'] ?? 0))) ?></strong><small>Despachado</small></span>
+        <span><strong><?= e(sindesg_units((float) ($requestCommitmentEvidence['received'] ?? 0))) ?></strong><small>Recibido P4</small></span>
     </div>
 
     <p class="request-verification-copy">
@@ -247,7 +247,7 @@ foreach ($nominalProducts ?? [] as $product) {
                 <?php foreach ($requestItems as $item): ?>
                     <tr>
                         <td><strong><?= e($item['product_name']) ?></strong><small class="request-cell-sub"><?= e($item['category_name']) ?></small></td>
-                        <td><code><?= e($item['variant_code']) ?></code></td>
+                        <td><?= e(($item['size_name'] ?? '') ? 'Talla ' . $item['size_name'] : 'Presentación estándar') ?></td>
                         <td><?= e($item['size_name'] ?: '—') ?></td>
                         <td>
                             <?= e($item['beneficiary_label_snapshot'] ?: 'Cantidad consolidada') ?>
@@ -262,14 +262,14 @@ foreach ($nominalProducts ?? [] as $product) {
                                 </small>
                             <?php endif; ?>
                         </td>
-                        <td class="request-qty"><?= e(number_format((float) $item['quantity_requested'], 3, '.', ',')) ?></td>
-                        <td><?= e(number_format((float) $item['central_stock'], 3, '.', ',')) ?></td>
-                        <td><?= e(number_format((float) $item['available_to_approve'], 3, '.', ',')) ?></td>
-                        <td class="request-qty approved"><?= e(number_format((float) $item['quantity_approved'], 3, '.', ',')) ?></td>
-                        <td><?= e(number_format((float) ($item['quantity_dispatched'] ?? 0), 3, '.', ',')) ?></td>
-                        <td><?= e(number_format((float) ($item['quantity_received'] ?? 0), 3, '.', ',')) ?></td>
+                        <td class="request-qty"><?= e(sindesg_units((float) $item['quantity_requested'])) ?></td>
+                        <td><?= e(sindesg_units((float) $item['central_stock'])) ?></td>
+                        <td><?= e(sindesg_units((float) $item['available_to_approve'])) ?></td>
+                        <td class="request-qty approved"><?= e(sindesg_units((float) $item['quantity_approved'])) ?></td>
+                        <td><?= e(sindesg_units((float) ($item['quantity_dispatched'] ?? 0))) ?></td>
+                        <td><?= e(sindesg_units((float) ($item['quantity_received'] ?? 0))) ?></td>
                         <td>
-                            <?= e(number_format((float) ($item['quantity_delivered'] ?? 0), 3, '.', ',')) ?>
+                            <?= e(sindesg_units((float) ($item['quantity_delivered'] ?? 0))) ?>
                             <?php
                             $pendingIndividual = max(
                                 0.0,
@@ -280,7 +280,7 @@ foreach ($nominalProducts ?? [] as $product) {
                             <?php if (!empty($item['beneficiary_employee_id']) && $pendingIndividual > 0.000001): ?>
                                 <a class="request-cell-sub"
                                    href="<?= e(sindesg_url('?module=deliveries&action=new&request_item_id=' . (int) $item['id'])) ?>">
-                                    Entregar <?= e(number_format($pendingIndividual, 3, '.', ',')) ?>
+                                    Entregar <?= e(sindesg_units($pendingIndividual)) ?>
                                 </a>
                             <?php endif; ?>
                         </td>
@@ -638,8 +638,8 @@ foreach ($nominalProducts ?? [] as $product) {
         <div class="request-review-lines">
             <?php foreach ($requestItems as $item): ?>
                 <label>
-                    <span><?= e($item['product_name'] . ' · ' . $item['variant_code']) ?></span>
-                    <small>Solicitado <?= e(number_format((float) $item['quantity_requested'], 3, '.', ',')) ?> · Comprometible <?= e(number_format((float) $item['available_to_approve'], 3, '.', ',')) ?></small>
+                    <span><?= e($item['product_name'] . (!empty($item['size_name']) ? ' · Talla ' . $item['size_name'] : '')) ?></span>
+                    <small>Solicitado <?= e(sindesg_units((float) $item['quantity_requested'])) ?> · Comprometible <?= e(sindesg_units((float) $item['available_to_approve'])) ?></small>
                     <input type="number"
                            name="approved_quantity[<?= e($item['id']) ?>]"
                            min="0"

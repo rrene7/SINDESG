@@ -10,14 +10,18 @@ $cases = [
     [0.000, '0'],
     [349.500, '349,5'],
     [349.025, '349,025'],
-    [1000.000, '1.000'],
-    [1234.500, '1.234,5'],
+    [1000.000, '1 000'],
+    [1234.500, '1 234,5'],
 ];
 foreach ($cases as [$quantity, $expected]) {
     $actual = P4QuantityDisplay::units($quantity);
     if ($actual !== $expected) {
         throw new RuntimeException("Expected {$expected} for {$quantity}, got {$actual}");
     }
+}
+$bootstrap = (string)file_get_contents(dirname(__DIR__) . '/app/bootstrap.php');
+if (!str_contains($bootstrap, 'function sindesg_units(')) {
+    throw new RuntimeException('Missing shared unit-formatting function.');
 }
 $view = (string)file_get_contents(dirname(__DIR__) . '/app/Views/dashboard-p4.php');
 if (substr_count($view, 'P4QuantityDisplay::units(') !== 2

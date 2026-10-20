@@ -86,6 +86,12 @@ function e(mixed $value): string
     return htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
 }
 
+/** Cantidad legible: 1.000 unidades almacenadas se presentan como 1. */
+function sindesg_units(int|float|string $quantity): string
+{
+    return \App\Services\P4QuantityDisplay::units((float) $quantity);
+}
+
 function csrf_token(): string
 {
     if (!isset($_SESSION['csrf_token']) || !is_string($_SESSION['csrf_token'])) {
