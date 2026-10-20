@@ -267,6 +267,10 @@ function sindesg_role_action_allowed(string $module, string $action, string $met
     if (in_array('ADMIN', $roles, true)) {
         return true;
     }
+    // Administration is reserved to ADMIN even if RBAC permissions are edited.
+    if ($module === 'admin') {
+        return false;
+    }
 
     if ($module === 'profile') {
         return $action === 'signature'
