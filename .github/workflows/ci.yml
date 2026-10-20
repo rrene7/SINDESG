@@ -119,6 +119,9 @@ jobs:
       - name: P4 distribution receipt ownership test
         run: php tests/p4_distribution_receive_guard_test.php
 
+      - name: P4 server-side nominal pagination and scope
+        run: php tests/p4_nominal_server_pagination_test.php
+
       - name: P4 nominal delivery isolation test
         run: php tests/p4_nominal_delivery_isolation_test.php
 

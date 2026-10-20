@@ -217,13 +217,24 @@ final class DeliveryController
         }
 
         if ($this->isP4Only()) {
+            $userId = (int) (sindesg_user()['id'] ?? 0);
+            $input = static fn (string $key): string =>
+                isset($query[$key]) && is_scalar($query[$key]) ? trim((string) $query[$key]) : '';
+            $filters = [
+                'search'=>substr($input('q'), 0, 120),
+                'size'=>substr($input('size'), 0, 40),
+                'request'=>substr($input('request'), 0, 80),
+            ];
             return [
                 'view' => SINDESG_ROOT . '/app/Views/deliveries/p4-index.php',
                 'title' => 'Entregas de mi P4',
                 'data' => [
-                    'nominalQueue' => $this->repository->pendingNominalForUser(
-                        (int) (sindesg_user()['id'] ?? 0)
+                    'nominalQueuePage' => $this->repository->pendingNominalPageForUser(
+                        $userId, $filters['search'], $filters['size'], $filters['request'],
+                        (int) $input('page'), (int) $input('per_page')
                     ),
+                    'nominalQueueOptions' => $this->repository->pendingNominalOptionsForUser($userId),
+                    'nominalFilters' => $filters,
                 ],
             ];
         }

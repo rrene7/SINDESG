@@ -203,6 +203,109 @@ SQL;
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+
+    /**
+     * Full authorized P4 pending list, filtered before pagination.
+     * Uses the same eligibility rules as the legacy 100-row list.
+     */
+    public function pendingNominalPageForUser(
+        int $userId, string $search = '', string $size = '',
+        string $request = '', int $page = 1, int $perPage = 25
+    ): array {
+        $perPage = in_array($perPage, [10,25,50], true) ? $perPage : 25;
+        $page = max(1, $page);
+        $empty = ['rows'=>[], 'total'=>0, 'page'=>1, 'pages'=>1, 'per_page'=>$perPage];
+        if ($userId <= 0) return $empty;
+        $search = substr(trim($search), 0, 120);
+        $size = substr(trim($size), 0, 40);
+        $request = substr(trim($request), 0, 80);
+        $from = <<<'SQL'
+            FROM service_request_items i
+            JOIN service_requests r ON r.id=i.request_id
+            JOIN warehouses w ON w.id=r.p4_warehouse_id
+            JOIN security_user_p4_scopes scope ON scope.warehouse_id=r.p4_warehouse_id
+            JOIN product_variants pv ON pv.id=i.product_variant_id
+            JOIN products p ON p.id=pv.product_id
+            LEFT JOIN sizes sz ON sz.id=pv.size_id
+            WHERE scope.user_id=:user_id AND w.warehouse_type='P4' AND w.is_active=1
+              AND i.beneficiary_employee_id IS NOT NULL
+              AND i.quantity_received > i.quantity_delivered
+              AND r.status IN ('approved','partially_approved','fulfilled')
+        SQL;
+        $parameters = [':user_id' => $userId];
+        if ($search !== '') {
+            $escaped = str_replace(['!', '%', '_'], ['!!', '!%', '!_'], strtolower($search));
+            $from .= <<<'SQL'
+
+              AND (
+                LOWER(COALESCE(i.beneficiary_label_snapshot,'')) LIKE :name_filter ESCAPE '!'
+                OR LOWER(COALESCE(i.beneficiary_document_snapshot,'')) LIKE :document_filter ESCAPE '!'
+                OR LOWER(COALESCE(p.name,'')) LIKE :product_filter ESCAPE '!'
+                OR LOWER(COALESCE(sz.name,'')) LIKE :size_filter ESCAPE '!'
+              )
+            SQL;
+            foreach ([':name_filter',':document_filter',':product_filter',':size_filter'] as $name) {
+                $parameters[$name] = '%' . $escaped . '%';
+            }
+        }
+        if ($size !== '') { $from .= ' AND sz.name=:selected_size'; $parameters[':selected_size'] = $size; }
+        if ($request !== '') { $from .= ' AND r.request_code=:selected_request'; $parameters[':selected_request'] = $request; }
+        $bind = static function (\PDOStatement $stmt) use ($parameters): void {
+            foreach ($parameters as $key => $value) {
+                $stmt->bindValue($key, $value, $key === ':user_id' ? PDO::PARAM_INT : PDO::PARAM_STR);
+            }
+        };
+        $countQuery = $this->pdo->prepare('SELECT COUNT(*) ' . $from);
+        $bind($countQuery);
+        $countQuery->execute();
+        $total = (int) $countQuery->fetchColumn();
+        $pages = max(1, (int) ceil($total / $perPage));
+        $page = min($page, $pages);
+        $sql = <<<'SQL'
+            SELECT i.id AS request_item_id,
+                   i.beneficiary_label_snapshot, i.beneficiary_document_snapshot,
+                   GREATEST(i.quantity_received-i.quantity_delivered,0) AS pending_quantity,
+                   r.request_code, r.requested_at, r.p4_warehouse_id,
+                   w.organization_unit_name_snapshot AS p4_name,
+                   pv.internal_code AS variant_code, p.name AS product_name,
+                   sz.name AS size_name
+        SQL;
+        $stmt = $this->pdo->prepare($sql . ' ' . $from . ' ORDER BY i.id ASC LIMIT :limit OFFSET :offset');
+        $bind($stmt);
+        $stmt->bindValue(':limit', $perPage, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', ($page - 1) * $perPage, PDO::PARAM_INT);
+        $stmt->execute();
+        return [
+            'rows'=>$stmt->fetchAll(PDO::FETCH_ASSOC), 'total'=>$total,
+            'page'=>$page, 'pages'=>$pages, 'per_page'=>$perPage
+        ];
+    }
+
+    /** Filter options across the full authorized P4 queue, including later pages. */
+    public function pendingNominalOptionsForUser(int $userId): array
+    {
+        if ($userId <= 0) return [];
+        $stmt = $this->pdo->prepare(<<<'SQL'
+            SELECT DISTINCT COALESCE(sz.name,'') AS size_name,
+                   r.request_code, r.requested_at,
+                   w.organization_unit_name_snapshot AS p4_name, p.name AS product_name
+            FROM service_request_items i
+            JOIN service_requests r ON r.id=i.request_id
+            JOIN warehouses w ON w.id=r.p4_warehouse_id
+            JOIN security_user_p4_scopes scope ON scope.warehouse_id=r.p4_warehouse_id
+            JOIN product_variants pv ON pv.id=i.product_variant_id
+            JOIN products p ON p.id=pv.product_id
+            LEFT JOIN sizes sz ON sz.id=pv.size_id
+            WHERE scope.user_id=:user_id AND w.warehouse_type='P4' AND w.is_active=1
+              AND i.beneficiary_employee_id IS NOT NULL
+              AND i.quantity_received > i.quantity_delivered
+              AND r.status IN ('approved','partially_approved','fulfilled')
+            ORDER BY r.request_code, sz.name
+        SQL);
+        $stmt->execute(['user_id'=>$userId]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
     public function pendingNominalLine(int $requestItemId): ?array
     {
         $statement = $this->pdo->prepare(<<<'SQL'
