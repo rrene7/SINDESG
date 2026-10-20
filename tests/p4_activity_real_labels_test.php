@@ -26,6 +26,11 @@ if (P4ActivityLabel::title('transfers',[
 ]) !== 'Transferencia recibida de Central · Botas Tácticas · 2 renglones · 1 000 unidades') {
     throw new RuntimeException('Received transfer title is ambiguous.');
 }
+if (P4ActivityLabel::title('transfers',[
+    'status'=>'received','person_label'=>'Responsable P4','total_quantity'=>1
+]) !== 'Transferencia recibida por Responsable P4 desde Central · 1 unidad') {
+    throw new RuntimeException('Transfer receiver label missing.');
+}
 if (P4ActivityLabel::title('requests',[
     'person_label'=>'Responsable Pacora','total_quantity'=>2,
     'status'=>'submitted'

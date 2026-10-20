@@ -14,7 +14,9 @@ final class P4ActivityLabel
         $status = (string) ($row['status'] ?? '');
         $title = match ($type) {
             'requests' => $person !== '' ? 'Solicitud de ' . $person : 'Solicitud de dotación',
-            'transfers' => $status === 'received' ? 'Transferencia recibida de Central' : 'Transferencia desde Central',
+            'transfers' => $status === 'received'
+                ? ($person !== '' ? 'Transferencia recibida por ' . $person . ' desde Central' : 'Transferencia recibida de Central')
+                : 'Transferencia desde Central',
             'deliveries' => $person !== '' ? 'Entrega a ' . $person : 'Entrega individual de dotación',
             default => 'Movimiento de dotación',
         };
