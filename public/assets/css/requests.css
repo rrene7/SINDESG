@@ -175,6 +175,9 @@ form[action*='import-nominal-file'] label:has(input[type='checkbox']){display:fl
 .request-tracking-steps {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));list-style:none;padding:0;gap:10px;margin:18px 0}
 .request-tracking-step {display:flex;gap:10px;min-height:95px;padding:12px;border:1px solid rgba(82,149,204,.32);border-radius:12px;background:rgba(2,21,42,.45)}
 .request-tracking-step.completed {border-color:rgba(58,178,240,.65);background:rgba(8,57,91,.52)}
+.request-tracking-step.in-progress {border-color:rgba(242,181,86,.78);background:rgba(82,54,16,.32)}
+.request-tracking-step.in-progress .request-tracking-dot {background:#815312;border-color:#f2b556;color:#fff}
+.request-tracking-step .request-tracking-state {display:block;font-size:.72rem;color:#ffce80;margin-top:5px;font-weight:700}
 .request-tracking-dot {width:25px;height:25px;display:grid;place-items:center;border-radius:50%;border:1px solid #4b86ad;flex:0 0 auto;color:#9ccfeb;font-weight:700}
 .request-tracking-step.completed .request-tracking-dot {background:#147de0;color:#fff;border-color:#23bfff}
 .request-tracking-step strong,.request-tracking-step small,.request-tracking-step time {display:block}

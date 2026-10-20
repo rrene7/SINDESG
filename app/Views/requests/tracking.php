@@ -13,10 +13,15 @@ declare(strict_types=1);
     </div>
     <ol class="request-tracking-steps">
         <?php foreach ($requestTracking['steps'] as $step): ?>
-            <li class="request-tracking-step <?= !empty($step['done']) ? 'completed' : 'pending' ?>">
-                <span class="request-tracking-dot" aria-hidden="true"><?= !empty($step['done']) ? '✓' : '·' ?></span>
+            <?php
+            $stepCompleted = !empty($step['done']);
+            $stepInProgress = !$stepCompleted && !empty($step['in_progress']);
+            ?>
+            <li class="request-tracking-step <?= $stepCompleted ? 'completed' : ($stepInProgress ? 'in-progress' : 'pending') ?>">
+                <span class="request-tracking-dot" aria-hidden="true"><?= $stepCompleted ? '✓' : ($stepInProgress ? '↻' : '·') ?></span>
                 <div>
                     <strong><?= e($step['label']) ?></strong>
+                    <?php if ($stepInProgress): ?><span class="request-tracking-state">En proceso · entrega parcial</span><?php endif; ?>
                     <small><?= e($step['detail']) ?></small>
                     <?php if (!empty($step['date'])): ?>
                         <time><?= e(date('d/m/Y H:i', strtotime((string) $step['date']))) ?></time>
