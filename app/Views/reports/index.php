@@ -28,10 +28,10 @@ $selectedSize = (int) ($reportFilters['size_id'] ?? 0);
 </section>
 
 <section class="reports-summary">
-    <article><span>Disponible Central</span><strong><?= e(number_format((float) $reportSummary['available_stock'], 0, '.', ',')) ?></strong><small>Central físico <?= e(number_format((float) $reportSummary['central_stock'], 0, '.', ',')) ?> · comprometido <?= e(number_format((float) $reportSummary['committed_stock'], 0, '.', ',')) ?></small></article>
-    <article><span>Stock institucional</span><strong><?= e(number_format((float) $reportSummary['institutional_stock'], 0, '.', ',')) ?></strong><small>P4 <?= e(number_format((float) $reportSummary['p4_stock'], 0, '.', ',')) ?> · tránsito <?= e(number_format((float) $reportSummary['transit_stock'], 0, '.', ',')) ?></small></article>
+    <article><span>Disponible Central</span><strong><?= e(sindesg_units((float) $reportSummary['available_stock'])) ?></strong><small>Central físico <?= e(sindesg_units((float) $reportSummary['central_stock'])) ?> · comprometido <?= e(sindesg_units((float) $reportSummary['committed_stock'])) ?></small></article>
+    <article><span>Stock institucional</span><strong><?= e(sindesg_units((float) $reportSummary['institutional_stock'])) ?></strong><small>P4 <?= e(sindesg_units((float) $reportSummary['p4_stock'])) ?> · tránsito <?= e(sindesg_units((float) $reportSummary['transit_stock'])) ?></small></article>
     <article><span>Solicitudes abiertas</span><strong><?= e($reportSummary['open_requests']) ?></strong><small>Pendientes de cierre</small></article>
-    <article><span>Entregas confirmadas</span><strong><?= e($reportSummary['confirmed_deliveries']) ?></strong><small><?= e(number_format((float) $reportSummary['movement_count'], 0, '.', ',')) ?> movimientos en kardex</small></article>
+    <article><span>Entregas confirmadas</span><strong><?= e($reportSummary['confirmed_deliveries']) ?></strong><small><?= e(sindesg_units((float) $reportSummary['movement_count'])) ?> movimientos en kardex</small></article>
 </section>
 
 <section class="reports-panel">
@@ -85,7 +85,7 @@ $selectedSize = (int) ($reportFilters['size_id'] ?? 0);
                 <option value="0">Todos</option>
                 <?php foreach ($reportFilterOptions['warehouses'] as $warehouse): ?>
                     <option value="<?= e($warehouse['id']) ?>" <?= $selectedWarehouse === (int) $warehouse['id'] ? 'selected' : '' ?>>
-                        <?= e($warehouse['code'] . ' · ' . ($warehouse['warehouse_type'] === 'P4'
+                        <?= e(($warehouse['warehouse_type'] === 'P4'
                             ? ($warehouse['organization_unit_name_snapshot'] ?: $warehouse['name'])
                             : $warehouse['name'])) ?>
                     </option>
@@ -183,8 +183,8 @@ $selectedSize = (int) ($reportFilters['size_id'] ?? 0);
             <span class="eyebrow">RESULTADOS</span>
             <h2><?= e($reportMeta['title']) ?></h2>
             <p>
-                <?= e(number_format((int) $reportTotals['rows'], 0, '.', ',')) ?> renglones mostrados
-                · total referencial <?= e(number_format((float) $reportTotals['quantity'], 3, '.', ',')) ?>
+                <?= e(sindesg_units((int) $reportTotals['rows'])) ?> renglones mostrados
+                · total referencial <?= e(sindesg_units((float) $reportTotals['quantity'])) ?>
                 <?php if ((int) $reportTotals['rows'] >= $reportScreenLimit): ?>
                     · vista limitada a <?= e($reportScreenLimit) ?> renglones
                 <?php endif; ?>
@@ -216,7 +216,7 @@ $selectedSize = (int) ($reportFilters['size_id'] ?? 0);
                 <?php foreach ($reportRows as $row): ?>
                     <tr>
                         <?php foreach (array_keys($reportColumns) as $key): ?>
-                            <td><?= e((string) ($row[$key] ?? '')) ?></td>
+                            <td><?= e(sindesg_report_value($row, (string) $key)) ?></td>
                         <?php endforeach; ?>
                     </tr>
                 <?php endforeach; ?>

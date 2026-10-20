@@ -44,6 +44,34 @@ final class RequestsController
         string $method
     ): array {
         try {
+            $current = (array) sindesg_user();
+            $roles = (array) ($current['role_codes'] ?? []);
+            $isP4Operator = in_array('P4', $roles, true)
+                && !in_array('ADMIN', $roles, true)
+                && !in_array('CENTRAL', $roles, true);
+            if ($isP4Operator) {
+                $guard = new \App\Services\P4RequestGuard($this->database->connection('sindesg'));
+                $userId = (int) ($current['id'] ?? 0);
+                $isPost = strtoupper($method) === 'POST';
+                $allowedActions = $isPost
+                    ? ['save', 'add-item', 'remove-item', 'submit']
+                    : ['new', 'show'];
+                if (!in_array($action, $allowedActions, true)) {
+                    throw new InvalidArgumentException('Esta operación no está habilitada para P4.');
+                }
+                if ($isPost && $action === 'save') {
+                    $warehouseId = (int) ($post['p4_warehouse_id'] ?? 0);
+                    if (!$guard->allowed($userId, $warehouseId)) {
+                        throw new InvalidArgumentException('Almacén P4 no autorizado.');
+                    }
+                    // Requester identity is the authenticated official, not browser input.
+                    $post['requested_by_employee_id'] = (int) ($current['employee_id'] ?? 0);
+                } elseif ($isPost) {
+                    $guard->assertRequest($userId, (int) ($post['request_id'] ?? 0));
+                } elseif ($action === 'show') {
+                    $guard->assertRequest($userId, (int) ($query['id'] ?? 0));
+                }
+            }
             if (strtoupper($method) === 'POST') {
                 if (!csrf_valid(isset($post['_token']) ? (string) $post['_token'] : null)) {
                     throw new InvalidArgumentException('La sesión del formulario venció. Intente nuevamente.');
@@ -113,7 +141,14 @@ final class RequestsController
                 'view' => SINDESG_ROOT . '/app/Views/requests/form.php',
                 'title' => 'Nueva solicitud',
                 'data' => [
-                    'activeP4s' => \App\Services\P4WarehouseScope::filter($this->repository->activeP4s(), \App\Services\P4WarehouseScope::current($this->database), 'id'),
+                    'activeP4s' => in_array('P4', (array) (sindesg_user()['role_codes'] ?? []), true) && !in_array('ADMIN', (array) (sindesg_user()['role_codes'] ?? []), true) && !in_array('CENTRAL', (array) (sindesg_user()['role_codes'] ?? []), true)
+                        ? array_values(array_filter(
+                            $this->repository->activeP4s(),
+                            fn (array $warehouse): bool => (new \App\Services\P4RequestGuard(
+                                $this->database->connection('sindesg')
+                            ))->allowed((int) (sindesg_user()['id'] ?? 0), (int) $warehouse['id'])
+                        ))
+                        : $this->repository->activeP4s(),
                     'employeeSearchUrl' => sindesg_url('public/api/employees.php'),
                     'defaultRequestedAt' => date('Y-m-d\TH:i'),
                 ],
@@ -192,8 +227,7 @@ final class RequestsController
             'title' => 'Solicitudes',
             'data' => [
                 'requestStats' => $this->repository->stats(),
-                'requestStatsRestricted' => !\App\Services\P4WarehouseScope::current($this->database)['unrestricted'],
-                'serviceRequests' => $this->repository->recent(100, \App\Services\P4WarehouseScope::current($this->database)['unrestricted'] ? null : \App\Services\P4WarehouseScope::current($this->database)['warehouses']),
+                'serviceRequests' => $this->repository->recent(60),
             ],
         ];
     }

@@ -69,7 +69,7 @@ declare(strict_types=1);
                         <option value="">Seleccione...</option>
                         <?php foreach ($variantOptions as $option): ?>
                             <option value="<?= e($option['id']) ?>">
-                                <?= e($option['category_name'] . ' · ' . $option['product_name'] . ' · ' . $option['variant_code'] . ($option['size_name'] ? ' · Talla ' . $option['size_name'] : '') . ($option['brand_name'] ? ' · ' . $option['brand_name'] : '')) ?>
+                                <?= e($option['category_name'] . ' · ' . $option['product_name'] . ($option['size_name'] ? ' · Talla ' . $option['size_name'] : '') . ($option['brand_name'] ? ' · ' . $option['brand_name'] : '')) ?>
                             </option>
                         <?php endforeach; ?>
                     </select>
@@ -101,7 +101,7 @@ declare(strict_types=1);
                 <select name="output_variant_id[]" required>
                     <option value="">Seleccione...</option>
                     <?php foreach ($variantOptions as $option): ?>
-                        <option value="<?= e($option['id']) ?>"><?= e($option['category_name'] . ' · ' . $option['product_name'] . ' · ' . $option['variant_code'] . ($option['size_name'] ? ' · Talla ' . $option['size_name'] : '') . ($option['brand_name'] ? ' · ' . $option['brand_name'] : '')) ?></option>
+                        <option value="<?= e($option['id']) ?>"><?= e($option['category_name'] . ' · ' . $option['product_name'] . ($option['size_name'] ? ' · Talla ' . $option['size_name'] : '') . ($option['brand_name'] ? ' · ' . $option['brand_name'] : '')) ?></option>
                     <?php endforeach; ?>
                 </select>
             </label>
@@ -119,7 +119,7 @@ declare(strict_types=1);
                     <option value="">Seleccione...</option>
                     <?php foreach ($variantOptions as $option): ?>
                         <option value="<?= e($option['id']) ?>">
-                            <?= e($option['category_name'] . ' · ' . $option['product_name'] . ' · ' . $option['variant_code'] . ' · Stock central ' . number_format((float) $option['central_stock'], 3, '.', ',')) ?>
+                            <?= e($option['category_name'] . ' · ' . $option['product_name'] . ' · Stock central ' . sindesg_units((float) $option['central_stock'])) ?>
                         </option>
                     <?php endforeach; ?>
                 </select>

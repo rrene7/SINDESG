@@ -69,8 +69,8 @@ $statusLabels = ['draft' => 'Borrador', 'confirmed' => 'Confirmado', 'cancelled'
                     <tr>
                         <td><a class="adjustment-link" href="<?= e(sindesg_url('?module=adjustments&action=show&id=' . (int) $row['id'])) ?>"><?= e($row['adjustment_code']) ?></a></td>
                         <td><?= e($typeLabels[$row['adjustment_type']] ?? $row['adjustment_type']) ?></td>
-                        <td><?= e($row['warehouse_code']) ?></td>
-                        <td><strong><?= e($row['product_name']) ?></strong><small class="adjustment-cell-sub"><?= e($row['variant_code']) ?></small></td>
+                        <td><?= e($row['warehouse_name'] ?? 'Almacén institucional') ?></td>
+                        <td><strong><?= e($row['product_name']) ?></strong><small class="adjustment-cell-sub">Artículo de dotación</small></td>
                         <td><?= e($row['affected_employee_label_snapshot'] ?: '—') ?></td>
                         <td><?= e(date('d/m/Y H:i', strtotime((string) $row['occurred_at']))) ?></td>
                         <td><span class="adjustment-status <?= e($row['status']) ?>"><?= e($statusLabels[$row['status']] ?? $row['status']) ?></span></td>

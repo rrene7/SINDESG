@@ -7,19 +7,15 @@ declare(strict_types=1);
         <h1>Almacenes y P4</h1>
         <p>El Almacén Central concentra la recepción institucional. Cada P4 se habilita explícitamente y se vincula a una unidad vigente de RRHH2029.</p>
     </div>
-    <?php if (sindesg_can('warehouses.manage')): ?>
     <a class="primary-button" href="<?= e(sindesg_url('?module=warehouses&action=new')) ?>">+ Habilitar P4</a>
-    <?php endif; ?>
 </section>
 
-<?php if (empty($warehouseStatsRestricted)): ?>
 <section class="warehouse-stats">
-    <article><span>Almacén Central</span><strong><?= e($warehouseStats['central_active']) ?></strong><small><?= e(number_format((float) $warehouseStats['central_stock'], 0, '.', ',')) ?> unidades</small></article>
+    <article><span>Almacén Central</span><strong><?= e($warehouseStats['central_active']) ?></strong><small><?= e(sindesg_units((float) $warehouseStats['central_stock'])) ?> unidades</small></article>
     <article><span>P4 activos</span><strong><?= e($warehouseStats['p4_active']) ?></strong><small>Habilitados para operar</small></article>
     <article><span>P4 inactivos</span><strong><?= e($warehouseStats['p4_inactive']) ?></strong><small>Historial conservado</small></article>
-    <article><span>Stock en P4</span><strong><?= e(number_format((float) $warehouseStats['p4_stock'], 0, '.', ',')) ?></strong><small>Separado del Central</small></article>
+    <article><span>Stock en P4</span><strong><?= e(sindesg_units((float) $warehouseStats['p4_stock'])) ?></strong><small>Separado del Central</small></article>
 </section>
-<?php endif; ?>
 
 <?php if (!$rrhhAvailable): ?>
     <div class="warehouse-alert">RRHH2029 no está disponible. Se muestran los snapshots guardados; no es posible crear nuevos P4 hasta recuperar la conexión.</div>
@@ -55,7 +51,7 @@ declare(strict_types=1);
                 <p>Servicios Generales · recepción y distribución institucional</p>
             <?php endif; ?>
             <div class="warehouse-card-metrics">
-                <span><strong><?= e(number_format((float) $warehouse['stock_total'], 0, '.', ',')) ?></strong><small>unidades</small></span>
+                <span><strong><?= e(sindesg_units((float) $warehouse['stock_total'])) ?></strong><small>unidades</small></span>
                 <span><strong><?= e((int) $warehouse['variants_with_stock']) ?></strong><small>variantes</small></span>
             </div>
         </a>

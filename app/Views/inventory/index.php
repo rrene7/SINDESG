@@ -19,8 +19,8 @@ declare(strict_types=1);
     <article><span>Variantes</span><strong><?= e($catalogStats['variants']) ?></strong></article>
     <article class="stock-stat">
         <span>Stock disponible</span>
-        <strong><?= e(number_format((float) $inventoryStats['available_stock'], 0, '.', ',')) ?></strong>
-        <small><?= e(number_format((float) $inventoryStats['total_stock'], 0, '.', ',')) ?> unidades institucionales</small>
+        <strong><?= e(sindesg_units((float) $inventoryStats['available_stock'])) ?></strong>
+        <small><?= e(sindesg_units((float) $inventoryStats['total_stock'])) ?> unidades institucionales</small>
     </article>
 </section>
 
@@ -101,13 +101,13 @@ declare(strict_types=1);
                 <div class="product-card-body">
                     <span class="product-category"><?= e($product['category_name']) ?></span>
                     <h2><?= e($product['name']) ?></h2>
-                    <code><?= e($product['internal_code']) ?></code>
+                    <small>Artículo del catálogo</small>
                     <div class="product-stock-line">
                         <span>Disponible</span>
-                        <strong><?= e(number_format((float) $product['stock_available'], 0, '.', ',')) ?></strong>
+                        <strong><?= e(sindesg_units((float) $product['stock_available'])) ?></strong>
                     </div>
                     <div class="product-meta">
-                        <span><?= e(number_format((float) $product['stock_total'], 0, '.', ',')) ?> institucionales</span>
+                        <span><?= e(sindesg_units((float) $product['stock_total'])) ?> institucionales</span>
                         <span><?= e($product['variant_count']) ?> variantes · <?= e(ucfirst((string) $product['sex'])) ?></span>
                     </div>
                 </div>

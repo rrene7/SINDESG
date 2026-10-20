@@ -13,6 +13,14 @@ if (!sindesg_api_authorized(false)) {
     exit;
 }
 header('Cache-Control: no-store');
+$roles = (array) (sindesg_user()['role_codes'] ?? []);
+if (in_array('P4', $roles, true) && !in_array('ADMIN', $roles, true)
+    && !in_array('CENTRAL', $roles, true)) {
+    http_response_code(403);
+    echo json_encode(['ok'=>false,'message'=>'Historial global no disponible para P4.','items'=>[]],JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
 
 $employeeId = (int) ($_GET['employee_id'] ?? 0);
 
@@ -28,11 +36,10 @@ if ($employeeId <= 0) {
 
 try {
     $repository = new DeliveryRepository($database->connection('sindesg'));
-    $scope = \App\Services\P4WarehouseScope::current($database);
 
     echo json_encode([
         'ok' => true,
-        'items' => $repository->historySummaryForEmployee($employeeId, 12, $scope['unrestricted'] ? null : $scope['warehouses']),
+        'items' => $repository->historySummaryForEmployee($employeeId, 12),
     ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 } catch (Throwable $exception) {
     http_response_code(503);

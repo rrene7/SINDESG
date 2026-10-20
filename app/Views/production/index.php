@@ -13,7 +13,7 @@ declare(strict_types=1);
 <section class="production-stats">
     <article><span>Borradores</span><strong><?= e($productionStats['drafts']) ?></strong><small>No afectan inventario</small></article>
     <article><span>Órdenes confirmadas</span><strong><?= e($productionStats['confirmed']) ?></strong><small>Movimientos contabilizados</small></article>
-    <article><span>Producto terminado</span><strong><?= e(number_format((float) $productionStats['output_quantity'], 0, '.', ',')) ?></strong><small>Cantidad producida confirmada</small></article>
+    <article><span>Producto terminado</span><strong><?= e(sindesg_units((float) $productionStats['output_quantity'])) ?></strong><small>Cantidad producida confirmada</small></article>
 </section>
 
 <section class="production-panel">
@@ -54,7 +54,7 @@ declare(strict_types=1);
                         <td><?= e(date('d/m/Y H:i', strtotime((string) $row['produced_at']))) ?></td>
                         <td><?= e($row['responsible_label']) ?></td>
                         <td><?= e($row['output_lines']) ?></td>
-                        <td><?= e(number_format((float) $row['output_quantity'], 0, '.', ',')) ?></td>
+                        <td><?= e(sindesg_units((float) $row['output_quantity'])) ?></td>
                         <td><?= e($row['input_lines']) ?></td>
                         <td><span class="production-status <?= e($row['status']) ?>"><?= e($row['status'] === 'confirmed' ? 'Confirmada' : 'Borrador') ?></span></td>
                     </tr>

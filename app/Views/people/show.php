@@ -73,13 +73,13 @@ $fullName = trim((string) $person['first_name'] . ' ' . (string) $person['last_n
                     <span>
                         <strong><?= e($row['product_name']) ?></strong>
                         <small>
-                            <?= e($row['variant_code']) ?>
+                            <?= e(sindesg_variant_label($row)) ?>
                             <?= !empty($row['size_name']) ? ' · Talla ' . e($row['size_name']) : '' ?>
                         </small>
                     </span>
                     <span>
-                        <strong><?= e(number_format((float) $row['quantity'], 3, '.', ',')) ?></strong>
-                        <small><?= e(date('d/m/Y', strtotime((string) $row['delivered_at']))) ?> · <?= e($row['p4_code']) ?></small>
+                        <strong><?= e(sindesg_units((float) $row['quantity'])) ?></strong>
+                        <small><?= e(date('d/m/Y', strtotime((string) $row['delivered_at']))) ?> · <?= e($row['p4_name'] ?? 'Almacén P4') ?></small>
                     </span>
                 </a>
             <?php endforeach; ?>

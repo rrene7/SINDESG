@@ -16,7 +16,7 @@ $statusLabel = $receipt['status'] === 'confirmed' ? 'Confirmada' : ucfirst((stri
     </div>
     <div class="receipt-detail-status">
         <span class="receipt-status <?= e($receipt['status']) ?>"><?= e($statusLabel) ?></span>
-        <strong><?= e(number_format($totalQuantity, 0, '.', ',')) ?></strong>
+        <strong><?= e(sindesg_units($totalQuantity)) ?></strong>
         <small>cantidad total del lote</small>
     </div>
 </section>
@@ -139,21 +139,21 @@ $statusLabel = $receipt['status'] === 'confirmed' ? 'Confirmada' : ucfirst((stri
                 <tr>
                     <td><?= e($row['product_name']) ?></td>
                     <td>
-                        <code><?= e($row['variant_code']) ?></code>
+                        <?= e(($row['size_name'] ?? '') ? 'Talla ' . $row['size_name'] : 'Presentación estándar') ?>
                         <?php if (!empty($row['size_name'])): ?>
                             <small class="table-subline">Talla <?= e($row['size_name']) ?></small>
                         <?php endif; ?>
                     </td>
-                    <td><?= e(number_format((float) $row['expected_quantity'], 3, '.', ',')) ?></td>
+                    <td><?= e(sindesg_units((float) $row['expected_quantity'])) ?></td>
                     <td>
                         <?php if (!empty($row['movement_id'])): ?>
-                            <?= e(number_format((float) $row['movement_quantity'], 3, '.', ',')) ?>
+                            <?= e(sindesg_units((float) $row['movement_quantity'])) ?>
                             <small class="table-subline">#<?= e($row['movement_id']) ?></small>
                         <?php else: ?>
                             —
                         <?php endif; ?>
                     </td>
-                    <td class="receipt-qty"><?= e(number_format((float) $row['central_stock'], 3, '.', ',')) ?></td>
+                    <td class="receipt-qty"><?= e(sindesg_units((float) $row['central_stock'])) ?></td>
                     <td>
                         <span class="receipt-verification-status <?= !empty($row['verified']) ? 'ok' : 'warn' ?>">
                             <?= !empty($row['verified']) ? 'Verificado' : 'Revisar' ?>
@@ -193,7 +193,7 @@ $statusLabel = $receipt['status'] === 'confirmed' ? 'Confirmada' : ucfirst((stri
                 <select name="receipt_item_id" required>
                     <option value="">Seleccione una talla...</option>
                     <?php foreach ($receiptItems as $item): ?>
-                        <option value="<?= e($item['id']) ?>"><?= e($item['product_name'] . ' · ' . ($item['size_name'] ?: 'Sin talla') . ' · ' . $item['variant_code']) ?> — actual: <?= e(number_format((float) $item['quantity'], 3, '.', ',')) ?></option>
+                        <option value="<?= e($item['id']) ?>"><?= e($item['product_name'] . ' · ' . ($item['size_name'] ?: 'Sin talla') . ' · ' . $item['variant_code']) ?> — actual: <?= e(sindesg_units((float) $item['quantity'])) ?></option>
                     <?php endforeach; ?>
                 </select>
             </label>
@@ -254,11 +254,11 @@ $statusLabel = $receipt['status'] === 'confirmed' ? 'Confirmada' : ucfirst((stri
                 <tr>
                     <td><?= e($item['category_name']) ?></td>
                     <td><?= e($item['product_name']) ?></td>
-                    <td><code><?= e($item['variant_code']) ?></code></td>
+                    <td><?= e(($item['size_name'] ?? '') ? 'Talla ' . $item['size_name'] : 'Presentación estándar') ?></td>
                     <td><?= e($item['size_name'] ?: '—') ?></td>
                     <td><?= e($item['brand_name'] ?: '—') ?></td>
                     <td><?= e($item['institutional_code'] ?: '—') ?></td>
-                    <td class="receipt-qty"><?= e(number_format((float) $item['quantity'], 3, '.', ',')) ?></td>
+                    <td class="receipt-qty"><?= e(sindesg_units((float) $item['quantity'])) ?></td>
                     <td><?= e($item['notes'] ?: '—') ?></td>
                 </tr>
             <?php endforeach; ?>

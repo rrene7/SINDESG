@@ -31,7 +31,7 @@ foreach ($variants as $variantStockRow) {
     <div class="product-detail-copy">
         <span class="eyebrow"><?= e($product['category_name']) ?></span>
         <h1><?= e($product['name']) ?></h1>
-        <code><?= e($product['internal_code']) ?></code>
+        <small>Artículo institucional</small>
 
         <?php if (!empty($product['description'])): ?>
             <p><?= e($product['description']) ?></p>
@@ -42,12 +42,12 @@ foreach ($variants as $variantStockRow) {
             <div><dt>Color general</dt><dd><?= e($product['color'] ?: 'No definido') ?></dd></div>
             <div><dt>Estado</dt><dd><?= e(ucfirst((string) $product['status'])) ?></dd></div>
             <div><dt>Variantes</dt><dd><?= e(count($variants)) ?></dd></div>
-            <div class="stock-detail"><dt>Disponible</dt><dd><?= e(number_format($productAvailableStock, 0, '.', ',')) ?></dd></div>
-            <div class="stock-detail"><dt>Central físico</dt><dd><?= e(number_format($productCentralStock, 0, '.', ',')) ?></dd></div>
-            <div class="stock-detail"><dt>Comprometido</dt><dd><?= e(number_format($productCommittedStock, 0, '.', ',')) ?></dd></div>
-            <div class="stock-detail"><dt>En P4</dt><dd><?= e(number_format($productP4Stock, 0, '.', ',')) ?></dd></div>
-            <div class="stock-detail"><dt>En tránsito</dt><dd><?= e(number_format($productTransitStock, 0, '.', ',')) ?></dd></div>
-            <div class="stock-detail"><dt>Stock institucional</dt><dd><?= e(number_format($productTotalStock, 0, '.', ',')) ?></dd></div>
+            <div class="stock-detail"><dt>Disponible</dt><dd><?= e(sindesg_units($productAvailableStock)) ?></dd></div>
+            <div class="stock-detail"><dt>Central físico</dt><dd><?= e(sindesg_units($productCentralStock)) ?></dd></div>
+            <div class="stock-detail"><dt>Comprometido</dt><dd><?= e(sindesg_units($productCommittedStock)) ?></dd></div>
+            <div class="stock-detail"><dt>En P4</dt><dd><?= e(sindesg_units($productP4Stock)) ?></dd></div>
+            <div class="stock-detail"><dt>En tránsito</dt><dd><?= e(sindesg_units($productTransitStock)) ?></dd></div>
+            <div class="stock-detail"><dt>Stock institucional</dt><dd><?= e(sindesg_units($productTotalStock)) ?></dd></div>
         </dl>
 
         <form class="photo-update-form" method="post" enctype="multipart/form-data"
@@ -101,18 +101,18 @@ foreach ($variants as $variantStockRow) {
                     <tbody>
                     <?php foreach ($variants as $variant): ?>
                         <tr>
-                            <td><code><?= e($variant['internal_code']) ?></code></td>
+                            <td><?= e(($variant['size_name'] ?? '') ? 'Talla ' . $variant['size_name'] : 'Presentación estándar') ?></td>
                             <td><?= e($variant['size_name'] ?: '—') ?></td>
                             <td><?= e($variant['brand_name'] ?: '—') ?></td>
                             <td><?= e($variant['institutional_code'] ?: '—') ?></td>
                             <td><?= e($variant['supplier_code'] ?: '—') ?></td>
                             <td><?= e($variant['color'] ?: $product['color'] ?: '—') ?></td>
-                            <td class="stock-cell strong"><?= e(number_format((float) $variant['stock_available'], 0, '.', ',')) ?></td>
-                            <td class="stock-cell"><?= e(number_format((float) $variant['stock_central'], 0, '.', ',')) ?></td>
-                            <td class="stock-cell"><?= e(number_format((float) $variant['stock_committed'], 0, '.', ',')) ?></td>
-                            <td class="stock-cell"><?= e(number_format((float) $variant['stock_p4'], 0, '.', ',')) ?></td>
-                            <td class="stock-cell"><?= e(number_format((float) $variant['stock_transit'], 0, '.', ',')) ?></td>
-                            <td class="stock-cell"><?= e(number_format((float) $variant['stock_total'], 0, '.', ',')) ?></td>
+                            <td class="stock-cell strong"><?= e(sindesg_units((float) $variant['stock_available'])) ?></td>
+                            <td class="stock-cell"><?= e(sindesg_units((float) $variant['stock_central'])) ?></td>
+                            <td class="stock-cell"><?= e(sindesg_units((float) $variant['stock_committed'])) ?></td>
+                            <td class="stock-cell"><?= e(sindesg_units((float) $variant['stock_p4'])) ?></td>
+                            <td class="stock-cell"><?= e(sindesg_units((float) $variant['stock_transit'])) ?></td>
+                            <td class="stock-cell"><?= e(sindesg_units((float) $variant['stock_total'])) ?></td>
                         </tr>
                     <?php endforeach; ?>
                     </tbody>
@@ -226,14 +226,14 @@ foreach ($variants as $variantStockRow) {
                         <td><?= e(date('d/m/Y H:i', strtotime((string) $movement['occurred_at']))) ?></td>
                         <td><?= e($movement['warehouse_name']) ?></td>
                         <td>
-                            <code><?= e($movement['variant_code']) ?></code>
+                            <?= e(($movement['size_name'] ?? '') ? 'Talla ' . $movement['size_name'] : 'Presentación estándar') ?>
                             <?php if (!empty($movement['size_name'])): ?>
                                 <small class="table-subline">Talla <?= e($movement['size_name']) ?></small>
                             <?php endif; ?>
                         </td>
                         <td><?= e(str_replace('_', ' ', ucfirst((string) $movement['movement_kind']))) ?></td>
-                        <td class="movement-in"><?= $movement['direction'] === 'IN' ? e(number_format((float) $movement['quantity'], 0, '.', ',')) : '—' ?></td>
-                        <td class="movement-out"><?= $movement['direction'] === 'OUT' ? e(number_format((float) $movement['quantity'], 0, '.', ',')) : '—' ?></td>
+                        <td class="movement-in"><?= $movement['direction'] === 'IN' ? e(sindesg_units((float) $movement['quantity'])) : '—' ?></td>
+                        <td class="movement-out"><?= $movement['direction'] === 'OUT' ? e(sindesg_units((float) $movement['quantity'])) : '—' ?></td>
                         <td><?= e($movement['reference_code'] ?: $movement['document_number'] ?: '—') ?></td>
                     </tr>
                 <?php endforeach; ?>

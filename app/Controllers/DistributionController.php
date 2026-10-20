@@ -32,6 +32,26 @@ final class DistributionController
         string $method
     ): array {
         try {
+            $user = (array) sindesg_user();
+            $roles = (array) ($user['role_codes'] ?? []);
+            $p4Only = in_array('P4', $roles, true) && !in_array('ADMIN', $roles, true)
+                && !in_array('CENTRAL', $roles, true);
+            if ($p4Only) {
+                $postRequest = strtoupper($method) === 'POST';
+                if (($postRequest && $action !== 'receive')
+                    || (!$postRequest && $action !== 'show')) {
+                    throw new InvalidArgumentException('Acción no autorizada para P4.');
+                }
+                $transferId = (int) (($postRequest ? $post['distribution_id'] ?? 0
+                    : $query['id'] ?? 0));
+                (new \App\Services\P4DistributionGuard(
+                    $this->database->connection('sindesg')
+                ))->assertAssigned((int) ($user['id'] ?? 0), $transferId);
+                if ($postRequest) {
+                    // Receiver identity is always the authenticated P4 official.
+                    $post['received_by_employee_id'] = (int) ($user['employee_id'] ?? 0);
+                }
+            }
             if (strtoupper($method) === 'POST') {
                 if (!csrf_valid(isset($post['_token']) ? (string) $post['_token'] : null)) {
                     throw new InvalidArgumentException('La sesión del formulario venció. Intente nuevamente.');
@@ -125,9 +145,8 @@ final class DistributionController
             'title' => 'Distribución a P4',
             'data' => [
                 'distributionStats' => $this->repository->stats(),
-                'distributionStatsRestricted' => !\App\Services\P4WarehouseScope::current($this->database)['unrestricted'],
-                'readyRequests' => \App\Services\P4WarehouseScope::current($this->database)['unrestricted'] ? $this->repository->readyRequests() : [],
-                'distributions' => $this->repository->recent(100, \App\Services\P4WarehouseScope::current($this->database)['unrestricted'] ? null : \App\Services\P4WarehouseScope::current($this->database)['warehouses']),
+                'readyRequests' => $this->repository->readyRequests(),
+                'distributions' => $this->repository->recent(),
             ],
         ];
     }

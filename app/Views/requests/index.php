@@ -24,7 +24,6 @@ $statusLabels = [
     </div>
 </section>
 
-<?php if (empty($requestStatsRestricted)): ?>
 <section class="request-stats">
     <article><span>Borradores</span><strong><?= e($requestStats['drafts']) ?></strong><small>En preparación</small></article>
     <article><span>Pendientes de revisión</span><strong><?= e($requestStats['pending_review']) ?></strong><small>Enviadas / revisión</small></article>
@@ -32,7 +31,6 @@ $statusLabels = [
     <article><span>Parciales</span><strong><?= e($requestStats['partials']) ?></strong><small>Aprobación parcial</small></article>
     <article><span>Rechazadas</span><strong><?= e($requestStats['rejected']) ?></strong><small>Sin compromiso</small></article>
 </section>
-<?php endif; ?>
 
 <?php
 $draftReady = null;
@@ -49,7 +47,7 @@ foreach ($serviceRequests as $candidate) {
     <div class="request-section-head">
         <div>
             <span class="eyebrow">SIGUIENTE PASO · BORRADOR CON DOTACIONES CARGADAS</span>
-            <h2><?= e($draftReady['request_code']) ?> — listo para revisar y enviar</h2>
+            <h2>Solicitud de dotación — lista para revisar y enviar</h2>
             <p>
                 <?= (int) $draftReady['item_count'] ?> asignaciones ya están en SINDESG.
                 No vuelva a importar el Excel. Revise los destinatarios y envíe
@@ -85,13 +83,13 @@ foreach ($serviceRequests as $candidate) {
                 <tbody>
                 <?php foreach ($serviceRequests as $row): ?>
                     <tr>
-                        <td><a class="request-link" href="<?= e(sindesg_url('?module=requests&action=show&id=' . (int) $row['id'])) ?>"><?= e($row['request_code']) ?></a></td>
-                        <td><?= e(($row['p4_code'] ?: 'P4') . ' · ' . ($row['p4_name'] ?: 'Unidad')) ?></td>
+                        <td><a class="request-link" href="<?= e(sindesg_url('?module=requests&action=show&id=' . (int) $row['id'])) ?>">Ver solicitud</a></td>
+                        <td><?= e($row['p4_name'] ?: 'Unidad P4') ?></td>
                         <td><?= e($row['requested_by_label_snapshot']) ?></td>
                         <td><?= e(date('d/m/Y H:i', strtotime((string) $row['requested_at']))) ?></td>
                         <td><?= e((int) $row['item_count']) ?></td>
-                        <td><?= e(number_format((float) $row['quantity_requested'], 0, '.', ',')) ?></td>
-                        <td><?= e(number_format((float) $row['quantity_approved'], 0, '.', ',')) ?></td>
+                        <td><?= e(sindesg_units((float) $row['quantity_requested'])) ?></td>
+                        <td><?= e(sindesg_units((float) $row['quantity_approved'])) ?></td>
                         <td><span class="request-status <?= e($row['status']) ?>"><?= e($statusLabels[$row['status']] ?? $row['status']) ?></span></td>
                         <td>
                             <a class="request-link" href="<?= e(sindesg_url('?module=requests&action=show&id=' . (int) $row['id'] . '#seguimiento-p4')) ?>">Ver estado →</a>

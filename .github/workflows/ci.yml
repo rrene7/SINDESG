@@ -67,6 +67,85 @@ jobs:
       - name: Dynamic dashboard test
         run: php tests/dashboard_dynamic_test.php
 
+      - name: P4 dashboard flow isolation test
+        run: php tests/p4_dashboard_flow_test.php
+
+      - name: Main P4 warehouse scope foundation test
+        run: php tests/p4_warehouse_scope_foundation_test.php
+
+      - name: Main P4 delivery SQL scope test
+        run: php tests/p4_delivery_sql_scope_test.php
+
+      - name: Main P4 two-unit SQL isolation integration test
+        run: php tests/p4_two_unit_isolation_integration_test.php
+
+      - name: Main P4 controller database dependency test
+        run: php tests/p4_controller_database_dependency_test.php
+
+      - name: Assigned P4 warehouses SQL test
+        run: php tests/p4_assigned_warehouses_test.php
+
+      - name: P4 admin assignment audit contract test
+        run: php tests/p4_admin_assignment_contract_test.php
+
+      - name: P4 operational SQL isolation test
+        run: php tests/p4_operational_summary_isolation_test.php
+
+      - name: P4 actual metrics and physical-stock isolation
+        run: |
+          php -l app/Services/P4DashboardData.php
+          php -l app/Views/dashboard-p4.php
+          php tests/p4_dashboard_real_metrics_isolation_test.php
+          php -l app/Services/P4QuantityDisplay.php
+          php tests/p4_quantity_display_test.php
+
+      - name: Human-readable SINDESG quantities and labels
+        run: php tests/ui_human_readability_test.php
+
+      - name: P4 activity real names and quantities
+        run: php tests/p4_activity_real_labels_test.php
+
+      - name: P4 request ownership guard integration test
+        run: php tests/p4_request_guard_integration_test.php
+
+      - name: P4 distribution receipt ownership test
+        run: php tests/p4_distribution_receive_guard_test.php
+
+      - name: P4 nominal delivery isolation test
+        run: php tests/p4_nominal_delivery_isolation_test.php
+
+      - name: P4 compact delivery view test
+        run: |
+          php -l app/Views/deliveries/p4-index.php
+          php tests/p4_delivery_compact_ui_test.php
+
+      - name: P4 A4 historical signed receipt rendering
+        run: php tests/p4_receipt_a4_document_test.php
+
+      - name: P4 signed receipt contract
+        run: |
+          php -l app/Views/deliveries/show.php
+          php -l app/Controllers/DeliveryController.php
+          php -l app/Repositories/DeliveryRepository.php
+          php tests/p4_signature_receipt_contract_test.php
+          php -l scripts/install_p4_signed_receipts.php
+      - name: P4 personal issuer signature
+        run: |
+          php -l app/Services/P4IssuerSignature.php
+          php -l app/Controllers/ProfileController.php
+          php -l app/Views/profile/signature.php
+          php -l scripts/install_p4_issuer_signatures.php
+          php tests/p4_issuer_signature_flow_test.php
+
+      - name: P4 nominal delivery PHP syntax
+        run: |
+          php -l app/Controllers/DeliveryController.php
+          php -l app/Repositories/DeliveryRepository.php
+          php -l app/Services/P4DeliveryGuard.php
+          php -l app/Views/deliveries/form.php
+          php -l app/Views/deliveries/show.php
+          php -l app/Views/deliveries/p4-index.php
+
       - name: UTF-8 repair test
         run: php tests/utf8_repair_test.php
 
@@ -228,18 +307,6 @@ jobs:
 
       - name: P4 searchable catalog test
         run: php tests/p4_catalog_search_test.php
-
-      - name: P4 warehouse scope foundation test
-        run: php tests/p4_warehouse_scope_foundation_test.php
-
-      - name: P4 delivery SQL scope test
-        run: php tests/p4_delivery_sql_scope_test.php
-
-      - name: P4 two-unit SQL isolation integration test
-        run: php tests/p4_two_unit_isolation_integration_test.php
-
-      - name: P4 controller Database dependency test
-        run: php tests/p4_controller_database_dependency_test.php
 
       - name: Footwear catalog & sizes test
         run: php tests/footwear_catalog_test.php

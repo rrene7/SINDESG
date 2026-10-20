@@ -12,7 +12,7 @@ $totalUnits = array_sum(array_map(
     <div>
         <span class="eyebrow">HISTORIAL DE DOTACIÓN</span>
         <h1><?= e($employeeLabel) ?></h1>
-        <p><?= e($employeeDocument ?: 'Sin cédula disponible') ?> · <?= e(count($deliveryHistory)) ?> renglones · <?= e(number_format($totalUnits, 3, '.', ',')) ?> unidades entregadas</p>
+        <p><?= e($employeeDocument ?: 'Sin cédula disponible') ?> · <?= e(count($deliveryHistory)) ?> renglones · <?= e(sindesg_units($totalUnits)) ?> unidades entregadas</p>
     </div>
     <a class="secondary-button" href="<?= e(sindesg_url('?module=deliveries')) ?>">← Despachos</a>
 </section>
@@ -34,13 +34,13 @@ $totalUnits = array_sum(array_map(
                 <?php foreach ($deliveryHistory as $row): ?>
                     <tr>
                         <td><?= e(date('d/m/Y H:i', strtotime((string) $row['delivered_at']))) ?></td>
-                        <td><a class="delivery-link" href="<?= e(sindesg_url('?module=deliveries&action=show&id=' . (int) $row['delivery_id'])) ?>"><?= e($row['delivery_code']) ?></a></td>
-                        <td><?= e($row['p4_code'] . ' · ' . ($row['p4_name'] ?: 'P4')) ?></td>
+                        <td><a class="delivery-link" href="<?= e(sindesg_url('?module=deliveries&action=show&id=' . (int) $row['delivery_id'])) ?>">Ver comprobante</a></td>
+                        <td><?= e($row['p4_name'] ?: 'Almacén P4') ?></td>
                         <td><?= e($row['product_name']) ?></td>
-                        <td><code><?= e($row['variant_code']) ?></code></td>
+                        <td><?= e($row['size_name'] ? 'Talla ' . $row['size_name'] : 'Presentación estándar') ?></td>
                         <td><?= e($row['size_name'] ?: '—') ?></td>
-                        <td class="delivery-qty"><?= e(number_format((float) $row['quantity'], 3, '.', ',')) ?></td>
-                        <td><?= e($row['request_code'] ?: 'Entrega manual') ?></td>
+                        <td class="delivery-qty"><?= e(sindesg_units((float) $row['quantity'])) ?></td>
+                        <td><?= e($row['request_code'] ? 'Solicitud de dotación' : 'Entrega manual') ?></td>
                     </tr>
                 <?php endforeach; ?>
                 </tbody>
