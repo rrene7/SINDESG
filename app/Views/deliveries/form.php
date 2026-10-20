@@ -45,7 +45,7 @@ $p4Only = in_array('P4', $roles, true) && !in_array('ADMIN', $roles, true) && !i
             <div class="delivery-fixed-grid">
                 <article>
                     <span>P4</span>
-                    <strong><?= e($p4Only ? ($pendingLine['p4_name'] ?: 'P4') : $pendingLine['p4_code']) ?></strong>
+                    <strong><?= e($pendingLine['p4_name'] ?: 'Almacén P4') ?></strong>
                     <small><?= e($p4Only ? 'Unidad logística autorizada' : ($pendingLine['p4_name'] ?: 'P4')) ?></small>
                 </article>
                 <article>
@@ -56,12 +56,12 @@ $p4Only = in_array('P4', $roles, true) && !in_array('ADMIN', $roles, true) && !i
                 <article>
                     <span>Artículo reservado</span>
                     <strong><?= e($pendingLine['product_name']) ?></strong>
-                    <small><?= e(($pendingLine['size_name'] ? 'Talla ' . $pendingLine['size_name'] : 'Variante sin talla') . ($p4Only ? '' : ' · ' . $pendingLine['variant_code'])) ?></small>
+                    <small><?= e(($pendingLine['size_name'] ? 'Talla ' . $pendingLine['size_name'] : 'Variante sin talla') ) ?></small>
                 </article>
                 <article>
                     <span>Origen logístico</span>
-                    <strong><?= e($p4Only ? 'Dotación autorizada' : $pendingLine['request_code']) ?></strong>
-                    <small><?= e($p4Only ? 'Recibida en el almacén' : ($pendingLine['transfer_code'] ?: 'Transferencia recibida')) ?></small>
+                    <strong><?= e('Dotación autorizada') ?></strong>
+                    <small><?= e('Recibida en el almacén') ?></small>
                 </article>
             </div>
 
@@ -74,7 +74,7 @@ $p4Only = in_array('P4', $roles, true) && !in_array('ADMIN', $roles, true) && !i
                        step="0.001"
                        value="<?= e($pendingLine['pending_quantity']) ?>"
                        required>
-                <small>Máximo pendiente: <?= e(number_format((float) $pendingLine['pending_quantity'], 3, '.', ',')) ?></small>
+                <small>Máximo pendiente: <?= e(sindesg_units((float) $pendingLine['pending_quantity'])) ?></small>
             </label>
         <?php else: ?>
             <div class="delivery-form-grid">
@@ -210,8 +210,8 @@ $p4Only = in_array('P4', $roles, true) && !in_array('ADMIN', $roles, true) && !i
                 <?php foreach ($priorHistory as $row): ?>
                     <div class="history-preview-row">
                         <strong><?= e($row['product_name']) ?></strong>
-                        <span><?= e($row['variant_code'] . ($row['size_name'] ? ' · Talla ' . $row['size_name'] : '')) ?></span>
-                        <span><?= e(number_format((float) $row['quantity'], 3, '.', ',')) ?> · <?= e(date('d/m/Y', strtotime((string) $row['delivered_at']))) ?></span>
+                        <span><?= e($row['product_name'] . ($row['size_name'] ? ' · Talla ' . $row['size_name'] : '')) ?></span>
+                        <span><?= e(sindesg_units((float) $row['quantity'])) ?> · <?= e(date('d/m/Y', strtotime((string) $row['delivered_at']))) ?></span>
                     </div>
                 <?php endforeach; ?>
             <?php endif; ?>

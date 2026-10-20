@@ -16,7 +16,7 @@ $totalAvailable = array_sum(array_map(
 <section class="request-detail-hero">
     <div>
         <span class="eyebrow">ALMACÉN CENTRAL · REVISIÓN POR TALLAS</span>
-        <h1><?= e($serviceRequest['request_code']) ?> — <?= e($serviceRequest['p4_name_snapshot'] ?: $serviceRequest['p4_internal_name']) ?></h1>
+        <h1>Solicitud de dotación — <?= e($serviceRequest['p4_name_snapshot'] ?: $serviceRequest['p4_internal_name']) ?></h1>
         <p><?= e($serviceRequest['requested_by_label_snapshot']) ?> · Solicitud registrada <?= e(date('d/m/Y H:i', strtotime((string) $serviceRequest['requested_at']))) ?></p>
     </div>
     <a class="secondary-button" href="<?= e(sindesg_url('?module=requests&action=show&id=' . (int) $serviceRequest['id'])) ?>">
@@ -34,8 +34,8 @@ $totalAvailable = array_sum(array_map(
     <div class="request-verification-summary">
         <span><strong><?= (int) $totalNominees ?></strong><small>Renglones nominales</small></span>
         <span><strong><?= (int) $totalVariants ?></strong><small>Variantes / tallas</small></span>
-        <span><strong><?= e(number_format((float) $reviewTotal, 0, '.', ',')) ?></strong><small>Unidades solicitadas</small></span>
-        <span><strong><?= e(number_format($totalAvailable, 0, '.', ',')) ?></strong><small>Máximo comprometible hoy</small></span>
+        <span><strong><?= e(sindesg_units((float) $reviewTotal)) ?></strong><small>Unidades solicitadas</small></span>
+        <span><strong><?= e(sindesg_units($totalAvailable)) ?></strong><small>Máximo comprometible hoy</small></span>
     </div>
     <?php if ($totalAvailable < (float) $reviewTotal): ?>
         <p class="central-warning" role="status">
@@ -92,13 +92,13 @@ $totalAvailable = array_sum(array_map(
                 ?>
                 <tr>
                     <td><strong><?= e($group['product_name']) ?></strong>
-                        <small class="request-cell-sub"><?= e($group['variant_code']) ?></small></td>
+                        <small class="request-cell-sub"><?= e(($group['size_name'] ?? '') ? 'Talla ' . $group['size_name'] : 'Presentación estándar') ?></small></td>
                     <td><strong><?= e($group['size_name'] ?: '—') ?></strong></td>
                     <td><?= count($group['items']) ?></td>
-                    <td><?= e(number_format($requested, 0, '.', ',')) ?></td>
-                    <td><?= e(number_format((float) $group['central_stock'], 0, '.', ',')) ?></td>
-                    <td class="<?= $limit <= 0 ? 'central-zero-stock' : '' ?>"><?= e(number_format($available, 0, '.', ',')) ?></td>
-                    <td><?= e(number_format((float) $group['approved'], 0, '.', ',')) ?></td>
+                    <td><?= e(sindesg_units($requested)) ?></td>
+                    <td><?= e(sindesg_units((float) $group['central_stock'])) ?></td>
+                    <td class="<?= $limit <= 0 ? 'central-zero-stock' : '' ?>"><?= e(sindesg_units($available)) ?></td>
+                    <td><?= e(sindesg_units((float) $group['approved'])) ?></td>
                     <?php if ($mayReview): ?>
                         <td>
                             <div class="central-decision" data-central-variant
@@ -138,7 +138,7 @@ $totalAvailable = array_sum(array_map(
                                                        required>
                                             </label>
                                         <?php else: ?>
-                                            <small>Solicitado <?= e(number_format((float) $item['quantity_requested'], 0, '.', ',')) ?></small>
+                                            <small>Solicitado <?= e(sindesg_units((float) $item['quantity_requested'])) ?></small>
                                         <?php endif; ?>
                                     </div>
                                 <?php endforeach; ?>

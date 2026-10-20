@@ -4,8 +4,8 @@ declare(strict_types=1);
 <section class="distribution-hero compact">
     <div>
         <span class="eyebrow">PREPARACIÓN</span>
-        <h1><?= e($distributionRequest['request_code']) ?></h1>
-        <p><?= e($distributionRequest['p4_code'] . ' · ' . ($distributionRequest['p4_name'] ?: 'P4')) ?> · Seleccione cuánto se enviará en esta transferencia.</p>
+        <h1>Preparar transferencia de dotación</h1>
+        <p><?= e($distributionRequest['p4_name'] ?: 'Almacén P4') ?> · Seleccione cuánto se enviará en esta transferencia.</p>
     </div>
     <a class="secondary-button" href="<?= e(sindesg_url('?module=distribution')) ?>">← Volver</a>
 </section>
@@ -33,10 +33,10 @@ declare(strict_types=1);
                         <td><strong><?= e($item['product_name']) ?></strong><small class="distribution-cell-sub"><?= e($item['variant_code']) ?> · <?= e($item['category_name']) ?></small></td>
                         <td><?= e($item['size_name'] ?: '—') ?></td>
                         <td><?= e($item['beneficiary_label_snapshot'] ?: 'Cantidad consolidada') ?></td>
-                        <td><?= e(number_format((float) $item['quantity_approved'], 3, '.', ',')) ?></td>
-                        <td><?= e(number_format((float) $item['quantity_dispatched'], 3, '.', ',')) ?></td>
-                        <td class="distribution-qty"><?= e(number_format((float) $item['remaining_quantity'], 3, '.', ',')) ?></td>
-                        <td><?= e(number_format((float) $item['central_stock'], 3, '.', ',')) ?></td>
+                        <td><?= e(sindesg_units((float) $item['quantity_approved'])) ?></td>
+                        <td><?= e(sindesg_units((float) $item['quantity_dispatched'])) ?></td>
+                        <td class="distribution-qty"><?= e(sindesg_units((float) $item['remaining_quantity'])) ?></td>
+                        <td><?= e(sindesg_units((float) $item['central_stock'])) ?></td>
                         <td>
                             <input type="number"
                                    name="transfer_quantity[<?= e($item['request_item_id']) ?>]"

@@ -20,7 +20,7 @@ $statusLabels = [
     <article><span>Pendientes nominales</span><strong><?= e($deliveryStats['pending_nominal']) ?></strong><small>Recibidos en P4</small></article>
     <article><span>Borradores</span><strong><?= e($deliveryStats['drafts']) ?></strong><small>Sin afectar inventario</small></article>
     <article><span>Confirmados</span><strong><?= e($deliveryStats['confirmed']) ?></strong><small>Entregas finales</small></article>
-    <article><span>Unidades entregadas</span><strong><?= e(number_format((float) $deliveryStats['delivered_quantity'], 0, '.', ',')) ?></strong><small>Histórico confirmado</small></article>
+    <article><span>Unidades entregadas</span><strong><?= e(sindesg_units((float) $deliveryStats['delivered_quantity'])) ?></strong><small>Histórico confirmado</small></article>
 </section>
 
 <section class="delivery-panel">
@@ -44,15 +44,15 @@ $statusLabels = [
                     </div>
                     <div>
                         <strong><?= e($line['product_name']) ?></strong>
-                        <small><?= e($line['variant_code'] . ($line['size_name'] ? ' · Talla ' . $line['size_name'] : '')) ?></small>
+                        <small><?= e($line['size_name'] ? 'Talla ' . $line['size_name'] : 'Presentación estándar') ?></small>
                     </div>
                     <div>
-                        <strong><?= e(number_format((float) $line['pending_quantity'], 3, '.', ',')) ?></strong>
+                        <strong><?= e(sindesg_units((float) $line['pending_quantity'])) ?></strong>
                         <small>pendientes</small>
                     </div>
                     <div>
-                        <strong><?= e($line['p4_code']) ?></strong>
-                        <small><?= e($line['request_code'] . ($line['transfer_code'] ? ' · ' . $line['transfer_code'] : '')) ?></small>
+                        <strong><?= e($line['p4_name'] ?? 'Almacén P4') ?></strong>
+                        <small>Dotación aprobada<?= !empty($line['transfer_code']) ? ' · Recibida desde Central' : '' ?></small>
                     </div>
                     <b>Entregar →</b>
                 </a>
@@ -77,12 +77,12 @@ $statusLabels = [
                 <tbody>
                 <?php foreach ($deliveries as $row): ?>
                     <tr>
-                        <td><a class="delivery-link" href="<?= e(sindesg_url('?module=deliveries&action=show&id=' . (int) $row['id'])) ?>"><?= e($row['delivery_code']) ?></a></td>
+                        <td><a class="delivery-link" href="<?= e(sindesg_url('?module=deliveries&action=show&id=' . (int) $row['id'])) ?>">Ver entrega</a></td>
                         <td><strong><?= e($row['recipient_label_snapshot']) ?></strong><small class="delivery-cell-sub"><?= e($row['recipient_document_snapshot'] ?: '—') ?></small></td>
-                        <td><?= e($row['p4_code'] . ' · ' . ($row['p4_name'] ?: 'P4')) ?></td>
+                        <td><?= e($row['p4_name'] ?: 'Almacén P4') ?></td>
                         <td><?= e(date('d/m/Y H:i', strtotime((string) $row['delivered_at']))) ?></td>
                         <td><?= e((int) $row['item_count']) ?></td>
-                        <td><?= e(number_format((float) $row['total_quantity'], 3, '.', ',')) ?></td>
+                        <td><?= e(sindesg_units((float) $row['total_quantity'])) ?></td>
                         <td><span class="delivery-status <?= e($row['status']) ?>"><?= e($statusLabels[$row['status']] ?? $row['status']) ?></span></td>
                     </tr>
                 <?php endforeach; ?>

@@ -20,7 +20,7 @@ $statusLabels = [
 <section class="distribution-stats">
     <article><span>Preparadas</span><strong><?= e($distributionStats['prepared']) ?></strong></article>
     <article><span>Listas para retirar</span><strong><?= e($distributionStats['authorized']) ?></strong></article>
-    <article><span>En tránsito</span><strong><?= e($distributionStats['in_transit']) ?></strong><small><?= e(number_format((float) $distributionStats['transit_stock'], 0, '.', ',')) ?> unidades</small></article>
+    <article><span>En tránsito</span><strong><?= e($distributionStats['in_transit']) ?></strong><small><?= e(sindesg_units((float) $distributionStats['transit_stock'])) ?> unidades</small></article>
     <article><span>Recibidas</span><strong><?= e($distributionStats['received']) ?></strong></article>
 </section>
 
@@ -39,8 +39,8 @@ $statusLabels = [
             <?php foreach ($readyRequests as $request): ?>
                 <?php if (sindesg_role_action_allowed('distribution', 'new', 'GET', (array) sindesg_user())): ?>
                 <a href="<?= e(sindesg_url('?module=distribution&action=new&request_id=' . (int) $request['id'])) ?>">
-                    <span><strong><?= e($request['request_code']) ?></strong><small><?= e($request['p4_code'] . ' · ' . ($request['p4_name'] ?: 'P4')) ?></small></span>
-                    <span><strong><?= e(number_format((float) $request['remaining_quantity'], 3, '.', ',')) ?></strong><small><?= e((int) $request['remaining_lines']) ?> renglones pendientes</small></span>
+                    <span><strong>Solicitud de dotación</strong><small><?= e($request['p4_name'] ?: 'Almacén P4') ?></small></span>
+                    <span><strong><?= e(sindesg_units((float) $request['remaining_quantity'])) ?></strong><small><?= e((int) $request['remaining_lines']) ?> renglones pendientes</small></span>
                     <b>Preparar →</b>
                 </a>
                 <?php endif; ?>
@@ -63,11 +63,11 @@ $statusLabels = [
                 <tbody>
                 <?php foreach ($distributions as $row): ?>
                     <tr>
-                        <td><a class="distribution-link" href="<?= e(sindesg_url('?module=distribution&action=show&id=' . (int) $row['id'])) ?>"><?= e($row['transfer_code']) ?></a></td>
-                        <td><?= e($row['request_code']) ?></td>
-                        <td><?= e($row['p4_code'] . ' · ' . ($row['p4_name'] ?: 'P4')) ?></td>
+                        <td><a class="distribution-link" href="<?= e(sindesg_url('?module=distribution&action=show&id=' . (int) $row['id'])) ?>">Ver transferencia</a></td>
+                        <td>Dotación solicitada</td>
+                        <td><?= e($row['p4_name'] ?: 'Almacén P4') ?></td>
                         <td><?= e((int) $row['item_count']) ?></td>
-                        <td><?= e(number_format((float) $row['total_quantity'], 3, '.', ',')) ?></td>
+                        <td><?= e(sindesg_units((float) $row['total_quantity'])) ?></td>
                         <td><span class="distribution-status <?= e($row['status']) ?>"><?= e($statusLabels[$row['status']] ?? $row['status']) ?></span></td>
                     </tr>
                 <?php endforeach; ?>

@@ -93,7 +93,7 @@ ksort($requestOptions, SORT_NATURAL);
                     </div>
                     <div class="p4-delivery-quantity">
                         <span class="p4-delivery-cell-label">Pendiente</span>
-                        <strong><?= e(number_format((float) $line['pending_quantity'], 3, '.', ',')) ?></strong>
+                        <strong><?= e(sindesg_units((float) $line['pending_quantity'])) ?></strong>
                     </div>
                     <a class="p4-delivery-action" href="<?= e(sindesg_url('?module=deliveries&action=new&request_item_id=' . (int) $line['request_item_id'])) ?>">Preparar entrega <span aria-hidden="true">→</span></a>
                 </article>
