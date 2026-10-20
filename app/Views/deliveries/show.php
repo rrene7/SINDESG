@@ -334,56 +334,96 @@ $totalQuantity = array_sum(array_map(
 </div>
 
 <?php if (!empty($receiptEvidence)): ?>
+<?php
+// Read-only representation of the evidence captured with this confirmed delivery.
+$receiptCapturedRaw = (string) ($receiptEvidence['captured_at'] ?? '');
+$receiptCapturedUnix = $receiptCapturedRaw !== '' ? strtotime($receiptCapturedRaw) : false;
+$receiptCapturedLabel = $receiptCapturedUnix === false
+    ? ($receiptCapturedRaw !== '' ? $receiptCapturedRaw : 'No disponible')
+    : date('d/m/Y H:i', $receiptCapturedUnix);
+$receiptItemCount = count($deliveryItems);
+$receiptTotalText = sindesg_units((float) $totalQuantity);
+?>
 <style>
-/* Institutional receipt: fully scoped and printable without surrounding dashboard. */
-#signed-receipt{background:#fff;color:#15263b;border:1px solid #ced8e3;border-radius:10px;padding:28px 32px;max-width:900px;margin:22px auto;font-family:Arial,Helvetica,sans-serif;box-shadow:0 8px 26px rgba(0,0,0,.12)}
+/* A4 institutional receipt: self-contained, responsive and paginated for long deliveries. */
+#signed-receipt{background:#fff;color:#162c41;border:1px solid #d3dfe9;border-radius:13px;padding:30px 36px;max-width:900px;margin:22px auto;font-family:Arial,Helvetica,sans-serif;box-shadow:0 12px 36px rgba(0,0,0,.16);font-size:12px;line-height:1.42}
 #signed-receipt *{box-sizing:border-box}
-#signed-receipt .receipt-top{display:flex;justify-content:space-between;align-items:start;gap:20px;padding-bottom:17px;border-bottom:3px solid #143e63}
-#signed-receipt .receipt-mark{display:flex;gap:13px;align-items:center}
-#signed-receipt .receipt-emblem{height:53px;width:53px;display:grid;place-items:center;border:2px solid #143e63;border-radius:10px;font-size:19px;font-weight:800;letter-spacing:-1px;color:#143e63}
-#signed-receipt .receipt-agency{font-size:13px;font-weight:800;letter-spacing:.07em;color:#143e63}
-#signed-receipt .receipt-subagency{font-size:10px;letter-spacing:.09em;color:#526378;margin-top:4px}
-#signed-receipt .receipt-number{text-align:right;color:#3c5064;font-size:11px}
-#signed-receipt .receipt-number strong{display:block;color:#152f4d;font-size:16px;margin-top:4px}
-#signed-receipt .receipt-title{margin:20px 0 4px;font-size:22px;line-height:1.25;color:#142e49;font-weight:800}
-#signed-receipt .receipt-intro{color:#586b7c;font-size:11px;margin:0 0 19px}
-#signed-receipt .receipt-block-heading{font-size:11px;font-weight:800;letter-spacing:.08em;color:#163e61;text-transform:uppercase;border-bottom:1px solid #dce5ed;padding-bottom:8px;margin:19px 0 10px}
-#signed-receipt .receipt-facts{display:grid;grid-template-columns:1fr 1fr;gap:12px 22px}
+#signed-receipt .receipt-top{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;padding-bottom:16px;border-bottom:3px solid #164765}
+#signed-receipt .receipt-mark{display:flex;align-items:center;gap:13px;min-width:0}
+#signed-receipt .receipt-emblem{height:54px;width:54px;flex:0 0 54px;display:grid;place-items:center;border:2px solid #164765;border-radius:9px;font-size:20px;font-weight:800;color:#164765}
+#signed-receipt .receipt-agency{font-size:14px;font-weight:800;letter-spacing:.045em;color:#123955}
+#signed-receipt .receipt-subagency{font-size:10px;letter-spacing:.045em;color:#546b7c;margin-top:3px}
+#signed-receipt .receipt-number{text-align:right;font-size:10px;color:#506479;min-width:145px}
+#signed-receipt .receipt-number strong{display:block;font-size:17px;letter-spacing:.02em;color:#102f4a;margin:5px 0 10px;overflow-wrap:anywhere}
+#signed-receipt .receipt-print-action{background:#164765;color:#fff;border:0;border-radius:7px;padding:9px 12px;font-size:11px;font-weight:700;cursor:pointer}
+#signed-receipt .receipt-title{font-size:22px;line-height:1.25;font-weight:800;color:#12334d;margin:20px 0 5px}
+#signed-receipt .receipt-intro{font-size:11px;color:#5b7182;margin:0 0 17px}
+#signed-receipt .receipt-highlights{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:0 0 20px}
+#signed-receipt .receipt-highlight{border:1px solid #d5e2eb;border-radius:8px;padding:10px 12px;background:#f5f9fc}
+#signed-receipt .receipt-highlight span{display:block;color:#647789;font-size:9px;font-weight:700;letter-spacing:.03em;text-transform:uppercase}
+#signed-receipt .receipt-highlight strong{display:block;color:#173953;font-size:14px;margin-top:3px;overflow-wrap:anywhere}
+#signed-receipt .receipt-block-heading{font-size:11px;font-weight:800;letter-spacing:.055em;color:#164765;text-transform:uppercase;border-bottom:1px solid #dae5ed;padding-bottom:7px;margin:18px 0 11px}
+#signed-receipt .receipt-facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 24px}
 #signed-receipt .receipt-fact{min-width:0}
-#signed-receipt .receipt-fact label{display:block;font-size:10px;color:#64778b;margin-bottom:3px}
-#signed-receipt .receipt-fact strong{font-size:12px;color:#1a2939;overflow-wrap:anywhere}
-#signed-receipt table{border-collapse:collapse;width:100%;font-size:12px;color:#1b2a3a}
-#signed-receipt thead{background:#eaf0f6}
-#signed-receipt th,#signed-receipt td{padding:10px 12px;text-align:left;border-bottom:1px solid #dce6ee}
-#signed-receipt th:last-child,#signed-receipt td:last-child{text-align:right}
-#signed-receipt .receipt-signoff{display:grid;grid-template-columns:1fr 1fr;gap:30px;margin-top:23px}
-#signed-receipt .receipt-signature-box{min-height:125px;display:flex;flex-direction:column;justify-content:end;align-items:center;text-align:center}
-#signed-receipt .receipt-signature-box img{display:block;height:90px;max-width:100%;object-fit:contain}
-#signed-receipt .receipt-signature-box .receipt-line{border-top:1px solid #4d5a6b;width:100%;padding-top:7px;font-size:11px;font-weight:700}
-#signed-receipt .receipt-signature-box small{display:block;font-size:10px;color:#5c7082;margin-top:5px}
-#signed-receipt .receipt-integrity{margin-top:22px;background:#f2f6fa;border-radius:6px;padding:10px 12px;font-size:9px;color:#485e72}
-#signed-receipt .receipt-integrity code{overflow-wrap:anywhere;white-space:normal;font-size:9px;color:#284057}
-#signed-receipt .receipt-footer{border-top:1px solid #dce5ed;padding-top:10px;margin-top:16px;color:#657587;font-size:10px;display:flex;justify-content:space-between;gap:12px}
-#signed-receipt .receipt-print-action{background:#153f62;color:white;border:0;border-radius:7px;padding:10px 15px;cursor:pointer;font-size:12px;font-weight:700}
-@media(max-width:580px){#signed-receipt{padding:17px}#signed-receipt .receipt-facts{grid-template-columns:1fr}#signed-receipt .receipt-signoff{gap:12px}#signed-receipt .receipt-emblem{height:40px;width:40px}}
+#signed-receipt .receipt-fact-label{display:block;font-size:10px;color:#5f7387;margin-bottom:3px}
+#signed-receipt .receipt-fact strong{display:block;color:#182f43;font-size:12px;font-weight:700;overflow-wrap:anywhere}
+#signed-receipt .receipt-fact small{display:block;color:#5f7387;font-size:10px;margin-top:3px}
+#signed-receipt table{width:100%;border-collapse:collapse;table-layout:fixed;color:#162c41;font-size:12px}
+#signed-receipt thead{background:#eaf2f7}
+#signed-receipt th,#signed-receipt td{padding:9px 11px;text-align:left;border-bottom:1px solid #dce6ee;vertical-align:top;overflow-wrap:anywhere}
+#signed-receipt th:nth-child(2),#signed-receipt td:nth-child(2){width:24%}
+#signed-receipt th:last-child,#signed-receipt td:last-child{text-align:right;width:21%}
+#signed-receipt .receipt-total{display:flex;justify-content:flex-end;gap:14px;align-items:baseline;margin-top:10px;padding:10px 12px;border-top:2px solid #164765;color:#1d435d;font-weight:700}
+#signed-receipt .receipt-total strong{font-size:17px;color:#143c58}
+#signed-receipt .receipt-additional{padding:9px 11px;background:#f5f9fc;border:1px solid #dce6ee;border-radius:7px;margin:13px 0;font-size:11px;overflow-wrap:anywhere}
+#signed-receipt .receipt-attestation{font-size:10px;line-height:1.5;color:#4d6073;margin:7px 0 12px}
+#signed-receipt .receipt-signoff{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:28px;margin:18px 0 0}
+#signed-receipt .receipt-signature-box{min-height:152px;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;text-align:center;min-width:0;padding-top:3px}
+#signed-receipt .receipt-signature-image{height:90px;width:100%;object-fit:contain;display:block}
+#signed-receipt .receipt-missing-signature{display:grid;place-items:center;height:90px;width:100%;padding:10px;color:#64788a;font-size:10px}
+#signed-receipt .receipt-signature-box .receipt-line{border-top:1px solid #536c7f;padding-top:7px;width:100%;font-size:11px;font-weight:700;color:#1c3950}
+#signed-receipt .receipt-signature-box small{font-size:10px;color:#536a7d;margin-top:4px;overflow-wrap:anywhere}
+#signed-receipt .receipt-integrity{margin-top:20px;background:#f2f6fa;border:1px solid #e0e8ef;border-radius:7px;padding:11px 13px;font-size:9px;color:#4e6274}
+#signed-receipt .receipt-integrity strong{display:block;font-size:10px;color:#244760;margin-bottom:6px}
+#signed-receipt .receipt-integrity code{overflow-wrap:anywhere;word-break:break-all;white-space:normal;font-size:9px;color:#263f54}
+#signed-receipt .receipt-integrity div+div{margin-top:4px}
+#signed-receipt .receipt-integrity-note{margin-top:7px;color:#63798a}
+#signed-receipt .receipt-footer{display:flex;justify-content:space-between;gap:12px;margin-top:16px;border-top:1px solid #dae5ed;padding-top:11px;font-size:10px;color:#597183}
+#signed-receipt .receipt-footer span:last-child{white-space:nowrap}
+@media(max-width:620px){
+ #signed-receipt{padding:18px;margin:16px 0}
+ #signed-receipt .receipt-top{flex-wrap:wrap}
+ #signed-receipt .receipt-number{text-align:left}
+ #signed-receipt .receipt-facts{grid-template-columns:1fr}
+ #signed-receipt .receipt-highlights{grid-template-columns:1fr 1fr}
+ #signed-receipt .receipt-signoff{gap:12px}
+ #signed-receipt .receipt-emblem{width:44px;height:44px;flex-basis:44px}
+}
 @media print{
  @page{size:A4 portrait;margin:13mm}
- html,body{background:white!important}
- body *{visibility:hidden!important}
- #signed-receipt,#signed-receipt *{visibility:visible!important}
- #signed-receipt{position:absolute!important;left:0!important;top:0!important;width:100%!important;max-width:none!important;margin:0!important;padding:0!important;border:0!important;border-radius:0!important;box-shadow:none!important;background:white!important;color:#15263b!important}
+ html,body{background:#fff!important;color:#000!important}
+ body::before,.site-header,.main-nav,.more-menu,.site-footer,.flash-stack,.search-overlay{display:none!important}
+ .app-shell,.main-content{background:transparent!important;border:0!important;box-shadow:none!important;max-width:none!important;width:100%!important;margin:0!important;padding:0!important}
+ .main-content > :not(#signed-receipt){display:none!important}
+ #signed-receipt{position:static!important;display:block!important;visibility:visible!important;max-width:none!important;width:100%!important;margin:0!important;padding:0!important;border:0!important;border-radius:0!important;box-shadow:none!important;background:#fff!important;color:#162c41!important}
  #signed-receipt .receipt-print-action{display:none!important}
- #signed-receipt .receipt-integrity,#signed-receipt thead{print-color-adjust:exact;-webkit-print-color-adjust:exact}
- #signed-receipt .receipt-signoff,#signed-receipt .receipt-integrity{break-inside:avoid}
+ #signed-receipt .receipt-highlights{grid-template-columns:repeat(3,minmax(0,1fr))}
+ #signed-receipt .receipt-facts{grid-template-columns:repeat(2,minmax(0,1fr))}
+ #signed-receipt .receipt-signoff{grid-template-columns:repeat(2,minmax(0,1fr))}
+ #signed-receipt thead{display:table-header-group;print-color-adjust:exact;-webkit-print-color-adjust:exact}
+ #signed-receipt .receipt-highlight,#signed-receipt .receipt-integrity{print-color-adjust:exact;-webkit-print-color-adjust:exact}
+ #signed-receipt tr,#signed-receipt .receipt-signoff,#signed-receipt .receipt-signature-box,#signed-receipt .receipt-integrity,#signed-receipt .receipt-footer{break-inside:avoid;page-break-inside:avoid}
+ #signed-receipt .receipt-block-heading{break-after:avoid;page-break-after:avoid}
+ #signed-receipt .receipt-highlights{break-inside:avoid;page-break-inside:avoid}
 }
 </style>
 <section id="signed-receipt" aria-label="Comprobante institucional de recibido">
-    <div class="receipt-top">
+    <header class="receipt-top">
         <div class="receipt-mark">
             <div class="receipt-emblem" aria-hidden="true">PN</div>
             <div>
                 <div class="receipt-agency">POLICÍA NACIONAL DE PANAMÁ</div>
-                <div class="receipt-subagency">SINDESG · SERVICIOS GENERALES</div>
+                <div class="receipt-subagency">SINDESG · SISTEMA DE INVENTARIO Y DESPACHO DE SERVICIOS GENERALES</div>
             </div>
         </div>
         <div class="receipt-number">
@@ -391,62 +431,102 @@ $totalQuantity = array_sum(array_map(
             <strong><?= e($delivery['delivery_code']) ?></strong>
             <button type="button" class="receipt-print-action" onclick="window.print()">Imprimir / guardar PDF</button>
         </div>
-    </div>
+    </header>
+
     <h2 class="receipt-title">Comprobante de entrega de dotación</h2>
-    <p class="receipt-intro">Constancia institucional de recepción física de artículos asignados.</p>
-    <h3 class="receipt-block-heading">Datos de la entrega</h3>
-    <div class="receipt-facts">
-        <div class="receipt-fact"><label>Unidad / almacén</label><strong><?= e($delivery['p4_name'] ?: $delivery['p4_code']) ?></strong></div>
-        <div class="receipt-fact"><label>Fecha y hora de registro</label><strong><?= e((string) $receiptEvidence['captured_at']) ?></strong></div>
-        <div class="receipt-fact"><label>Funcionario receptor</label><strong><?= e($delivery['recipient_label_snapshot']) ?></strong></div>
-        <div class="receipt-fact"><label>Documento de identidad</label><strong><?= e($delivery['recipient_document_snapshot'] ?: 'No registrado') ?></strong></div>
-        <div class="receipt-fact"><label>Funcionario que entrega</label><strong><?= e($delivery['delivered_by_label_snapshot']) ?></strong></div>
-        <div class="receipt-fact"><label>Estado</label><strong>Entrega confirmada</strong></div>
+    <p class="receipt-intro">Registro institucional de entrega física, aceptación de recibido y responsabilidad del despacho.</p>
+
+    <div class="receipt-highlights" aria-label="Resumen del comprobante">
+        <div class="receipt-highlight"><span>Fecha de firma y registro</span><strong><?= e($receiptCapturedLabel) ?></strong></div>
+        <div class="receipt-highlight"><span>Artículos registrados</span><strong><?= e($receiptItemCount) ?> renglones</strong></div>
+        <div class="receipt-highlight"><span>Unidades entregadas</span><strong><?= e($receiptTotalText) ?></strong></div>
     </div>
+
+    <h3 class="receipt-block-heading">Identificación y responsabilidad</h3>
+    <div class="receipt-facts">
+        <div class="receipt-fact">
+            <span class="receipt-fact-label">Unidad / almacén que entrega</span>
+            <strong><?= e($delivery['p4_name'] ?: $delivery['p4_internal_name'] ?: $delivery['p4_code']) ?></strong>
+        </div>
+        <div class="receipt-fact">
+            <span class="receipt-fact-label">Fecha de entrega</span>
+            <strong><?= e(date('d/m/Y H:i', strtotime((string) $delivery['delivered_at']))) ?></strong>
+        </div>
+        <div class="receipt-fact">
+            <span class="receipt-fact-label">Funcionario receptor</span>
+            <strong><?= e($delivery['recipient_label_snapshot']) ?></strong>
+            <small><?= e($delivery['recipient_rank_snapshot'] ?: 'Rango no registrado') ?> · Posición <?= e($delivery['recipient_position_snapshot'] ?: 'No registrada') ?></small>
+        </div>
+        <div class="receipt-fact">
+            <span class="receipt-fact-label">Documento de identidad del receptor</span>
+            <strong><?= e($delivery['recipient_document_snapshot'] ?: 'No registrado') ?></strong>
+        </div>
+        <div class="receipt-fact">
+            <span class="receipt-fact-label">Funcionario responsable de la entrega</span>
+            <strong><?= e($delivery['delivered_by_label_snapshot']) ?></strong>
+            <small><?= e($delivery['delivered_by_rank_snapshot'] ?: 'Rango no registrado') ?> · Posición <?= e($delivery['delivered_by_position_snapshot'] ?: 'No registrada') ?></small>
+        </div>
+        <div class="receipt-fact">
+            <span class="receipt-fact-label">Documento de referencia, si existe</span>
+            <strong><?= e($delivery['document_number'] ?: 'Sin referencia adicional') ?></strong>
+        </div>
+    </div>
+
     <h3 class="receipt-block-heading">Detalle de artículos entregados</h3>
     <table aria-label="Detalle de artículos entregados">
-        <thead><tr><th>Artículo</th><th>Talla</th><th>Cantidad</th></tr></thead>
+        <thead><tr><th scope="col">Artículo entregado</th><th scope="col">Talla</th><th scope="col">Unidades</th></tr></thead>
         <tbody>
         <?php foreach ($deliveryItems as $item): ?>
             <tr>
                 <td><?= e($item['product_name']) ?></td>
-                <td><?= e($item['size_name'] ?: '—') ?></td>
+                <td><?= e($item['size_name'] ?: 'Sin talla') ?></td>
                 <td><?= e(sindesg_units((float) $item['quantity'])) ?></td>
             </tr>
         <?php endforeach; ?>
         </tbody>
     </table>
+    <div class="receipt-total"><span>Total entregado</span><strong><?= e($receiptTotalText) ?> <?= abs((float) $totalQuantity - 1.0) < 0.000001 ? 'unidad' : 'unidades' ?></strong></div>
+
+    <?php if (!empty($delivery['notes'])): ?>
+        <div class="receipt-additional"><strong>Observaciones registradas:</strong> <?= e($delivery['notes']) ?></div>
+    <?php endif; ?>
+    <?php if ((int) ($delivery['scope_override_enabled'] ?? 0) === 1): ?>
+        <div class="receipt-additional"><strong>Entrega con excepción de adscripción autorizada.</strong>
+            <?= e($delivery['scope_override_reason'] ?: 'Motivo no registrado') ?></div>
+    <?php endif; ?>
+
     <h3 class="receipt-block-heading">Conformidad y recepción</h3>
+    <p class="receipt-attestation">Las firmas corresponden a las evidencias archivadas al confirmar esta entrega. Reemplazar posteriormente una firma institucional no modifica los comprobantes históricos.</p>
     <div class="receipt-signoff">
         <div class="receipt-signature-box">
-            <img alt="Firma manuscrita registrada del funcionario receptor" src="data:image/png;base64,<?= e(base64_encode((string) $receiptEvidence['signature_png'])) ?>">
+            <img class="receipt-signature-image" alt="Firma manuscrita registrada del funcionario receptor" src="data:image/png;base64,<?= e(base64_encode((string) $receiptEvidence['signature_png'])) ?>">
             <div class="receipt-line">Firma del funcionario receptor</div>
             <small><?= e($delivery['recipient_label_snapshot']) ?></small>
         </div>
         <div class="receipt-signature-box">
             <?php if (!empty($issuerReceiptEvidence)): ?>
-                <img alt="Firma histórica del responsable P4" src="data:image/png;base64,<?= e(base64_encode((string)$issuerReceiptEvidence['signature_png'])) ?>">
+                <img class="receipt-signature-image" alt="Firma histórica del responsable P4" src="data:image/png;base64,<?= e(base64_encode((string) $issuerReceiptEvidence['signature_png'])) ?>">
             <?php else: ?>
-                <div style="height:90px;display:grid;place-items:end center;color:#60758a;font-size:10px">Sin firma personal archivada en esta entrega histórica</div>
+                <div class="receipt-missing-signature">Sin firma personal archivada en esta entrega histórica</div>
             <?php endif; ?>
-            <div class="receipt-line">Funcionario responsable de la entrega</div>
+            <div class="receipt-line">Firma del responsable de la entrega</div>
             <small><?= e($delivery['delivered_by_label_snapshot']) ?></small>
             <small>Identificado mediante sesión institucional</small>
         </div>
     </div>
+
     <div class="receipt-integrity">
-        <strong>Control de integridad de la firma</strong>
-        <div>SHA-256: <code><?= e($receiptEvidence['signature_sha256']) ?></code></div>
+        <strong>Control de integridad documental</strong>
+        <div>Firma del receptor · SHA-256: <code><?= e($receiptEvidence['signature_sha256']) ?></code></div>
         <?php if (!empty($issuerReceiptEvidence)): ?>
-            <div>Firma del responsable P4 · SHA-256:
-                <code><?= e($issuerReceiptEvidence['signature_sha256']) ?></code></div>
+            <div>Firma del responsable P4 · SHA-256: <code><?= e($issuerReceiptEvidence['signature_sha256']) ?></code></div>
         <?php endif; ?>
-        <div>Esta huella identifica la imagen de firma almacenada; no constituye por sí sola certificación electrónica.</div>
+        <div class="receipt-integrity-note">Estas huellas identifican las imágenes archivadas. No constituyen por sí solas una firma electrónica certificada ni una validación externa.</div>
     </div>
-    <div class="receipt-footer">
-        <span>Documento generado desde SINDESG · Registro sujeto a auditoría institucional</span>
-        <span><?= e($delivery['delivery_code']) ?></span>
-    </div>
+    <footer class="receipt-footer">
+        <span>Generado desde SINDESG · Evidencia histórica del despacho sujeta a auditoría institucional</span>
+        <span>Folio <?= e($delivery['delivery_code']) ?></span>
+    </footer>
 </section>
 <?php endif; ?>
 
