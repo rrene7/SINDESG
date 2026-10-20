@@ -33,7 +33,7 @@ declare(strict_types=1);
                 <select name="p4_warehouse_id" required>
                     <option value="">Seleccione...</option>
                     <?php foreach ($activeP4s as $p4): ?>
-                        <option value="<?= e($p4['id']) ?>"><?= e($p4['code'] . ' · ' . ($p4['organization_unit_name_snapshot'] ?: $p4['name'])) ?></option>
+                        <option value="<?= e($p4['id']) ?>"><?= e($p4['organization_unit_name_snapshot'] ?: $p4['name']) ?></option>
                     <?php endforeach; ?>
                 </select>
             </label>

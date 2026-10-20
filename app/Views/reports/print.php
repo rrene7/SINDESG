@@ -43,7 +43,7 @@ declare(strict_types=1);
             <?php foreach ($reportRows as $row): ?>
                 <tr>
                     <?php foreach (array_keys($reportColumns) as $key): ?>
-                        <td><?= e((string) ($row[$key] ?? '')) ?></td>
+                        <td><?= e(sindesg_report_value($row, (string) $key)) ?></td>
                     <?php endforeach; ?>
                 </tr>
             <?php endforeach; ?>

@@ -92,6 +92,54 @@ function sindesg_units(int|float|string $quantity): string
     return \App\Services\P4QuantityDisplay::units((float) $quantity);
 }
 
+/** Etiqueta humana sin sustituir los códigos almacenados para auditoría. */
+function sindesg_variant_label(array $row): string
+{
+    $parts = [];
+    $brand = trim((string) ($row['brand_name'] ?? ''));
+    $color = trim((string) ($row['variant_color'] ?? ''));
+    $size = trim((string) ($row['size_name'] ?? ''));
+    if ($brand !== '' && $brand !== '—') $parts[] = $brand;
+    if ($color !== '') $parts[] = $color;
+    if ($size !== '' && $size !== 'S/T' && $size !== '—') $parts[] = 'Talla ' . $size;
+    return $parts ? implode(' · ', $parts) : 'Presentación estándar';
+}
+
+/** Solo para vistas e impresión; la exportación mantiene referencias originales. */
+function sindesg_report_value(array $row, string $key): string
+{
+    $value = (string) ($row[$key] ?? '');
+    $quantityKeys = [
+        'quantity','physical_quantity','committed_quantity','available_quantity',
+        'quantity_requested','quantity_approved','quantity_dispatched',
+        'quantity_received','quantity_delivered','pending_quantity'
+    ];
+    if (in_array($key, $quantityKeys, true)) return sindesg_units((float) $value);
+    if ($key === 'variant_code') return sindesg_variant_label($row);
+    if (in_array($key, ['warehouse_code','p4_code','destination_code'], true)) {
+        return (string) ($row['warehouse_name'] ?? $row['p4_name']
+            ?? $row['destination_name'] ?? 'Almacén institucional');
+    }
+    if ($value === '' || $value === '—') return $value;
+    return match ($key) {
+        'request_code' => 'Solicitud de dotación' .
+            (!empty($row['p4_name']) ? ' · ' . $row['p4_name'] : ''),
+        'transfer_code' => 'Transferencia a ' . ($row['destination_name'] ?? 'almacén P4'),
+        'delivery_code' => 'Entrega a ' . ($row['recipient'] ?? 'funcionario'),
+        'receipt_code' => 'Recepción de artículos',
+        'lot_code' => 'Lote de recepción',
+        'adjustment_code' => 'Ajuste de inventario',
+        'reference_code' => 'Movimiento registrado en kardex',
+        'direction' => match ($value) { 'IN'=>'Entrada', 'OUT'=>'Salida', default=>$value },
+        'status' => match ($value) {
+            'confirmed'=>'Confirmado', 'draft'=>'Borrador', 'cancelled'=>'Cancelado',
+            'received'=>'Recibido', 'dispatched'=>'Despachado', 'approved'=>'Aprobado',
+            'submitted'=>'Enviado', 'rejected'=>'Rechazado', default=>$value
+        },
+        default => $value,
+    };
+}
+
 function csrf_token(): string
 {
     if (!isset($_SESSION['csrf_token']) || !is_string($_SESSION['csrf_token'])) {

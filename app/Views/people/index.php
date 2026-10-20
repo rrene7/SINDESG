@@ -76,7 +76,7 @@ declare(strict_types=1);
     <div class="unit-grid">
         <?php foreach ($rootUnits as $unit): ?>
             <a class="unit-card" href="<?= e(sindesg_url('?module=people&action=unit&id=' . (int) $unit['id'])) ?>">
-                <span class="unit-code"><?= e($unit['system_code'] ?: 'SIN-CÓDIGO') ?></span>
+                <span class="unit-code">Unidad institucional</span>
                 <strong><?= e($unit['official_name']) ?></strong>
                 <small><?= e($unit['unit_type'] ?: 'Unidad') ?></small>
                 <div class="unit-metrics">

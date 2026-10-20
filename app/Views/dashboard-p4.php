@@ -114,10 +114,10 @@ $ready = !empty($p4ScopeReady) && !empty($p4OperationsReadable)
         </section>
     <?php else: ?>
         <section class="p4-v2-metrics" aria-label="Indicadores reales de mi almacén">
-            <article class="p4-v2-metric"><strong><?= e(number_format($totals['requests_waiting_central'],0,',','.')) ?></strong><span>Solicitudes en Central</span><small>Enviadas o en revisión</small></article>
-            <article class="p4-v2-metric"><strong><?= e(number_format($totals['transfers_to_receive'],0,',','.')) ?></strong><span>Transferencias por recibir</span><small>Despachadas, aún sin recepción confirmada</small></article>
-            <article class="p4-v2-metric"><strong><?= e(number_format($totals['beneficiaries_pending'],0,',','.')) ?></strong><span>Funcionarios pendientes</span><small>Con prendas recibidas aún sin entregar</small></article>
-            <article class="p4-v2-metric"><strong><?= e(number_format($totals['deliveries_confirmed'],0,',','.')) ?></strong><span>Entregas confirmadas</span><small>Total histórico de mis almacenes</small></article>
+            <article class="p4-v2-metric"><strong><?= e(sindesg_units((int)$totals['requests_waiting_central'])) ?></strong><span>Solicitudes en Central</span><small>Enviadas o en revisión</small></article>
+            <article class="p4-v2-metric"><strong><?= e(sindesg_units((int)$totals['transfers_to_receive'])) ?></strong><span>Transferencias por recibir</span><small>Despachadas, aún sin recepción confirmada</small></article>
+            <article class="p4-v2-metric"><strong><?= e(sindesg_units((int)$totals['beneficiaries_pending'])) ?></strong><span>Funcionarios pendientes</span><small>Con prendas recibidas aún sin entregar</small></article>
+            <article class="p4-v2-metric"><strong><?= e(sindesg_units((int)$totals['deliveries_confirmed'])) ?></strong><span>Entregas confirmadas</span><small>Total histórico de mis almacenes</small></article>
             <article class="p4-v2-metric"><strong><?= e(\App\Services\P4QuantityDisplay::units((float)$totals['physical_units'])) ?></strong><span>Unidades físicas</span><small>Unidades, no miles · Incluye dotación reservada</small></article>
         </section>
         <section class="p4-v2-panel">
@@ -160,7 +160,7 @@ $ready = !empty($p4ScopeReady) && !empty($p4OperationsReadable)
                         <?php if (sindesg_role_action_allowed($record['module'],'show','GET',(array)sindesg_user())): ?>
                             <a href="<?= e(sindesg_url('?module='.$record['module'].'&action=show&id='.(int)$record['id'])) ?>"><?= e($record['title']) ?></a>
                         <?php else: ?><strong><?= e($record['title']) ?></strong><?php endif; ?>
-                        <small><?= e($record['warehouse_name']) ?> · Ref. <?= e($record['code']) ?></small>
+                        <small><?= e($record['warehouse_name']) ?></small>
                     </div>
                     <span><?= e($statusLabels[(string)$record['status']] ?? (string)$record['status']) ?></span>
                     <span><?= e((string)($record['event_at']??'')) ?></span>

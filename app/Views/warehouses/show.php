@@ -35,7 +35,7 @@ $heroLabel = $isCentral ? 'ALMACÉN CENTRAL' : ($isTransit ? 'INVENTARIO EN TRÁ
                 
                 <div><dt>Unidad actual</dt><dd><?= e($currentUnit['official_name'] ?? 'RRHH no disponible') ?></dd></div>
                 <div><dt>Tipo actual</dt><dd><?= e($currentUnit['unit_type'] ?? '—') ?></dd></div>
-                <div><dt>Código actual</dt><dd><?= e($currentUnit['system_code'] ?? $currentUnit['institutional_code'] ?? '—') ?></dd></div>
+                
             <?php endif; ?>
         </dl>
 

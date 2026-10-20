@@ -344,6 +344,7 @@ final class ReportRepository
         $sql = '
             SELECT
                 w.code AS warehouse_code,
+                COALESCE(w.organization_unit_name_snapshot, w.name) AS warehouse_name,
                 CASE w.warehouse_type
                     WHEN "CENTRAL" THEN "Central"
                     WHEN "P4" THEN "P4"
@@ -447,6 +448,7 @@ final class ReportRepository
             SELECT
                 im.occurred_at,
                 w.code AS warehouse_code,
+                COALESCE(w.organization_unit_name_snapshot, w.name) AS warehouse_name,
                 c.name AS category_name,
                 p.name AS product_name,
                 pv.internal_code AS variant_code,
@@ -561,6 +563,7 @@ final class ReportRepository
                 r.requested_at,
                 r.request_code,
                 w.code AS p4_code,
+                COALESCE(w.organization_unit_name_snapshot, w.name) AS warehouse_name,
                 COALESCE(w.organization_unit_name_snapshot, w.name) AS p4_name,
                 COALESCE(i.beneficiary_label_snapshot, "Solicitud no nominal") AS beneficiary,
                 c.name AS category_name,
@@ -750,6 +753,7 @@ final class ReportRepository
                 a.adjustment_code,
                 a.adjustment_type,
                 w.code AS warehouse_code,
+                COALESCE(w.organization_unit_name_snapshot, w.name) AS warehouse_name,
                 COALESCE(a.affected_employee_label_snapshot, "—") AS affected_employee,
                 c.name AS category_name,
                 p.name AS product_name,
