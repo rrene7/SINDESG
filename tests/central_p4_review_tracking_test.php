@@ -59,7 +59,8 @@ $progress = P4RequestTracking::build(array_merge($request,['status'=>'approved']
     'last_received_at'=>'2026-10-16 11:00:00',
 ]);
 if (!$progress['steps'][4]['done'] || !$progress['steps'][5]['done']
-    || !$progress['steps'][6]['done'] || !$progress['steps'][7]['done']
+    || !$progress['steps'][6]['done'] || $progress['steps'][7]['done']
+    || !$progress['steps'][7]['in_progress']
     || !str_contains($progress['steps'][7]['detail'],'15')
     || $progress['steps'][6]['date']!=='2026-10-16 11:00:00') {
     throw new RuntimeException('El tracking debe reflejar solo movimientos registrados.');

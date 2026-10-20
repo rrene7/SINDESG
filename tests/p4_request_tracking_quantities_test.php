@@ -31,13 +31,17 @@ foreach ([
     'approved' => '1 000 unidades aprobadas',
     'dispatched' => '350 unidades despachadas',
     'received' => '350 unidades recibidas',
-    'delivered' => '2 unidades entregadas a funcionarios',
+    'delivered' => '2 de 1 000 unidades aprobadas entregadas · 998 pendientes',
 ] as $key => $expected) {
-    if (!isset($steps[$key]) || $steps[$key]['detail'] !== $expected || !$steps[$key]['done']) {
+    if (!isset($steps[$key]) || $steps[$key]['detail'] !== $expected
+        || ($key !== 'delivered' && !$steps[$key]['done'])) {
         throw new RuntimeException('Tracking value or milestone changed: ' . $key);
     }
 }
-if (count($steps) !== 8 || $tracking['summary'] !== 'El P4 registra entregas individuales.') {
+if (count($steps) !== 8
+    || $steps['delivered']['done'] !== false
+    || $steps['delivered']['in_progress'] !== true
+    || $tracking['summary'] !== 'Entrega parcial: 2 de 1 000 unidades aprobadas entregadas; 998 pendientes.') {
     throw new RuntimeException('Tracking summary or milestone count unexpectedly changed.');
 }
 $partial = P4RequestTracking::build(
@@ -49,8 +53,9 @@ $p = array_column($partial['steps'], null, 'key');
 if ($p['approved']['detail'] !== '1,5 unidades aprobadas'
     || $p['dispatched']['detail'] !== '1,25 unidades despachadas'
     || $p['received']['detail'] !== '1,125 unidades recibidas'
-    || $p['delivered']['detail'] !== '0 unidades entregadas a funcionarios'
-    || $p['delivered']['done'] !== false) {
+    || $p['delivered']['detail'] !== '0 de 1,5 unidades aprobadas entregadas · 1,5 pendientes'
+    || $p['delivered']['done'] !== false
+    || $p['delivered']['in_progress'] !== false) {
     throw new RuntimeException('Fractional or zero quantities were altered or misleading.');
 }
 $draft = P4RequestTracking::build(['status' => 'draft'], [], []);
@@ -64,7 +69,32 @@ if ($rejected['summary'] !== 'La solicitud fue rechazada por Central.') {
 }
 $source = (string)file_get_contents(dirname(__DIR__) . '/app/Services/P4RequestTracking.php');
 if (str_contains($source, 'number_format(')
-    || substr_count($source, 'P4QuantityDisplay::units(') !== 4) {
+    || substr_count($source, 'P4QuantityDisplay::units(') < 4) {
     throw new RuntimeException('Tracking bypasses institutional formatting.');
 }
-echo "[OK] P4 request tracking renders exact quantities without misleading separators.\n";
+$complete = P4RequestTracking::build(['status'=>'fulfilled'], [
+    'approved'=>350, 'dispatched'=>350, 'received'=>350, 'delivered'=>350,
+], []);
+$completeSteps = array_column($complete['steps'], null, 'key');
+if (!$completeSteps['delivered']['done'] || $completeSteps['delivered']['in_progress']
+    || $complete['summary'] !== 'Entrega de la dotación aprobada completada.') {
+    throw new RuntimeException('Complete individual delivery was not marked completed.');
+}
+$partiallyReceived = P4RequestTracking::build(['status'=>'fulfilled'], [
+    'approved'=>350, 'dispatched'=>200, 'received'=>200, 'delivered'=>200,
+], []);
+if ($partiallyReceived['steps'][7]['done'] || !$partiallyReceived['steps'][7]['in_progress']) {
+    throw new RuntimeException('Delivering received stock must not close an unfulfilled approval.');
+}
+$view = (string) file_get_contents(dirname(__DIR__) . '/app/Views/requests/tracking.php');
+$css = (string) file_get_contents(dirname(__DIR__) . '/public/assets/css/requests.css');
+if (!str_contains($view, "request-tracking-state")
+    || !str_contains($view, "'in-progress'")
+    || !str_contains($css, '.request-tracking-step.in-progress')) {
+    throw new RuntimeException('Partial delivery visual status missing.');
+}
+$show = (string) file_get_contents(dirname(__DIR__) . '/app/Views/requests/show.php');
+if (!str_contains($show, "'fulfilled' => 'Atendida por Central'")) {
+    throw new RuntimeException('Central fulfillment label must be distinct from individual deliveries.');
+}
+echo "[OK] P4 request tracking distinguishes partial and completed individual deliveries.\n";
