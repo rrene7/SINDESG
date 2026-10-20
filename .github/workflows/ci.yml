@@ -108,6 +108,11 @@ jobs:
       - name: P4 request tracking quantity presentation
         run: php tests/p4_request_tracking_quantities_test.php
 
+      - name: P4 nominal list filters and pagination
+        run: |
+          php tests/p4_nominal_list_ui_test.php
+          node --check public/assets/js/requests.js
+
       - name: P4 request ownership guard integration test
         run: php tests/p4_request_guard_integration_test.php
 
