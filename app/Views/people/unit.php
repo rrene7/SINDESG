@@ -5,7 +5,7 @@ declare(strict_types=1);
     <div>
         <span class="eyebrow">ESTRUCTURA RRHH2029</span>
         <h1><?= e($unit['official_name']) ?></h1>
-        <p><?= e($unit['unit_type'] ?: 'Unidad') ?> · <?= e($unit['system_code'] ?: 'Sin código de sistema') ?></p>
+        <p><?= e($unit['unit_type'] ?: 'Unidad') ?></p>
     </div>
     <a class="secondary-button" href="<?= e(sindesg_url('?module=people')) ?>">← Estructura</a>
 </section>
@@ -15,9 +15,9 @@ declare(strict_types=1);
         <span class="eyebrow">UNIDAD VIGENTE</span>
         <h2>Identificación</h2>
         <dl class="people-dl">
-            <div><dt>ID técnico</dt><dd><?= e($unit['id']) ?></dd></div>
-            <div><dt>Código de sistema</dt><dd><?= e($unit['system_code'] ?: '—') ?></dd></div>
-            <div><dt>Código institucional</dt><dd><?= e($unit['institutional_code'] ?: '—') ?></dd></div>
+            <div><dt>Referencia para auditoría</dt><dd><details><summary>Ver identificación técnica</summary><?= e($unit['id']) ?> · <?= e($unit['system_code'] ?: '—') ?> · <?= e($unit['institutional_code'] ?: '—') ?></details></dd></div>
+            
+            
             <div><dt>Abreviatura</dt><dd><?= e($unit['official_abbreviation'] ?: '—') ?></dd></div>
             <div><dt>Tipo</dt><dd><?= e($unit['unit_type'] ?: '—') ?></dd></div>
             <div><dt>Nivel MOI</dt><dd><?= e($unit['moi_level'] ?: '—') ?></dd></div>
@@ -38,7 +38,7 @@ declare(strict_types=1);
             <div class="child-unit-list">
                 <?php foreach ($childUnits as $child): ?>
                     <a href="<?= e(sindesg_url('?module=people&action=unit&id=' . (int) $child['id'])) ?>">
-                        <span><strong><?= e($child['official_name']) ?></strong><small><?= e($child['system_code'] ?: 'Sin código') ?> · <?= e($child['unit_type'] ?: 'Unidad') ?></small></span>
+                        <span><strong><?= e($child['official_name']) ?></strong><small><?= e($child['unit_type'] ?: 'Unidad') ?></small></span>
                         <span><strong><?= e((int) $child['personnel_count']) ?></strong><small>funcionarios</small></span>
                     </a>
                 <?php endforeach; ?>

@@ -14,9 +14,9 @@ declare(strict_types=1);
 </section>
 
 <section class="people-stats">
-    <article><span>Funcionarios con asignación vigente</span><strong><?= e(number_format((int) $rrhhStats['current_people'])) ?></strong></article>
-    <article><span>Unidades vigentes</span><strong><?= e(number_format((int) $rrhhStats['active_units'])) ?></strong></article>
-    <article><span>Rangos registrados</span><strong><?= e(number_format((int) $rrhhStats['ranks_count'])) ?></strong></article>
+    <article><span>Funcionarios con asignación vigente</span><strong><?= e(sindesg_units((int) $rrhhStats['current_people'])) ?></strong></article>
+    <article><span>Unidades vigentes</span><strong><?= e(sindesg_units((int) $rrhhStats['active_units'])) ?></strong></article>
+    <article><span>Rangos registrados</span><strong><?= e(sindesg_units((int) $rrhhStats['ranks_count'])) ?></strong></article>
 </section>
 
 <section class="people-panel">

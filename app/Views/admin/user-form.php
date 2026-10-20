@@ -75,8 +75,8 @@ $isEdit = is_array($securityUser);
                 <label>
                     <input type="checkbox" name="p4_warehouse_ids[]" value="<?= e($warehouse['id']) ?>"
                       <?= in_array((int) $warehouse['id'], (array) ($selectedP4WarehouseIds ?? []), true) ? 'checked' : '' ?>>
-                    <span><strong><?= e($warehouse['code']) ?></strong>
-                    <small><?= e($warehouse['organization_unit_name_snapshot'] ?: $warehouse['name']) ?></small></span>
+                    <span><strong><?= e($warehouse['organization_unit_name_snapshot'] ?: $warehouse['name']) ?></strong>
+                    <small>Almacén P4 autorizado</small></span>
                 </label>
             <?php endforeach; ?>
         </div>
