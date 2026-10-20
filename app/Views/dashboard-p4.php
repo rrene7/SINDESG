@@ -39,6 +39,7 @@ foreach (($p4OperationalSummary ?? []) as $warehouseId => $operations) {
     ] as $type => $info) {
         foreach ($operations[$type] ?? [] as $record) {
             $activity[] = array_merge($record, $info, [
+                'title' => \App\Services\P4ActivityLabel::title($type, $record),
                 'warehouse_name' => $warehouses[(int)$warehouseId] ?? 'Almacén P4',
             ]);
         }
@@ -75,7 +76,7 @@ $ready = !empty($p4ScopeReady) && !empty($p4OperationsReadable)
 .p4-dashboard-v2 .p4-v2-stock-row strong{text-align:right;font-variant-numeric:tabular-nums}
 .p4-dashboard-v2 .p4-v2-activity{display:grid;gap:6px}
 .p4-dashboard-v2 .p4-v2-activity-row{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr) minmax(115px,.6fr);gap:12px;align-items:center;border:1px solid #204b6a;border-radius:8px;padding:10px 12px}
-.p4-dashboard-v2 .p4-v2-activity-row a{color:#8bdcff;text-decoration:none;font-weight:700}
+.p4-dashboard-v2 .p4-v2-activity-row a{color:#8bdcff;text-decoration:none;font-weight:700;overflow-wrap:anywhere}
 .p4-dashboard-v2 .p4-v2-activity-row div{font-size:.84rem}
 .p4-dashboard-v2 .p4-v2-activity-row small{display:block;font-size:.72rem;color:#9bc1d8;margin-top:3px}
 .p4-dashboard-v2 .p4-v2-activity-row>span{font-size:.8rem;color:#d0e3ed}
@@ -163,7 +164,7 @@ $ready = !empty($p4ScopeReady) && !empty($p4OperationsReadable)
                         <small><?= e($record['warehouse_name']) ?></small>
                     </div>
                     <span><?= e($statusLabels[(string)$record['status']] ?? (string)$record['status']) ?></span>
-                    <span><?= e((string)($record['event_at']??'')) ?></span>
+                    <span><?= !empty($record['event_at']) ? e(date('d/m/Y H:i', strtotime((string)$record['event_at']))) : '—' ?></span>
                 </div>
             <?php endforeach; ?>
             <?php if (!$activity): ?><p class="p4-v2-note">Aún no hay trámites registrados para tus almacenes.</p><?php endif; ?>

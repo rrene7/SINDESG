@@ -26,21 +26,61 @@ final class P4OperationalSummary
         $limit = max(1, min($limit, 50));
         return [
             'requests' => $this->rows(
-                'SELECT id, request_code AS code, status, requested_at AS event_at
-                 FROM service_requests WHERE p4_warehouse_id = :warehouse_id
-                 ORDER BY id DESC LIMIT ' . $limit,
+                'SELECT r.id, r.request_code AS code, r.status, r.requested_at AS event_at,
+                        r.requested_by_label_snapshot AS person_label,
+                        (SELECT COALESCE(SUM(i.quantity_requested),0) FROM service_request_items i
+                         WHERE i.request_id=r.id) AS total_quantity,
+                        (SELECT COUNT(*) FROM service_request_items i
+                         WHERE i.request_id=r.id) AS item_count,
+                        (SELECT p.name FROM service_request_items i
+                         JOIN product_variants v ON v.id=i.product_variant_id
+                         JOIN products p ON p.id=v.product_id
+                         WHERE i.request_id=r.id ORDER BY i.id LIMIT 1) AS product_name,
+                        (SELECT sz.name FROM service_request_items i
+                         JOIN product_variants v ON v.id=i.product_variant_id
+                         LEFT JOIN sizes sz ON sz.id=v.size_id
+                         WHERE i.request_id=r.id ORDER BY i.id LIMIT 1) AS size_name
+                 FROM service_requests r WHERE r.p4_warehouse_id = :warehouse_id
+                 ORDER BY r.id DESC LIMIT ' . $limit,
                 $warehouseId
             ),
             'transfers' => $this->rows(
-                'SELECT id, transfer_code AS code, status, prepared_at AS event_at
-                 FROM distributions WHERE destination_warehouse_id = :warehouse_id
-                 ORDER BY id DESC LIMIT ' . $limit,
+                'SELECT d.id, d.transfer_code AS code, d.status,
+                        COALESCE(d.received_at,d.dispatched_at,d.prepared_at) AS event_at,
+                        d.received_by_label_snapshot AS person_label,
+                        (SELECT COALESCE(SUM(i.quantity),0) FROM distribution_items i
+                         WHERE i.distribution_id=d.id) AS total_quantity,
+                        (SELECT COUNT(*) FROM distribution_items i
+                         WHERE i.distribution_id=d.id) AS item_count,
+                        (SELECT p.name FROM distribution_items i
+                         JOIN product_variants v ON v.id=i.product_variant_id
+                         JOIN products p ON p.id=v.product_id
+                         WHERE i.distribution_id=d.id ORDER BY i.id LIMIT 1) AS product_name,
+                        (SELECT sz.name FROM distribution_items i
+                         JOIN product_variants v ON v.id=i.product_variant_id
+                         LEFT JOIN sizes sz ON sz.id=v.size_id
+                         WHERE i.distribution_id=d.id ORDER BY i.id LIMIT 1) AS size_name
+                 FROM distributions d WHERE d.destination_warehouse_id = :warehouse_id
+                 ORDER BY d.id DESC LIMIT ' . $limit,
                 $warehouseId
             ),
             'deliveries' => $this->rows(
-                'SELECT id, delivery_code AS code, status, delivered_at AS event_at
-                 FROM individual_deliveries WHERE p4_warehouse_id = :warehouse_id
-                 ORDER BY id DESC LIMIT ' . $limit,
+                'SELECT d.id, d.delivery_code AS code, d.status, d.delivered_at AS event_at,
+                        d.recipient_label_snapshot AS person_label,
+                        (SELECT COALESCE(SUM(i.quantity),0) FROM individual_delivery_items i
+                         WHERE i.delivery_id=d.id) AS total_quantity,
+                        (SELECT COUNT(*) FROM individual_delivery_items i
+                         WHERE i.delivery_id=d.id) AS item_count,
+                        (SELECT p.name FROM individual_delivery_items i
+                         JOIN product_variants v ON v.id=i.product_variant_id
+                         JOIN products p ON p.id=v.product_id
+                         WHERE i.delivery_id=d.id ORDER BY i.id LIMIT 1) AS product_name,
+                        (SELECT sz.name FROM individual_delivery_items i
+                         JOIN product_variants v ON v.id=i.product_variant_id
+                         LEFT JOIN sizes sz ON sz.id=v.size_id
+                         WHERE i.delivery_id=d.id ORDER BY i.id LIMIT 1) AS size_name
+                 FROM individual_deliveries d WHERE d.p4_warehouse_id = :warehouse_id
+                 ORDER BY d.id DESC LIMIT ' . $limit,
                 $warehouseId
             ),
         ];
