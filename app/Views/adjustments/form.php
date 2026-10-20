@@ -45,12 +45,12 @@ $warehouseTypes = [
             <div class="adjustment-source-grid">
                 <article><span>Despacho original</span><strong><?= e($sourceDeliveryItem['delivery_code']) ?></strong><small><?= e(date('d/m/Y', strtotime((string) $sourceDeliveryItem['delivered_at']))) ?></small></article>
                 <article><span>Funcionario</span><strong><?= e($sourceDeliveryItem['recipient_label_snapshot']) ?></strong><small><?= e($sourceDeliveryItem['recipient_document_snapshot'] ?: '—') ?></small></article>
-                <article><span>P4</span><strong><?= e($sourceDeliveryItem['warehouse_code']) ?></strong><small><?= e($sourceDeliveryItem['warehouse_name'] ?: 'P4') ?></small></article>
-                <article><span>Artículo entregado</span><strong><?= e($sourceDeliveryItem['product_name']) ?></strong><small><?= e($sourceDeliveryItem['variant_code'] . ($sourceDeliveryItem['size_name'] ? ' · Talla ' . $sourceDeliveryItem['size_name'] : '')) ?></small></article>
+                <article><span>P4</span><strong><?= e($sourceDeliveryItem['warehouse_name'] ?: 'Almacén P4') ?></strong><small><?= e($sourceDeliveryItem['warehouse_name'] ?: 'P4') ?></small></article>
+                <article><span>Artículo entregado</span><strong><?= e($sourceDeliveryItem['product_name']) ?></strong><small><?= e($sourceDeliveryItem['size_name'] ? 'Talla ' . $sourceDeliveryItem['size_name'] : 'Presentación estándar') ?></small></article>
             </div>
             <div class="adjustment-source-note">
-                Entregado: <strong><?= e(number_format((float) $sourceDeliveryItem['delivered_quantity'], 3, '.', ',')) ?></strong>
-                · Aún devolvible: <strong><?= e(number_format((float) $sourceDeliveryItem['returnable_quantity'], 3, '.', ',')) ?></strong>
+                Entregado: <strong><?= e(sindesg_units((float) $sourceDeliveryItem['delivered_quantity'])) ?></strong>
+                · Aún devolvible: <strong><?= e(sindesg_units((float) $sourceDeliveryItem['returnable_quantity'])) ?></strong>
             </div>
         <?php endif; ?>
 
@@ -89,7 +89,7 @@ $warehouseTypes = [
                         <?php foreach ($adjustmentVariants as $variant): ?>
                             <option value="<?= e($variant['id']) ?>">
                                 <?= e($variant['product_name']
-                                    . ' · ' . $variant['variant_code']
+                                   
                                     . ($variant['size_name'] ? ' · Talla ' . $variant['size_name'] : '')
                                     . ($variant['brand_name'] ? ' · ' . $variant['brand_name'] : '')) ?>
                             </option>
@@ -134,7 +134,7 @@ $warehouseTypes = [
                         <?php foreach ($replacementVariants as $variant): ?>
                             <option value="<?= e($variant['id']) ?>">
                                 <?= e($variant['product_name']
-                                    . ' · ' . $variant['variant_code']
+                                   
                                     . ($variant['size_name'] ? ' · Talla ' . $variant['size_name'] : '')
                                     . ($variant['brand_name'] ? ' · ' . $variant['brand_name'] : '')) ?>
                             </option>
