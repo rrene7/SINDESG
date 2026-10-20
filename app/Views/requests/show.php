@@ -229,7 +229,7 @@ foreach ($nominalProducts ?? [] as $product) {
 </section>
 <?php endif; ?>
 
-<section class="request-panel">
+<section class="request-panel" data-request-nominal-list>
     <div class="request-section-head">
         <div><span class="eyebrow">DETALLE</span><h2>Necesidades registradas</h2></div>
         <span class="request-total"><?= e(count($requestItems)) ?> renglones</span>
@@ -238,14 +238,41 @@ foreach ($nominalProducts ?? [] as $product) {
     <?php if ($requestItems === []): ?>
         <div class="request-empty compact"><p>El borrador todavía no contiene artículos.</p></div>
     <?php else: ?>
+        <div class="request-nominal-tools" data-request-nominal-controls hidden>
+            <label>
+                <span>Buscar funcionario, artículo o talla</span>
+                <input type="search" data-request-nominal-search placeholder="Escriba nombre, artículo o talla…" autocomplete="off">
+            </label>
+            <label>
+                <span>Situación de entrega</span>
+                <select data-request-nominal-filter>
+                    <option value="all">Todas las situaciones</option>
+                    <option value="ready">Disponible para entregar</option>
+                    <option value="waiting">Pendiente de recepción</option>
+                    <option value="delivered">Entregado</option>
+                    <option value="review">Pendiente de aprobación</option>
+                    <option value="consolidated">Cantidad consolidada</option>
+                </select>
+            </label>
+            <label>
+                <span>Renglones por página</span>
+                <select data-request-nominal-page-size>
+                    <option value="10">10</option>
+                    <option value="25" selected>25</option>
+                    <option value="50">50</option>
+                </select>
+            </label>
+            <p data-request-nominal-count aria-live="polite"></p>
+        </div>
         <div class="responsive-table">
             <table>
                 <thead>
-                <tr><th>Artículo</th><th>Variante</th><th>Talla</th><th>Beneficiario</th><th>Solicitado</th><th>Stock central</th><th>Comprometible</th><th>Aprobado</th><th>Despachado</th><th>Recibido P4</th><th>Entregado funcionario</th><?php if ($serviceRequest['status'] === 'draft'): ?><th></th><?php endif; ?></tr>
+                <tr><th>Artículo</th><th>Variante</th><th>Talla</th><th>Beneficiario</th><th>Solicitado</th><th>Stock central</th><th>Comprometible</th><th>Aprobado</th><th>Despachado</th><th>Recibido P4</th><th>Entregado funcionario</th><th>Situación</th><?php if ($serviceRequest['status'] === 'draft'): ?><th></th><?php endif; ?></tr>
                 </thead>
                 <tbody>
                 <?php foreach ($requestItems as $item): ?>
-                    <tr>
+                    <?php $nominalState = \App\Services\P4NominalLineState::classify($item); ?>
+                    <tr data-request-nominal-row data-request-line-state="<?= e($nominalState['key']) ?>">
                         <td><strong><?= e($item['product_name']) ?></strong><small class="request-cell-sub"><?= e($item['category_name']) ?></small></td>
                         <td><?= e(($item['size_name'] ?? '') ? 'Talla ' . $item['size_name'] : 'Presentación estándar') ?></td>
                         <td><?= e($item['size_name'] ?: '—') ?></td>
@@ -284,6 +311,7 @@ foreach ($nominalProducts ?? [] as $product) {
                                 </a>
                             <?php endif; ?>
                         </td>
+                        <td><span class="request-nominal-state state-<?= e($nominalState['key']) ?>"><?= e($nominalState['label']) ?></span></td>
                         <?php if ($serviceRequest['status'] === 'draft'): ?>
                             <td>
                                 <form method="post" action="<?= e(sindesg_url('?module=requests&action=remove-item')) ?>">
@@ -299,6 +327,13 @@ foreach ($nominalProducts ?? [] as $product) {
                 </tbody>
             </table>
         </div>
+        <p class="request-nominal-empty" data-request-nominal-empty hidden>No hay renglones que coincidan con los filtros seleccionados.</p>
+        <nav class="request-nominal-pagination" data-request-nominal-pagination aria-label="Páginas de renglones nominales" hidden>
+            <button type="button" class="secondary-button" data-request-nominal-prev>← Anterior</button>
+            <span data-request-nominal-page aria-live="polite"></span>
+            <button type="button" class="secondary-button" data-request-nominal-next>Siguiente →</button>
+        </nav>
+        <p class="request-nominal-help">La situación se calcula a partir de lo aprobado, recibido y entregado en esta solicitud. No representa el stock libre de todo el P4.</p>
     <?php endif; ?>
 </section>
 

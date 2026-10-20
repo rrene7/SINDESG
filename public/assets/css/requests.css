@@ -216,3 +216,22 @@ form[action*='import-nominal-file'] label:has(input[type='checkbox']){display:fl
  .central-nominees{grid-template-columns:1fr}
  .central-overview .request-verification-summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
 }
+
+/* Lista nominal: controles accesibles y paginación progresiva (con JS). */
+.request-nominal-tools {display:grid;grid-template-columns:minmax(210px,2fr) minmax(180px,1.3fr) 150px;gap:10px;align-items:end;margin:16px 0}
+.request-nominal-tools label {display:grid;gap:5px;min-width:0;font-size:.8rem;color:#b8d9ed}
+.request-nominal-tools input,.request-nominal-tools select {width:100%;min-width:0;padding:11px 12px;border:1px solid rgba(85,165,218,.48);border-radius:9px;background:#061e36;color:#edf7ff;font:inherit}
+.request-nominal-tools input:focus-visible,.request-nominal-tools select:focus-visible {outline:2px solid #74caff;outline-offset:2px}
+.request-nominal-tools p {grid-column:1/-1;margin:0;color:#a9d9f1;font-size:.79rem}
+.request-nominal-state {display:inline-block;border:1px solid #5a8db3;border-radius:999px;padding:5px 8px;font-size:.74rem;font-weight:700;white-space:normal;min-width:110px}
+.request-nominal-state.state-ready {color:#8ff3d0;border-color:#34bf98}
+.request-nominal-state.state-delivered {color:#a1d2ff;border-color:#519de5}
+.request-nominal-state.state-waiting {color:#ffce80;border-color:#a97a32}
+.request-nominal-state.state-review,.request-nominal-state.state-consolidated {color:#bcd3e3;border-color:#59758b}
+[data-request-nominal-row][hidden],[data-request-nominal-controls][hidden],[data-request-nominal-pagination][hidden],[data-request-nominal-empty][hidden] {display:none!important}
+.request-nominal-pagination {display:flex;align-items:center;justify-content:flex-end;gap:12px;margin:14px 0 5px}
+.request-nominal-pagination span,.request-nominal-help,.request-nominal-empty {color:#b5d5e9;font-size:.8rem}
+.request-nominal-pagination button:disabled {opacity:.42;cursor:not-allowed}
+.request-nominal-help {margin:12px 0 0}
+@media(max-width:760px){.request-nominal-tools {grid-template-columns:1fr 1fr}.request-nominal-tools label:first-child {grid-column:1/-1}}
+@media(max-width:450px){.request-nominal-tools {grid-template-columns:1fr}.request-nominal-tools label:first-child {grid-column:auto}.request-nominal-pagination {justify-content:space-between}}

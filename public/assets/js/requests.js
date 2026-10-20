@@ -545,3 +545,66 @@
         document.addEventListener('DOMContentLoaded', init, {once: true});
     } else init();
 })();
+
+/* Vista nominal: búsqueda, filtro y paginación solo en el navegador.
+ * Todas las líneas siguen protegidas por la consulta/autorización de servidor.
+ * Sin solicitudes de red y sin modificar cantidades, formularios ni kardex. */
+(() => {
+    const init = () => {
+        const root = document.querySelector('[data-request-nominal-list]');
+        if (!root) return;
+        const controls = root.querySelector('[data-request-nominal-controls]');
+        const rows = Array.from(root.querySelectorAll('[data-request-nominal-row]'));
+        const search = root.querySelector('[data-request-nominal-search]');
+        const filter = root.querySelector('[data-request-nominal-filter]');
+        const size = root.querySelector('[data-request-nominal-page-size]');
+        const count = root.querySelector('[data-request-nominal-count]');
+        const nav = root.querySelector('[data-request-nominal-pagination]');
+        const empty = root.querySelector('[data-request-nominal-empty]');
+        const pageLabel = root.querySelector('[data-request-nominal-page]');
+        const previous = root.querySelector('[data-request-nominal-prev]');
+        const next = root.querySelector('[data-request-nominal-next]');
+        if (!rows.length || !controls || !search || !filter || !size
+            || !count || !nav || !empty || !pageLabel || !previous || !next) return;
+
+        const normalize = (value) => String(value || '').normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('es');
+        const indexed = rows.map(row => ({
+            row,
+            state: row.dataset.requestLineState || '',
+            text: normalize(row.textContent)
+        }));
+        let page = 0;
+        const update = () => {
+            const term = normalize(search.value.trim());
+            const state = filter.value;
+            const perPage = Number(size.value) || 25;
+            const matches = indexed.filter(entry =>
+                (state === 'all' || entry.state === state) && entry.text.includes(term));
+            const totalPages = Math.max(1, Math.ceil(matches.length / perPage));
+            page = Math.min(page, totalPages - 1);
+            const from = page * perPage;
+            const visible = new Set(matches.slice(from, from + perPage).map(entry => entry.row));
+            rows.forEach(row => { row.hidden = !visible.has(row); });
+            const first = matches.length ? from + 1 : 0;
+            const last = Math.min(from + perPage, matches.length);
+            count.textContent = 'Mostrando ' + first + '–' + last + ' de '
+                + matches.length + ' renglones coincidentes (' + rows.length + ' en la solicitud)';
+            pageLabel.textContent = 'Página ' + (page + 1) + ' de ' + totalPages;
+            previous.disabled = page === 0;
+            next.disabled = page >= totalPages - 1;
+            empty.hidden = matches.length !== 0;
+        };
+        controls.hidden = false;
+        nav.hidden = false;
+        search.addEventListener('input', () => { page = 0; update(); });
+        filter.addEventListener('change', () => { page = 0; update(); });
+        size.addEventListener('change', () => { page = 0; update(); });
+        previous.addEventListener('click', () => { if (page > 0) { page -= 1; update(); } });
+        next.addEventListener('click', () => { page += 1; update(); });
+        update();
+    };
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init, {once: true});
+    } else init();
+})();
