@@ -403,7 +403,8 @@ $receiptTotalText = sindesg_units((float) $totalQuantity);
  @page{size:A4 portrait;margin:13mm}
  html,body{background:#fff!important;color:#000!important}
  body::before,.site-header,.main-nav,.more-menu,.site-footer,.flash-stack,.search-overlay{display:none!important}
- .app-shell,.main-content{background:transparent!important;border:0!important;box-shadow:none!important;max-width:none!important;width:100%!important;margin:0!important;padding:0!important}
+ .app-shell,.main-content{background:transparent!important;border:0!important;box-shadow:none!important;max-width:none!important;width:100%!important;margin:0!important;padding:0!important;min-height:0!important}
+ html{color-scheme:light!important}
  .main-content > :not(#signed-receipt){display:none!important}
  #signed-receipt{position:static!important;display:block!important;visibility:visible!important;max-width:none!important;width:100%!important;margin:0!important;padding:0!important;border:0!important;border-radius:0!important;box-shadow:none!important;background:#fff!important;color:#162c41!important}
  #signed-receipt .receipt-print-action{display:none!important}
