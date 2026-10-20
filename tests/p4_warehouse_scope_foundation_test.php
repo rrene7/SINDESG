@@ -27,7 +27,8 @@ $actionCases = [
     ['P4', 'reports', 'index', 'GET', false],
     ['P4', 'warehouses', 'new', 'GET', false],
     ['P4', 'warehouses', 'save', 'POST', false],
-    ['P4', 'warehouses', 'index', 'GET', true],
+    // P4 home shows assigned units; global warehouse listing remains closed.
+    ['P4', 'warehouses', 'index', 'GET', false],
     ['P4', 'distribution', 'receive', 'POST', true],
     ['P4', 'distribution', 'dispatch', 'POST', false],
     ['CENTRAL', 'distribution', 'receive', 'POST', false],
