@@ -6,8 +6,8 @@ $root = dirname(__DIR__);
 $repo = (string)file_get_contents($root.'/app/Repositories/DeliveryRepository.php');
 $controller = (string)file_get_contents($root.'/app/Controllers/DeliveryController.php');
 $routes = (string)file_get_contents($root.'/app/bootstrap.php');
-$start = strpos($repo, 'public function pendingNominalForUser(');
-$end = strpos($repo, 'public function pendingNominalLine(', $start === false ? 0 : $start);
+$start = strpos($repo, 'public function pendingNominalPageForUser(');
+$end = strpos($repo, 'public function pendingNominalOptionsForUser(', $start === false ? 0 : $start);
 if ($start === false || $end === false || $end <= $start) {
     throw new RuntimeException('User-scoped nominal queue missing.');
 }
@@ -19,7 +19,7 @@ if ($where === false || $limit === false || $where >= $limit
     || !str_contains($query, "w.warehouse_type='P4' AND w.is_active=1")) {
     throw new RuntimeException('P4 scoped SQL must filter authorization before LIMIT.');
 }
-foreach (['pendingNominalForUser(', 'assertNominal(', 'assertDelivery(', 'if ($this->isP4Only())'] as $required) {
+foreach (['pendingNominalPageForUser(', 'pendingNominalOptionsForUser(', 'assertNominal(', 'assertDelivery(', 'if ($this->isP4Only())'] as $required) {
     if (!str_contains($controller, $required)) {
         throw new RuntimeException('P4 controller guard missing: '.$required);
     }
