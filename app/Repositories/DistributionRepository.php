@@ -37,14 +37,25 @@ final class DistributionRepository
         ];
     }
 
-    public function recent(int $limit = 60): array
+    public function recent(int $limit = 60, ?array $allowedP4Ids = null): array
     {
         $limit = max(1, min($limit, 100));
+        if ($allowedP4Ids === []) {
+            return [];
+        }
+        $ids = $allowedP4Ids === null ? [] : array_values(array_unique(array_map('intval', $allowedP4Ids)));
+        $ids = array_values(array_filter($ids, static fn (int $id): bool => $id > 0));
+        if ($allowedP4Ids !== null && $ids === []) {
+            return [];
+        }
+        $scope = $allowedP4Ids === null ? '' : ' WHERE d.destination_warehouse_id IN (' . implode(',', $ids) . ')';
+
 
         return $this->pdo->query('
             SELECT
                 d.id,
                 d.transfer_code,
+                d.destination_warehouse_id,
                 d.status,
                 d.prepared_at,
                 d.authorized_at,
@@ -59,6 +70,7 @@ final class DistributionRepository
             INNER JOIN service_requests r ON r.id = d.request_id
             INNER JOIN warehouses wd ON wd.id = d.destination_warehouse_id
             LEFT JOIN distribution_items di ON di.distribution_id = d.id
+            ' . $scope . '
             GROUP BY d.id
             ORDER BY d.id DESC
             LIMIT ' . $limit)->fetchAll();
