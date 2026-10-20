@@ -289,6 +289,8 @@ final class DeliveryController
                     || !str_starts_with($png, "\x89PNG\r\n\x1a\n")) {
                     throw new InvalidArgumentException('Firma inválida. Capture nuevamente el recibido.');
                 }
+                // Validate the recipient image with the same structural PNG checks used for P4 signatures.
+                $png = \App\Services\P4IssuerSignature::validatePng($png);
                 $actorId = (int) (sindesg_user()['id'] ?? 0);
                 if ($actorId <= 0) throw new InvalidArgumentException('Sesión inválida.');
                 $employeeId = (int) (sindesg_user()['employee_id'] ?? 0);

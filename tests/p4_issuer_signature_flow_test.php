@@ -49,6 +49,7 @@ $schema=(string)file_get_contents($root.'/database/schema/022_p4_issuer_signatur
 $dashboard=(string)file_get_contents($root.'/app/Views/dashboard-p4.php');
 foreach ([
  [$ctrl, "issuer_ack"],[$ctrl,"'issuer_user_id' => \$actorId"],
+ [$ctrl, 'P4IssuerSignature::validatePng($png)'],
  [$ctrl, "'issuer_employee_id' => \$employeeId"],
  [$deliveryRepo, "'delivered_by_employee_id'"],
  [$dashboard, '✍ Mi firma institucional'],
