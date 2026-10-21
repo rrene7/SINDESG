@@ -44,6 +44,7 @@ $pageUrl = static function (int $page) use ($filterSearch, $filterSize, $filterR
         </div>
         <div class="p4-delivery-header-actions">
             <div class="p4-delivery-count"><strong><?= e($totalPending) ?></strong><span>renglones pendientes que coinciden</span></div>
+            <a class="secondary-button" href="<?= e(sindesg_url('?module=deliveries&action=nominal-report')) ?>">Reporte nominal →</a>
             <a class="secondary-button" href="<?= e(sindesg_url('?module=dashboard')) ?>">← Mi panel P4</a>
         </div>
     </header>
