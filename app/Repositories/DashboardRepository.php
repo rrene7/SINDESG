@@ -76,6 +76,35 @@ final class DashboardRepository
         SQL)->fetchAll();
     }
 
+    /**
+     * Recently created catalogue records, independently of physical stock.
+     * Read only. Stable newest-first ordering (timestamp + PK) avoids hiding
+     * freshly registered uniforms behind high-stock footwear.
+     */
+    public function recentProducts(int $limit = 8): array
+    {
+        $limit = max(1, min(12, $limit));
+
+        return $this->pdo->query('
+            SELECT
+                p.id, p.internal_code, p.name, p.created_at,
+                c.id AS category_id, c.name AS category_name,
+                (
+                    SELECT pi.path
+                    FROM product_images pi
+                    WHERE pi.product_id = p.id AND pi.is_primary = 1
+                    ORDER BY pi.id DESC
+                    LIMIT 1
+                ) AS primary_image,
+                CAST(COALESCE(ips.quantity_on_hand, 0) AS DECIMAL(14,3)) AS stock_total
+            FROM products p
+            INNER JOIN categories c ON c.id = p.category_id
+            LEFT JOIN v_inventory_product_stock ips ON ips.product_id = p.id
+            WHERE p.status = \'active\' AND c.is_active = 1
+            ORDER BY p.created_at DESC, p.id DESC
+            LIMIT ' . $limit)->fetchAll();
+    }
+
     public function categoryFocusData(array $categories): array
     {
         $result = [];

@@ -73,6 +73,9 @@ jobs:
       - name: Dynamic dashboard test
         run: php tests/dashboard_dynamic_test.php
 
+      - name: Dashboard recently registered catalogue articles
+        run: php tests/dashboard_recent_products_test.php
+
       - name: P4 dashboard flow isolation test
         run: php tests/p4_dashboard_flow_test.php
 

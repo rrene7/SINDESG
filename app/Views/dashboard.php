@@ -163,6 +163,52 @@ foreach ($cards as $category) {
     </div>
 </section>
 
+<section class="section-block dashboard-recent-products" aria-labelledby="dashboard-recent-products-title">
+    <div class="section-heading">
+        <div>
+            <span class="eyebrow">ACTUALIZACIONES DEL CATÁLOGO</span>
+            <h2 id="dashboard-recent-products-title">Últimos artículos incorporados</h2>
+            <p class="dashboard-recent-hint">Los artículos nuevos aparecen aquí aunque todavía no tengan existencias. El artículo destacado principal continúa seleccionándose por disponibilidad.</p>
+        </div>
+        <a class="dashboard-recent-all" href="<?= e(sindesg_url('?module=inventory')) ?>">Ver inventario completo →</a>
+    </div>
+
+    <?php if (($recentDashboardProducts ?? []) === []): ?>
+        <div class="dashboard-recent-empty">Aún no hay artículos activos registrados en el catálogo.</div>
+    <?php else: ?>
+        <div class="dashboard-recent-grid">
+            <?php foreach ($recentDashboardProducts as $recentProduct): ?>
+                <?php
+                $recentId = (int) ($recentProduct['id'] ?? 0);
+                $recentImage = (string) ($recentProduct['primary_image'] ?? '');
+                $recentStock = (float) ($recentProduct['stock_total'] ?? 0);
+                ?>
+                <a class="dashboard-recent-product" href="<?= e(sindesg_url('?module=inventory&action=product&id=' . $recentId)) ?>">
+                    <span class="dashboard-recent-photo">
+                        <?php if ($recentImage !== ''): ?>
+                            <img src="<?= e(sindesg_upload_url($recentImage)) ?>" alt="<?= e($recentProduct['name']) ?>" loading="lazy">
+                        <?php else: ?>
+                            <span class="dashboard-recent-monogram" aria-hidden="true"><?= e($categoryInitials(['slug' => (string) ($recentProduct['category_name'] ?? 'articulo')])) ?></span>
+                            <small>Sin fotografía</small>
+                        <?php endif; ?>
+                    </span>
+                    <span class="dashboard-recent-copy">
+                        <span class="dashboard-recent-category"><?= e($recentProduct['category_name']) ?></span>
+                        <strong><?= e($recentProduct['name']) ?></strong>
+                        <small class="dashboard-recent-code"><?= e((string) ($recentProduct['internal_code'] ?? '')) ?></small>
+                        <span class="dashboard-recent-stock">
+                            <?= $recentStock > 0
+                                ? 'Existencia institucional: ' . e(sindesg_units($recentStock))
+                                : 'Registrado · Sin existencias' ?>
+                        </span>
+                        <span class="dashboard-recent-open">Ver artículo →</span>
+                    </span>
+                </a>
+            <?php endforeach; ?>
+        </div>
+    <?php endif; ?>
+</section>
+
 <script type="application/json" data-dashboard-category-focus>
 <?= json_encode(
     $categoryFocusPayload,
