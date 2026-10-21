@@ -9,6 +9,10 @@ $root = dirname(__DIR__);
 $view = file_get_contents($root . '/app/Views/dashboard.php');
 $css = file_get_contents($root . '/public/assets/css/app.css');
 $javascript = file_get_contents($root . '/public/assets/js/app.js');
+// Git checkout on Windows can produce CRLF; check the same JS contract on both OSes.
+if (is_string($javascript)) {
+    $javascript = str_replace(["\r\n", "\r"], "\n", $javascript);
+}
 $layout = file_get_contents($root . '/app/Views/layout.php');
 
 foreach (['view' => $view, 'css' => $css, 'javascript' => $javascript, 'layout' => $layout] as $name => $source) {
@@ -43,6 +47,16 @@ $require($view, [
     'data-feature-available',
     'data-feature-sizes',
 ], 'vista');
+
+// Guard against CRLF false negatives while still requiring both statements.
+$presentScript = "renderImage(entry);\n            replayPresentation();";
+if (str_contains($javascript, $presentScript) !== true) {
+    throw new RuntimeException('La presentación automática no sigue a la actualización de imagen.');
+}
+$crlfFixture = str_replace("\n", "\r\n", $javascript);
+if (!str_contains(str_replace(["\r\n", "\r"], "\n", $crlfFixture), $presentScript)) {
+    throw new RuntimeException('Regresión de compatibilidad Windows CRLF.');
+}
 
 $require($javascript, [
     "qs('[data-digital-turntable]', focusPanel)",
