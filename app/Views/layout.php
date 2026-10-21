@@ -37,6 +37,9 @@ $authUser = sindesg_user();
     <?php if ($currentModule === 'deliveries'): ?>
         <link rel="stylesheet" href="<?= e(sindesg_asset('css/deliveries.css')) ?>">
     <?php endif; ?>
+    <?php if ($currentModule === 'deliveries' && $currentAction === 'nominal-report'): ?>
+        <link rel="stylesheet" href="<?= e(sindesg_asset('css/nominal-report.css')) ?>">
+    <?php endif; ?>
     <?php if ($currentModule === 'adjustments'): ?>
         <link rel="stylesheet" href="<?= e(sindesg_asset('css/adjustments.css')) ?>">
     <?php endif; ?>
