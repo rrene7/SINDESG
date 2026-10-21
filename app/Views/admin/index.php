@@ -15,6 +15,17 @@ declare(strict_types=1);
 
 <section class="security-panel">
     <div class="security-section-head">
+        <div>
+            <span class="eyebrow">SUPERADMINISTRACIÓN · CATALOGO INSTITUCIONAL</span>
+            <h2>Gobierno de categorías y artículos</h2>
+            <p>Edite categorías, ordene el catálogo y retire de la lista activa solo categorías sin artículos vinculados. Los códigos institucionales y las existencias están protegidos.</p>
+        </div>
+        <a class="primary-button" href="<?= e(sindesg_url('?module=inventory&action=categories')) ?>">Administrar categorías →</a>
+    </div>
+</section>
+
+<section class="security-panel">
+    <div class="security-section-head">
         <div><span class="eyebrow">USUARIOS</span><h2>Cuentas SINDESG</h2></div>
         <span><?= e(count($securityUsers)) ?> cuentas</span>
     </div>
