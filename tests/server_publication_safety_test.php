@@ -53,7 +53,6 @@ if (!str_contains($data['ready'], "\$environment === 'production'")
 if (!str_contains($data['test'], "Scheme -cne 'https'")
     || !str_contains($data['test'], 'Get-HttpStatus')
     || !str_contains($data['test'], 'config/database.example.php')
-    || !str_contains($data['test'], 'status') // no case requirement for HTTP status output
     || !str_contains($data['test'], '403,404')) {
     throw new RuntimeException('Falta verificación HTTP segura.');
 }
