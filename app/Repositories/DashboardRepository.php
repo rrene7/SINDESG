@@ -100,7 +100,7 @@ final class DashboardRepository
             FROM products p
             INNER JOIN categories c ON c.id = p.category_id
             LEFT JOIN v_inventory_product_stock ips ON ips.product_id = p.id
-            WHERE p.status = "active" AND c.is_active = 1
+            WHERE p.status = \'active\' AND c.is_active = 1
             ORDER BY p.created_at DESC, p.id DESC
             LIMIT ' . $limit)->fetchAll();
     }
