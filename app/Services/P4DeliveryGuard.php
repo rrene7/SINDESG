@@ -51,6 +51,15 @@ final class P4DeliveryGuard
                    SELECT 1 FROM individual_delivery_items di
                    WHERE di.delivery_id=d.id AND di.request_item_id IS NULL
                )
+               AND NOT EXISTS (
+                   SELECT 1 FROM individual_delivery_items linked
+                   JOIN service_request_items line ON line.id=linked.request_item_id
+                   JOIN service_requests request_owner ON request_owner.id=line.request_id
+                   WHERE linked.delivery_id=d.id
+                     AND (request_owner.p4_warehouse_id<>d.p4_warehouse_id
+                          OR line.beneficiary_employee_id<>d.recipient_employee_id
+                          OR line.product_variant_id<>linked.product_variant_id)
+               )
                LIMIT 1"
         );
         $stmt->execute(['delivery'=>$deliveryId,'user'=>$userId]);
