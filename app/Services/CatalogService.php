@@ -258,8 +258,31 @@ final class CatalogService
 
     private function slugify(string $value): string
     {
-        $normalized = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $value);
-        $normalized = is_string($normalized) ? $normalized : $value;
+        // Windows PHP iconv() may convert accented vowels to '?' rather than
+        // transliterate them. Handle common Latin letters deterministically
+        // before the optional iconv fallback, so the same institutional name
+        // generates exactly the same slug on XAMPP and GitHub/Linux.
+        $normalized = strtr($value, [
+            'Á' => 'A', 'À' => 'A', 'Â' => 'A', 'Ä' => 'A', 'Ã' => 'A',
+            'á' => 'a', 'à' => 'a', 'â' => 'a', 'ä' => 'a', 'ã' => 'a',
+            'É' => 'E', 'È' => 'E', 'Ê' => 'E', 'Ë' => 'E',
+            'é' => 'e', 'è' => 'e', 'ê' => 'e', 'ë' => 'e',
+            'Í' => 'I', 'Ì' => 'I', 'Î' => 'I', 'Ï' => 'I',
+            'í' => 'i', 'ì' => 'i', 'î' => 'i', 'ï' => 'i',
+            'Ó' => 'O', 'Ò' => 'O', 'Ô' => 'O', 'Ö' => 'O', 'Õ' => 'O',
+            'ó' => 'o', 'ò' => 'o', 'ô' => 'o', 'ö' => 'o', 'õ' => 'o',
+            'Ú' => 'U', 'Ù' => 'U', 'Û' => 'U', 'Ü' => 'U',
+            'ú' => 'u', 'ù' => 'u', 'û' => 'u', 'ü' => 'u',
+            'Ñ' => 'N', 'ñ' => 'n', 'Ç' => 'C', 'ç' => 'c',
+            'Æ' => 'AE', 'æ' => 'ae', 'Œ' => 'OE', 'œ' => 'oe', 'ß' => 'ss',
+        ]);
+
+        // Also handle decomposed Unicode accents: "ta" + combining acute.
+        $normalized = preg_replace('/[\x{0300}-\x{036F}]/u', '', $normalized) ?? $normalized;
+        $ascii = @iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $normalized);
+        if (is_string($ascii)) {
+            $normalized = $ascii;
+        }
         $normalized = strtolower($normalized);
         $normalized = preg_replace('/[^a-z0-9]+/', '-', $normalized) ?? '';
         $normalized = trim($normalized, '-');
