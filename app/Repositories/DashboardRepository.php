@@ -77,18 +77,16 @@ final class DashboardRepository
     }
 
     /**
-     * Recently created catalogue records, independently of physical stock.
-     * Read only. Stable newest-first ordering (timestamp + PK) avoids hiding
-     * freshly registered uniforms behind high-stock footwear.
+     * Full active product carousel; every catalogue article appears, even
+     * before stock is received. No artificial LIMIT or stock-based exclusion.
+     * It is distinct from the category carousel (which is intentionally gone).
      */
-    public function recentProducts(int $limit = 8): array
+    public function productCarouselCards(): array
     {
-        $limit = max(1, min(12, $limit));
-
-        return $this->pdo->query('
+        return $this->pdo->query(<<<'SQL'
             SELECT
-                p.id, p.internal_code, p.name, p.created_at,
-                c.id AS category_id, c.name AS category_name,
+                p.id, p.internal_code, p.name, p.description, p.sex, p.color,
+                p.created_at, c.id AS category_id, c.name AS category_name,
                 (
                     SELECT pi.path
                     FROM product_images pi
@@ -100,9 +98,59 @@ final class DashboardRepository
             FROM products p
             INNER JOIN categories c ON c.id = p.category_id
             LEFT JOIN v_inventory_product_stock ips ON ips.product_id = p.id
-            WHERE p.status = \'active\' AND c.is_active = 1
+            WHERE p.status = 'active' AND c.is_active = 1
             ORDER BY p.created_at DESC, p.id DESC
-            LIMIT ' . $limit)->fetchAll();
+        SQL)->fetchAll();
+    }
+
+    /**
+     * Populate each selectable article with its own real quantities/sizes.
+     * Never substitute the category total for an article's inventory.
+     *
+     * @param array<array<string,mixed>> $products
+     */
+    public function productCarouselFocusData(array $products): array
+    {
+        $result = [];
+        foreach ($products as $product) {
+            $productId = (int) ($product['id'] ?? 0);
+            if ($productId <= 0) {
+                continue;
+            }
+            $stock = $this->stockBreakdownForProduct($productId);
+            $result[$productId] = [
+                'category' => [
+                    'name' => (string) ($product['category_name'] ?? 'Inventario'),
+                    'initials' => 'SG',
+                ],
+                'product' => [
+                    'id' => $productId,
+                    'name' => (string) $product['name'],
+                    'internal_code' => (string) ($product['internal_code'] ?? ''),
+                    'description' => (string) ($product['description'] ?? ''),
+                    'color' => (string) ($product['color'] ?? ''),
+                    'sex' => (string) ($product['sex'] ?? 'no_aplica'),
+                    'url' => '?module=inventory&action=product&id=' . $productId,
+                    'image_path' => (string) ($product['primary_image'] ?? ''),
+                ],
+                'stock' => [
+                    'central' => (float) $stock['central'],
+                    'committed' => (float) $stock['committed'],
+                    'available' => (float) $stock['available'],
+                    'p4' => (float) $stock['p4'],
+                    'transit' => (float) $stock['transit'],
+                    'institutional' => (float) ($product['stock_total'] ?? 0),
+                ],
+                'sizes' => array_map(
+                    static fn (array $size): array => [
+                        'name' => (string) ($size['size_name'] ?? 'S/T'),
+                        'quantity' => (float) ($size['quantity_on_hand'] ?? 0),
+                    ],
+                    $this->sizesForProduct($productId)
+                ),
+            ];
+        }
+        return $result;
     }
 
     public function categoryFocusData(array $categories): array
