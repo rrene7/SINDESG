@@ -31,7 +31,7 @@ $editing = isset($category) && is_array($category);
         <div class="auto-code-note span-2">
             <span class="auto-code-badge"><?= $editing ? 'FIJO' : 'AUTO' ?></span>
             <div>
-                <strong><?= $editing ? e($category['code']) : 'Código de categoría automático' ?></strong>
+                <strong><?= $editing ? e($category['code']) : 'Código de categoría generado por SINDESG' ?></strong>
                 <small><?= $editing
                     ? 'Este código y su identificador interno son permanentes para conservar referencias y auditoría.'
                     : 'SINDESG generará CAT-000011, CAT-000012, etc. El usuario no puede modificarlo.' ?></small>
