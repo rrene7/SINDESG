@@ -288,7 +288,7 @@ function sindesg_role_action_allowed(string $module, string $action, string $met
         if ($module === 'deliveries') {
             return strtoupper($method) === 'POST'
                 ? in_array($action, ['save', 'confirm'], true)
-                : in_array($action, ['index', 'new', 'show'], true);
+                : in_array($action, ['index', 'new', 'show', 'nominal-report'], true);
         }
         if ($module === 'distribution') {
             return strtoupper($method) === 'POST'
