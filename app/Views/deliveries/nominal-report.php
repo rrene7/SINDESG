@@ -180,7 +180,7 @@ $units=static fn($n):string => sindesg_units((float)$n);
                                     <small><?= e($row['beneficiary_document_snapshot']?:'Sin cédula histórica') ?></small>
                                     <small><?= e($row['beneficiary_unit_name_snapshot']?:'Sin unidad histórica') ?></small>
                                 </td>
-                                <td><strong><?= e($row['request_code']) ?></strong>
+                                <td><strong><a href="<?= e(sindesg_url('?module=requests&action=show&id='.(int)$row['request_id'])) ?>"><?= e($row['request_code']) ?></a></strong>
                                     <small><?= e($row['p4_name']) ?></small>
                                     <small><?= e(substr((string)$row['requested_at'],0,10)) ?></small>
                                 </td>
