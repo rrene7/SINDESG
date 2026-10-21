@@ -29,7 +29,7 @@ final class P4NominalReportRepository
             'product_id' => max(0, (int)($query['product_id'] ?? 0)),
             'size_id' => max(0, (int)($query['size_id'] ?? 0)),
             'situation' => in_array($situation, $allowed, true) ? $situation : '',
-            'per_page' => in_array((int)($query['per_page'] ?? 25), [10,25,50], true) ? (int)$query['per_page'] : 25,
+            'per_page' => in_array((int)($query['per_page'] ?? 25), [10,25,50], true) ? (int)($query['per_page'] ?? 25) : 25,
             'page' => max(1, min((int)($query['page'] ?? 1), 1000000)),
         ];
     }
