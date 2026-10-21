@@ -427,5 +427,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           php tests/admin_category_governance_test.php
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          php tests/admin_duplicate_products_test.php
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           php tests/category_auto_code_test.php
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
