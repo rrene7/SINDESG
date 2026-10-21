@@ -92,7 +92,7 @@ final class P4NominalReportRepository
                         AND d.status='confirmed' AND d.p4_warehouse_id=r.p4_warehouse_id
                         AND d.recipient_employee_id=i.beneficiary_employee_id
                    ) AS latest_delivery_at,
-                   (SELECT MAX(d.id)
+                   (SELECT d.id
                       FROM individual_delivery_items di
                       JOIN individual_deliveries d ON d.id=di.delivery_id
                       WHERE di.request_item_id=i.id AND di.product_variant_id=i.product_variant_id
