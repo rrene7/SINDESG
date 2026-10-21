@@ -58,6 +58,15 @@ function Invoke-RobocopyMirror([string]$Name) {
     }
 }
 
+# A production deploy must never skip its recoverable pre-deploy snapshot.
+if ($Production -and $SkipBackup) {
+    throw "Producción no permite -SkipBackup. El respaldo previo es obligatorio."
+}
+
+if (-not (Test-Path (Join-Path $Source ".htaccess") -PathType Leaf)) {
+    throw "Falta .htaccess en la fuente: sin protección de archivos privados no se publica SINDESG."
+}
+
 if (-not (Test-Path $PhpExe -PathType Leaf)) {
     throw "No se encontró PHP: $PhpExe"
 }
@@ -182,7 +191,7 @@ try {
         }
     }
 
-    foreach ($file in @("index.php", "README.md", ".gitignore")) {
+    foreach ($file in @("index.php", "README.md", ".gitignore", ".htaccess")) {
         $sourceFile = Join-Path $Source $file
         if (Test-Path $sourceFile -PathType Leaf) {
             Copy-Item -Force $sourceFile (Join-Path $Destination $file)
@@ -209,7 +218,7 @@ try {
 
     $gitCommit = ""
     try {
-        $gitCommit = (& git.exe -C $Source rev-parse HEAD 2>$null).Trim()
+        $gitCommit = (& git.exe -C $Source rev-parse HEAD 2>$null | Out-String).Trim()
     }
     catch {
         $gitCommit = ""
