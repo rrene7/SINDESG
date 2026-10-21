@@ -120,7 +120,21 @@ $pageUrl = static function (int $page) use ($filterSearch, $filterSize, $filterR
                         <span class="p4-delivery-cell-label">Pendiente</span>
                         <strong><?= e(sindesg_units((float) $line['pending_quantity'])) ?></strong>
                     </div>
-                    <a class="p4-delivery-action" href="<?= e(sindesg_url('?module=deliveries&action=new&request_item_id=' . (int) $line['request_item_id'])) ?>">Preparar entrega <span aria-hidden="true">→</span></a>
+                    <?php if ((int) ($line['open_draft_count'] ?? 0) > 0 && (int) ($line['draft_delivery_id'] ?? 0) > 0): ?>
+                        <div class="p4-draft-reuse">
+                            <span class="p4-draft-warning">
+                                <?= (int) $line['open_draft_count'] === 1
+                                    ? 'Ya existe un borrador para esta entrega'
+                                    : e((int) $line['open_draft_count']) . ' borradores abiertos: revisar posibles duplicados' ?>
+                            </span>
+                            <a class="p4-delivery-action p4-resume-draft"
+                               href="<?= e(sindesg_url('?module=deliveries&action=show&id=' . (int) $line['draft_delivery_id'])) ?>">
+                                Continuar borrador <span aria-hidden="true">→</span>
+                            </a>
+                        </div>
+                    <?php else: ?>
+                        <a class="p4-delivery-action" href="<?= e(sindesg_url('?module=deliveries&action=new&request_item_id=' . (int) $line['request_item_id'])) ?>">Preparar entrega <span aria-hidden="true">→</span></a>
+                    <?php endif; ?>
                 </article>
             <?php endforeach; ?>
         </div>
