@@ -41,6 +41,8 @@
             available: qs('[data-feature-available]', focusPanel),
             breakdown: qs('[data-feature-breakdown]', focusPanel),
             sizes: qs('[data-feature-sizes]', focusPanel),
+            turntable: qs('[data-digital-turntable]', focusPanel),
+            replay: qs('[data-turntable-replay]', focusPanel),
         };
 
         const number = new Intl.NumberFormat('es-PA', {
@@ -87,6 +89,26 @@
 
             fields.image.append(ring, monogram, label);
         };
+
+        // Presentation effect only: a static image tilts gently above a CSS
+        // platform. It is not a 3D reconstruction or a real 360-degree turn.
+        const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+        const replayPresentation = () => {
+            if (!fields.turntable || reducedMotion.matches) return;
+            fields.turntable.classList.remove('is-presenting');
+            // Force animation restart even when the same item is selected twice.
+            void fields.turntable.offsetWidth;
+            fields.turntable.classList.add('is-presenting');
+        };
+
+        fields.replay?.addEventListener('click', replayPresentation);
+        fields.image?.addEventListener('click', replayPresentation);
+        fields.turntable?.addEventListener('animationend', (event) => {
+            if (event.target === fields.turntable.querySelector('.digital-turntable__product img')
+                || event.target === fields.turntable.querySelector('.digital-turntable__product')) {
+                fields.turntable.classList.remove('is-presenting');
+            }
+        });
 
         const renderSizes = (sizes) => {
             if (!fields.sizes) return;
@@ -165,6 +187,7 @@
             }
 
             renderImage(entry);
+            replayPresentation();
 
             if (fields.available) fields.available.textContent = available;
             if (fields.breakdown) {
@@ -178,6 +201,11 @@
 
             renderSizes(entry.sizes);
         };
+
+        // On initial dashboard load, the first selected uniform is presented.
+        if (focusCards.some((card) => card.classList.contains('is-selected'))) {
+            replayPresentation();
+        }
 
         focusCards.forEach((card) => {
             card.addEventListener('click', (event) => {
