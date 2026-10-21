@@ -110,6 +110,9 @@ declare(strict_types=1);
                 <div class="product-card-body">
                     <span class="product-category"><?= e($product['category_name']) ?></span>
                     <h2><?= e($product['name']) ?></h2>
+                    <?php if (!empty($possibleDuplicateIds[(int)$product['id']])): ?>
+                        <span class="catalog-possible-duplicate">Nombre repetido · Revisar</span>
+                    <?php endif; ?>
                     <small>Artículo del catálogo</small>
                     <div class="product-stock-line">
                         <span>Disponible</span>
