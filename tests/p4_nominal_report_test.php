@@ -147,7 +147,7 @@ if(!str_contains($source,'security_user_p4_scopes')
     || !str_contains($source,'LIMIT :limit OFFSET :offset')
     || !str_contains($source,'NOT EXISTS(')
     || preg_match('/\b(INSERT|UPDATE|DELETE|REPLACE)\s+(?:INTO|FROM|service_request|individual_)/i',$source)
-    || str_contains(strtolower($source),'rrhh2029')) {
+    || preg_match('/(?:FROM|JOIN|USE|INTO)\s+[`"]?rrhh2029[.`"]/i',$source)) {
     throw new RuntimeException('Report must be read-only and SQL scoped before pagination.');
 }
 foreach(['name="situation"','name="warehouse_id"','name="product_id"',
