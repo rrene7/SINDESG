@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace App\Controllers;
 
 use App\Repositories\DeliveryRepository;
+use App\Repositories\P4NominalReportRepository;
 use App\Services\DeliveryService;
 use App\Services\RrhhEmployeeDirectory;
 use App\Support\Database;
@@ -40,7 +41,7 @@ final class DeliveryController
                 $guard = new \App\Services\P4DeliveryGuard($this->database->connection('sindesg'));
                 $userId = (int) ($user['id'] ?? 0);
                 $isPost = strtoupper($method) === 'POST';
-                $allowed = $isPost ? ['save', 'confirm'] : ['index', 'new', 'show'];
+                $allowed = $isPost ? ['save', 'confirm'] : ['index', 'new', 'show', 'nominal-report'];
                 if (!in_array($action, $allowed, true)) {
                     throw new InvalidArgumentException('Operación no habilitada para este P4.');
                 }
@@ -102,6 +103,30 @@ final class DeliveryController
 
     private function handleGet(string $action, array $query): array
     {
+        if ($action === 'nominal-report') {
+            $user = (array) sindesg_user();
+            $roles = (array) ($user['role_codes'] ?? []);
+            $institutional = in_array('ADMIN', $roles, true) || in_array('CENTRAL', $roles, true);
+            if (!$institutional && !in_array('P4', $roles, true)) {
+                throw new InvalidArgumentException('Reporte nominal reservado a personal autorizado.');
+            }
+            $userId = (int)($user['id'] ?? 0);
+            if ($userId <= 0) {
+                throw new InvalidArgumentException('Sesión inválida para consultar el reporte.');
+            }
+            $report = new P4NominalReportRepository($this->database->connection('sindesg'));
+            $filters = P4NominalReportRepository::filters($query);
+            return [
+                'view' => SINDESG_ROOT . '/app/Views/deliveries/nominal-report.php',
+                'title' => 'Reporte nominal de dotaciones',
+                'data' => [
+                    'nominalReportPage' => $report->page($userId, $institutional, $filters),
+                    'nominalReportOptions' => $report->options($userId, $institutional),
+                    'nominalReportFilters' => $filters,
+                    'nominalReportInstitutional' => $institutional,
+                ],
+            ];
+        }
         if ($action === 'new') {
             $requestItemId = (int) ($query['request_item_id'] ?? 0);
             $pendingLine = $requestItemId > 0
