@@ -91,6 +91,30 @@ $require($css, [
     'animation: none !important',
 ], 'CSS');
 
+// Visual fit contract: prevent tops of uniforms leaving the viewer and keep
+// caption underneath the product rather than on top of the uniform photo.
+if (!preg_match('/\\.digital-turntable__product\\s*\\{([^}]+)\\}/s', $css, $productRules)
+    || !str_contains($productRules[1], 'inset: 12% 7% 23%;')
+    || !str_contains($productRules[1], 'display: flex;')
+    || !str_contains($productRules[1], 'min-height: 0;')) {
+    throw new RuntimeException('El uniforme puede salirse por el borde superior del plato.');
+}
+if (!preg_match('/\\.dashboard-product-image \\.digital-turntable__product img\\s*\\{([^}]+)\\}/s', $css, $imageRules)
+    || !str_contains($imageRules[1], 'height: 100%;')
+    || !str_contains($imageRules[1], 'max-height: 100%;')
+    || !str_contains($imageRules[1], 'max-width: 100%;')
+    || !str_contains($imageRules[1], 'object-fit: contain;')) {
+    throw new RuntimeException('La foto no respeta el área de encuadre en todos los tamaños.');
+}
+if (!preg_match('/\\.dashboard-product-image\\.digital-turntable > \\.digital-turntable__caption\\s*\\{([^}]+)\\}/s', $css, $captionRules)
+    || !str_contains($captionRules[1], 'position: absolute;')
+    || !str_contains($captionRules[1], 'bottom: 11px;')) {
+    throw new RuntimeException('La leyenda está superpuesta sobre el uniforme en lugar de ubicarse abajo.');
+}
+if (!str_contains($css, 'inset: 13% 7% 26%;')) {
+    throw new RuntimeException('Falta margen de seguridad del visor en móviles.');
+}
+
 $require($layout, ["sindesg_asset('css/app.css')", "sindesg_asset('js/app.js')"], 'carga de recursos');
 
 if (substr_count($view, 'data-feature-image') !== 1 ||
