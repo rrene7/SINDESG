@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 $root = dirname(__DIR__);
 $required = [
+    '.htaccess',
     'index.php',
     'public/index.php',
     'public/assets/css/app.css',
@@ -258,6 +259,9 @@ $required = [
     'tests/backup_recovery_logic_test.php',
     'tests/manuals_logic_test.php',
     'tests/deployment_logic_test.php',
+    'tests/server_publication_safety_test.php',
+    'scripts/verify-http-protection.ps1',
+    'docs/PREPARACION_SERVIDOR_P4.md',
 ];
 
 $errors = [];
