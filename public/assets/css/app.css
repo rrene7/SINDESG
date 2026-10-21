@@ -422,21 +422,30 @@ button { color: inherit; }
 }
 .digital-turntable__product {
     position: absolute;
-    inset: 8% 7% 23%;
-    display: grid;
-    place-items: center;
-    align-content: center;
+    /* Safe area prevents heads/collars from reaching the clipped frame edge. */
+    inset: 12% 7% 23%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-width: 0;
+    min-height: 0;
     z-index: 3;
     perspective: 920px;
     cursor: pointer;
-    filter: drop-shadow(0 24px 18px rgba(0,0,0,.5));
+    filter: drop-shadow(0 20px 15px rgba(0,0,0,.46));
 }
 .dashboard-product-image .digital-turntable__product img {
+    /* Older dashboard rules force height:320px. Contain within the reserved
+       viewing area instead of letting the intrinsic image overflow upwards. */
+    display: block;
     position: relative;
-    width: 100%;
+    width: auto;
     height: 100%;
-    max-height: 355px;
+    max-width: 100%;
+    max-height: 100%;
     min-width: 0;
+    min-height: 0;
     object-fit: contain;
     padding: 0;
     z-index: 3;
@@ -531,11 +540,14 @@ button { color: inherit; }
     outline: 3px solid #77e2ff;
     outline-offset: 3px;
 }
-.digital-turntable__caption {
+/* More specific than the generic .product-image-placeholder > span:last-child
+   which otherwise moves this caption into the middle of the product photo. */
+.dashboard-product-image.digital-turntable > .digital-turntable__caption {
     position: absolute;
     left: 14px;
     bottom: 11px;
     z-index: 4;
+    margin-top: 0;
     font-size: .61rem;
     letter-spacing: .1em;
     color: #a0cfe8;
@@ -563,7 +575,7 @@ button { color: inherit; }
 @media (max-width: 760px) {
     .dashboard-product-image.digital-turntable { min-height: 265px; aspect-ratio: 1.2 / 1; }
     .digital-turntable__platter { width: 82%; min-height: 44px; bottom: 11%; }
-    .digital-turntable__product { inset: 9% 7% 24%; }
+    .digital-turntable__product { inset: 13% 7% 26%; }
     .digital-turntable__replay span { display: none; }
 }
 @media (prefers-reduced-motion: reduce) {
