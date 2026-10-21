@@ -9,6 +9,7 @@ declare(strict_types=1);
     </div>
     <div class="inventory-actions">
         <?php if (in_array('ADMIN', (array) (sindesg_user()['role_codes'] ?? []), true)): ?>
+            <a class="secondary-button" href="<?= e(sindesg_url('?module=inventory&action=duplicate-products')) ?>">Revisar artículos repetidos</a>
             <a class="secondary-button" href="<?= e(sindesg_url('?module=inventory&action=categories')) ?>">Administrar categorías</a>
             <a class="secondary-button" href="<?= e(sindesg_url('?module=inventory&action=new-category')) ?>">+ Nueva categoría</a>
         <?php endif; ?>
