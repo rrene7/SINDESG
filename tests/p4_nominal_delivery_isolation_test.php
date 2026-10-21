@@ -42,6 +42,6 @@ foreach ([[101,42],[202,41],[101,43],[0,41]] as [$u,$id]) {
 $rows=(new DeliveryRepository($db))->pendingNominalForUser(101,1);
 if(count($rows)!==1 || (int)$rows[0]['request_item_id']!==11) throw new RuntimeException('P4 SQL queue not properly restricted');
 $src=(string)file_get_contents(dirname(__DIR__).'/app/Controllers/DeliveryController.php');
-foreach (['assertNominal(', 'assertDelivery(', 'pendingNominalForUser(', "\$post['allow_out_of_scope'] = '0'", "\$post['delivered_by_employee_id']"] as $word)
+foreach (['assertNominal(', 'assertDelivery(', 'pendingNominalPageForUser(', "\$post['allow_out_of_scope'] = '0'", "\$post['delivered_by_employee_id']"] as $word)
  if(!str_contains($src,$word)) throw new RuntimeException('Delivery guard wiring missing: '.$word);
 echo "[OK] P4 Pacora nominal delivery isolated, manual draft denied and queue scoped in SQL.\n";

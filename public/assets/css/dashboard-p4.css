@@ -32,3 +32,16 @@
 .p4-delivery-empty p,.p4-delivery-note{font-size:.75rem;color:#91b4ce;line-height:1.5}
 @media(max-width:900px){.p4-delivery-row{grid-template-columns:minmax(180px,1.5fr) minmax(130px,1fr) 70px 80px}.p4-delivery-action{grid-column:1/-1;justify-self:start}.p4-delivery-header{padding:17px}}
 @media(max-width:640px){.p4-delivery-row{grid-template-columns:1fr auto;gap:10px}.p4-delivery-person{grid-column:1/-1}.p4-delivery-product{grid-column:1/-1}.p4-delivery-size,.p4-delivery-quantity{grid-row:auto}.p4-delivery-action{width:100%;justify-self:stretch}.p4-delivery-header-actions{width:100%;justify-content:space-between}.p4-delivery-results-meta span:last-child{display:none}}
+
+/* Full SQL-scoped P4 nominal queue: form + server paging. */
+.p4-delivery-toolbar .p4-delivery-page-size{flex:0 1 116px;min-width:105px}
+.p4-delivery-apply{background:#187ebc;border:1px solid #4bbcf0;border-radius:8px;color:#fff;font-weight:800;padding:10px 13px;min-height:40px;cursor:pointer}
+.p4-delivery-apply:focus-visible,.p4-delivery-pagination a:focus-visible{outline:2px solid #6cd3ff;outline-offset:2px}
+.p4-delivery-pagination{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:16px;padding:16px 0 7px;color:#bce8ff}
+.p4-delivery-pagination .p4-page-disabled{opacity:.48;font-size:.8rem;padding:8px 12px}
+.p4-delivery-pagination strong{font-size:.83rem}
+
+/* Existing nominal drafts remain visible without creating duplicate forms. */
+.p4-draft-reuse{display:grid;gap:6px;min-width:0}
+.p4-draft-warning{display:block;max-width:220px;color:#ffcc88;font-size:.72rem;font-weight:750;line-height:1.35}
+.p4-resume-draft{background:#185a58!important;border-color:#47bca7!important}

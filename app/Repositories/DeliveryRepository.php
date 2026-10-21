@@ -203,6 +203,136 @@ SQL;
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+
+    /**
+     * Full authorized P4 pending list, filtered before pagination.
+     * Uses the same eligibility rules as the legacy 100-row list.
+     */
+    public function pendingNominalPageForUser(
+        int $userId, string $search = '', string $size = '',
+        string $request = '', int $page = 1, int $perPage = 25
+    ): array {
+        $perPage = in_array($perPage, [10,25,50], true) ? $perPage : 25;
+        $page = max(1, $page);
+        $empty = ['rows'=>[], 'total'=>0, 'page'=>1, 'pages'=>1, 'per_page'=>$perPage];
+        if ($userId <= 0) return $empty;
+        $search = substr(trim($search), 0, 120);
+        $size = substr(trim($size), 0, 40);
+        $request = substr(trim($request), 0, 80);
+        $from = <<<'SQL'
+            FROM service_request_items i
+            JOIN service_requests r ON r.id=i.request_id
+            JOIN warehouses w ON w.id=r.p4_warehouse_id
+            JOIN security_user_p4_scopes scope ON scope.warehouse_id=r.p4_warehouse_id
+            JOIN product_variants pv ON pv.id=i.product_variant_id
+            JOIN products p ON p.id=pv.product_id
+            LEFT JOIN sizes sz ON sz.id=pv.size_id
+            WHERE scope.user_id=:user_id AND w.warehouse_type='P4' AND w.is_active=1
+              AND i.beneficiary_employee_id IS NOT NULL
+              AND i.quantity_received > i.quantity_delivered
+              AND r.status IN ('approved','partially_approved','fulfilled')
+        SQL;
+        $parameters = [':user_id' => $userId];
+        if ($search !== '') {
+            $escaped = str_replace(['!', '%', '_'], ['!!', '!%', '!_'], strtolower($search));
+            $from .= <<<'SQL'
+
+              AND (
+                LOWER(COALESCE(i.beneficiary_label_snapshot,'')) LIKE :name_filter ESCAPE '!'
+                OR LOWER(COALESCE(i.beneficiary_document_snapshot,'')) LIKE :document_filter ESCAPE '!'
+                OR LOWER(COALESCE(p.name,'')) LIKE :product_filter ESCAPE '!'
+                OR LOWER(COALESCE(sz.name,'')) LIKE :size_filter ESCAPE '!'
+              )
+            SQL;
+            foreach ([':name_filter',':document_filter',':product_filter',':size_filter'] as $name) {
+                $parameters[$name] = '%' . $escaped . '%';
+            }
+        }
+        if ($size !== '') { $from .= ' AND sz.name=:selected_size'; $parameters[':selected_size'] = $size; }
+        if ($request !== '') { $from .= ' AND r.request_code=:selected_request'; $parameters[':selected_request'] = $request; }
+        $bind = static function (\PDOStatement $stmt) use ($parameters): void {
+            foreach ($parameters as $key => $value) {
+                $stmt->bindValue($key, $value, $key === ':user_id' ? PDO::PARAM_INT : PDO::PARAM_STR);
+            }
+        };
+        $countQuery = $this->pdo->prepare('SELECT COUNT(*) ' . $from);
+        $bind($countQuery);
+        $countQuery->execute();
+        $total = (int) $countQuery->fetchColumn();
+        $pages = max(1, (int) ceil($total / $perPage));
+        $page = min($page, $pages);
+        $sql = <<<'SQL'
+            SELECT i.id AS request_item_id,
+                   i.beneficiary_label_snapshot, i.beneficiary_document_snapshot,
+                   GREATEST(i.quantity_received-i.quantity_delivered,0) AS pending_quantity,
+                   r.request_code, r.requested_at, r.p4_warehouse_id,
+                   w.organization_unit_name_snapshot AS p4_name,
+                   pv.internal_code AS variant_code, p.name AS product_name,
+                   sz.name AS size_name,
+                   (
+                     SELECT MIN(d.id)
+                     FROM individual_delivery_items di
+                     JOIN individual_deliveries d ON d.id=di.delivery_id
+                     WHERE di.request_item_id=i.id AND d.status='draft'
+                       AND d.p4_warehouse_id=r.p4_warehouse_id
+                       AND d.recipient_employee_id=i.beneficiary_employee_id
+                       AND NOT EXISTS (
+                           SELECT 1 FROM individual_delivery_items other
+                           WHERE other.delivery_id=d.id AND other.request_item_id IS NULL
+                       )
+                   ) AS draft_delivery_id,
+                   (
+                     SELECT COUNT(DISTINCT d.id)
+                     FROM individual_delivery_items di
+                     JOIN individual_deliveries d ON d.id=di.delivery_id
+                     WHERE di.request_item_id=i.id AND d.status='draft'
+                       AND d.p4_warehouse_id=r.p4_warehouse_id
+                       AND d.recipient_employee_id=i.beneficiary_employee_id
+                   ) AS open_draft_count,
+                   (
+                     SELECT EXISTS (
+                         SELECT 1 FROM individual_delivery_items di
+                         JOIN individual_deliveries d ON d.id=di.delivery_id
+                         WHERE di.request_item_id=i.id AND d.status='draft'
+                     )
+                   ) AS blocking_draft_exists
+        SQL;
+        $stmt = $this->pdo->prepare($sql . ' ' . $from . ' ORDER BY i.id ASC LIMIT :limit OFFSET :offset');
+        $bind($stmt);
+        $stmt->bindValue(':limit', $perPage, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', ($page - 1) * $perPage, PDO::PARAM_INT);
+        $stmt->execute();
+        return [
+            'rows'=>$stmt->fetchAll(PDO::FETCH_ASSOC), 'total'=>$total,
+            'page'=>$page, 'pages'=>$pages, 'per_page'=>$perPage
+        ];
+    }
+
+    /** Filter options across the full authorized P4 queue, including later pages. */
+    public function pendingNominalOptionsForUser(int $userId): array
+    {
+        if ($userId <= 0) return [];
+        $stmt = $this->pdo->prepare(<<<'SQL'
+            SELECT DISTINCT COALESCE(sz.name,'') AS size_name,
+                   r.request_code, r.requested_at,
+                   w.organization_unit_name_snapshot AS p4_name, p.name AS product_name
+            FROM service_request_items i
+            JOIN service_requests r ON r.id=i.request_id
+            JOIN warehouses w ON w.id=r.p4_warehouse_id
+            JOIN security_user_p4_scopes scope ON scope.warehouse_id=r.p4_warehouse_id
+            JOIN product_variants pv ON pv.id=i.product_variant_id
+            JOIN products p ON p.id=pv.product_id
+            LEFT JOIN sizes sz ON sz.id=pv.size_id
+            WHERE scope.user_id=:user_id AND w.warehouse_type='P4' AND w.is_active=1
+              AND i.beneficiary_employee_id IS NOT NULL
+              AND i.quantity_received > i.quantity_delivered
+              AND r.status IN ('approved','partially_approved','fulfilled')
+            ORDER BY r.request_code, sz.name
+        SQL);
+        $stmt->execute(['user_id'=>$userId]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
     public function pendingNominalLine(int $requestItemId): ?array
     {
         $statement = $this->pdo->prepare(<<<'SQL'
@@ -268,6 +398,15 @@ SQL;
         $this->pdo->beginTransaction();
 
         try {
+            // Lock the nominal parent line before any ordinary SELECT can create an
+            // InnoDB REPEATABLE READ snapshot. Concurrent nominal draft creations
+            // for this request line therefore serialize before duplicate detection.
+            if (($linkedLine === null) !== ($linkedQuantity === null)) {
+                throw new RuntimeException('Datos de entrega nominal incompletos.');
+            }
+            if ($linkedLine !== null) {
+                $this->assertNominalDraftAvailableForUpdate($data, $linkedLine, $linkedQuantity);
+            }
             if (!$this->p4IsActive((int) $data['p4_warehouse_id'])) {
                 throw new RuntimeException('El P4 seleccionado no está activo.');
             }
@@ -379,6 +518,73 @@ SQL;
                 $this->pdo->rollBack();
             }
             throw $exception;
+        }
+    }
+
+    /**
+     * Must run inside createDraft's transaction, before any non-locking read.
+     * This does not change or delete previous drafts, receipts or stock.
+     */
+    private function assertNominalDraftAvailableForUpdate(
+        array $data,
+        array $linkedLine,
+        float $linkedQuantity
+    ): void {
+        $itemId = (int) ($linkedLine['request_item_id'] ?? 0);
+        if ($itemId <= 0 || !is_finite($linkedQuantity) || $linkedQuantity <= 0) {
+            throw new RuntimeException('Cantidad o renglón nominal inválido.');
+        }
+
+        // MySQL/MariaDB (InnoDB) holds this lock until commit/rollback. SQLite
+        // lacks FOR UPDATE and its isolated tests use serialized transactions.
+        $forUpdate = $this->pdo->getAttribute(PDO::ATTR_DRIVER_NAME) === 'mysql'
+            ? ' FOR UPDATE' : '';
+        $stmt = $this->pdo->prepare(<<<'SQL'
+            SELECT i.id, i.product_variant_id, i.beneficiary_employee_id,
+                   i.quantity_received, i.quantity_delivered,
+                   r.p4_warehouse_id, r.status AS request_status,
+                   w.warehouse_type, w.is_active
+            FROM service_request_items i
+            JOIN service_requests r ON r.id=i.request_id
+            JOIN warehouses w ON w.id=r.p4_warehouse_id
+            WHERE i.id=:request_item_id
+            LIMIT 1
+        SQL . $forUpdate);
+        $stmt->execute(['request_item_id'=>$itemId]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$row
+            || (int) $row['p4_warehouse_id'] !== (int) $data['p4_warehouse_id']
+            || (int) $row['p4_warehouse_id'] !== (int) ($linkedLine['p4_warehouse_id'] ?? 0)
+            || (int) $row['beneficiary_employee_id'] <= 0
+            || (int) $row['beneficiary_employee_id'] !== (int) $data['recipient_employee_id']
+            || (int) $row['beneficiary_employee_id'] !== (int) ($linkedLine['beneficiary_employee_id'] ?? 0)
+            || (int) $row['product_variant_id'] !== (int) ($linkedLine['product_variant_id'] ?? 0)
+            || $row['warehouse_type'] !== 'P4'
+            || (int) $row['is_active'] !== 1
+            || !in_array($row['request_status'], ['approved','partially_approved','fulfilled'], true)) {
+            throw new RuntimeException('El renglón nominal ya no corresponde a una entrega P4 autorizada.');
+        }
+
+        $pending = (float) $row['quantity_received'] - (float) $row['quantity_delivered'];
+        if ($pending <= 0.000001 || $linkedQuantity > $pending + 0.000001) {
+            throw new RuntimeException('La cantidad supera lo recibido y pendiente para ese beneficiario.');
+        }
+
+        // This first consistent read happens after the parent row lock. A
+        // concurrent creator must wait on the same row before seeing this state.
+        $existing = $this->pdo->prepare(<<<'SQL'
+            SELECT d.id
+            FROM individual_delivery_items di
+            JOIN individual_deliveries d ON d.id=di.delivery_id
+            WHERE di.request_item_id=:request_item_id AND d.status='draft'
+            ORDER BY d.id ASC
+            LIMIT 1
+        SQL);
+        $existing->execute(['request_item_id'=>$itemId]);
+        if ($existing->fetchColumn() !== false) {
+            throw new RuntimeException(
+                'Ya existe un borrador abierto para esta dotación. Regrese a Entregas pendientes para revisarlo.'
+            );
         }
     }
 
