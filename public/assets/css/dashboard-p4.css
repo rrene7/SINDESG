@@ -40,3 +40,8 @@
 .p4-delivery-pagination{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:16px;padding:16px 0 7px;color:#bce8ff}
 .p4-delivery-pagination .p4-page-disabled{opacity:.48;font-size:.8rem;padding:8px 12px}
 .p4-delivery-pagination strong{font-size:.83rem}
+
+/* Existing nominal drafts remain visible without creating duplicate forms. */
+.p4-draft-reuse{display:grid;gap:6px;min-width:0}
+.p4-draft-warning{display:block;max-width:220px;color:#ffcc88;font-size:.72rem;font-weight:750;line-height:1.35}
+.p4-resume-draft{background:#185a58!important;border-color:#47bca7!important}
