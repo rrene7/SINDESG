@@ -322,7 +322,7 @@ final class CatalogRepository
         return (bool) $statement->fetchColumn();
     }
 
-    public function createCategory(string $slug, string $name, ?string $description): int
+    public function createCategory(string $slug, string $name, ?string $description, ?array $actor = null): int
     {
         $this->pdo->beginTransaction();
 
@@ -355,6 +355,16 @@ final class CatalogRepository
                 'id' => $categoryId,
             ]);
 
+            if ($actor !== null) {
+                $this->auditCategory($actor, 'category_created', $categoryId, null, [
+                    'code' => $code,
+                    'slug' => $slug,
+                    'name' => $name,
+                    'description' => $description,
+                    'sort_order' => $sortOrder,
+                    'is_active' => 1,
+                ]);
+            }
             $this->pdo->commit();
             return $categoryId;
         } catch (\Throwable $exception) {
