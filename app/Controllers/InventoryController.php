@@ -6,6 +6,7 @@ namespace App\Controllers;
 use App\Repositories\CatalogRepository;
 use App\Repositories\InventoryRepository;
 use App\Services\CatalogService;
+use App\Services\CatalogDuplicateInspector;
 use InvalidArgumentException;
 use PDO;
 use Throwable;
@@ -33,7 +34,8 @@ final class InventoryController
         try {
             if (in_array($action, [
                 'new-category', 'edit-category', 'categories', 'save-category',
-                'update-category', 'archive-category', 'restore-category'
+                'update-category', 'archive-category', 'restore-category',
+                'duplicate-products', 'edit-product', 'update-product'
             ], true)) {
                 $this->assertCatalogAdministrator();
             }
@@ -50,13 +52,18 @@ final class InventoryController
             flash('error', $exception->getMessage());
             $categoryAction = in_array($action, [
                 'new-category', 'edit-category', 'categories', 'save-category',
-                'update-category', 'archive-category', 'restore-category'
+                'update-category', 'archive-category', 'restore-category',
+                'duplicate-products', 'edit-product', 'update-product'
             ], true);
-            $fallback = $categoryAction && $this->isCatalogAdministrator()
-                ? '?module=inventory&action=categories'
-                : (isset($post['product_id']) && (int) $post['product_id'] > 0
-                    ? '?module=inventory&action=product&id=' . (int) $post['product_id']
-                    : '?module=inventory');
+            $isProductAdmin = in_array($action, ['edit-product', 'update-product'], true)
+                && $this->isCatalogAdministrator();
+            $fallback = $isProductAdmin && (int) ($post['product_id'] ?? 0) > 0
+                ? '?module=inventory&action=edit-product&id=' . (int) $post['product_id']
+                : ($categoryAction && $this->isCatalogAdministrator()
+                    ? '?module=inventory&action=categories'
+                    : (isset($post['product_id']) && (int) $post['product_id'] > 0
+                        ? '?module=inventory&action=product&id=' . (int) $post['product_id']
+                        : '?module=inventory'));
             $this->redirect($fallback);
         } catch (Throwable $exception) {
             return [
@@ -71,6 +78,36 @@ final class InventoryController
 
     private function handleGet(string $action, array $query): array
     {
+        if ($action === 'duplicate-products') {
+            $stock = $this->inventory->productStockMap();
+            $groups = CatalogDuplicateInspector::groups($this->repository->listProducts());
+            foreach ($groups as &$group) {
+                foreach ($group['items'] as &$item) {
+                    $item['stock'] = $stock[(int)$item['id']] ?? [];
+                    $item['variants'] = $this->repository->variantsForProduct((int)$item['id']);
+                }
+                unset($item);
+            }
+            unset($group);
+            return [
+                'view' => SINDESG_ROOT . '/app/Views/inventory/duplicate-products.php',
+                'title' => 'Revisión de posibles artículos repetidos',
+                'data' => ['duplicateGroups' => $groups],
+            ];
+        }
+
+        if ($action === 'edit-product') {
+            $product = $this->repository->getProduct((int)($query['id'] ?? 0));
+            if ($product === null) {
+                throw new InvalidArgumentException('El artículo no existe o ya no está disponible.');
+            }
+            return [
+                'view' => SINDESG_ROOT . '/app/Views/inventory/product-edit.php',
+                'title' => 'Editar artículo',
+                'data' => ['product' => $product],
+            ];
+        }
+
         if ($action === 'categories') {
             $allCategories = $this->repository->listCategories();
             $detailed = [];
@@ -181,6 +218,16 @@ final class InventoryController
         }
         unset($product);
 
+        // Show advisory markers to ADMIN only: never manipulate the source rows.
+        $possibleDuplicateIds = [];
+        if ($this->isCatalogAdministrator()) {
+            foreach (CatalogDuplicateInspector::groups($products) as $group) {
+                foreach ($group['items'] as $item) {
+                    $possibleDuplicateIds[(int)$item['id']] = true;
+                }
+            }
+        }
+
         return [
             'view' => SINDESG_ROOT . '/app/Views/inventory/index.php',
             'title' => 'Inventario',
@@ -191,6 +238,7 @@ final class InventoryController
                 'products' => $products,
                 'selectedCategoryId' => $categoryId,
                 'catalogSearch' => $search,
+                'possibleDuplicateIds' => $possibleDuplicateIds,
             ],
         ];
     }
@@ -259,6 +307,15 @@ final class InventoryController
             );
             flash('success', 'Categoría reactivada.');
             $this->redirect('?module=inventory&action=categories');
+        }
+
+        if ($action === 'update-product') {
+            $productId = (int) ($post['product_id'] ?? 0);
+            $this->service->updateProductMetadata($productId, $post, (array) sindesg_user());
+            flash('success',
+                'Descripción del artículo actualizada con auditoría. Sin modificaciones de códigos, variantes o existencias.'
+            );
+            $this->redirect('?module=inventory&action=product&id=' . $productId);
         }
 
         if ($action === 'save-product') {

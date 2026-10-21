@@ -245,6 +245,8 @@ function sindesg_permission_for(string $module, string $action = 'index', string
         'new-category',
         'edit-category',
         'categories',
+        'duplicate-products',
+        'edit-product',
         'new',
         'create',
         'edit',
@@ -273,7 +275,8 @@ function sindesg_role_action_allowed(string $module, string $action, string $met
     // Category maintenance is administrative, not an ordinary inventory action.
     if ($module === 'inventory' && in_array($action, [
         'new-category', 'edit-category', 'categories', 'save-category',
-        'update-category', 'archive-category', 'restore-category'
+        'update-category', 'archive-category', 'restore-category',
+        'duplicate-products', 'edit-product', 'update-product'
     ], true)) {
         return false;
     }

@@ -34,6 +34,9 @@ jobs:
       - name: Administrator category governance and audit
         run: php tests/admin_category_governance_test.php
 
+      - name: Duplicate product audit and immutable stock metadata
+        run: php tests/admin_duplicate_products_test.php
+
       - name: Catalog schema test
         run: php tests/catalog_schema_test.php
 
@@ -423,6 +426,8 @@ jobs:
           php -l app/Services/CatalogService.php
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           php tests/admin_category_governance_test.php
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          php tests/admin_duplicate_products_test.php
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           php tests/category_auto_code_test.php
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

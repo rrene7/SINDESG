@@ -20,7 +20,10 @@ declare(strict_types=1);
             <h2>Gobierno de categorías y artículos</h2>
             <p>Edite categorías, ordene el catálogo y retire de la lista activa solo categorías sin artículos vinculados. Los códigos institucionales y las existencias están protegidos.</p>
         </div>
-        <a class="primary-button" href="<?= e(sindesg_url('?module=inventory&action=categories')) ?>">Administrar categorías →</a>
+        <div class="inventory-actions">
+            <a class="secondary-button" href="<?= e(sindesg_url('?module=inventory&action=duplicate-products')) ?>">Revisar artículos repetidos</a>
+            <a class="primary-button" href="<?= e(sindesg_url('?module=inventory&action=categories')) ?>">Administrar categorías →</a>
+        </div>
     </div>
 </section>
 

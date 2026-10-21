@@ -260,6 +260,58 @@ final class CatalogRepository
         return $row ?: null;
     }
 
+    /**
+     * Admin may amend descriptive fields only. Product ID, category, stock,
+     * internal codes, variants and every historical document stay unchanged.
+     * Audit and metadata mutation commit or roll back as one transaction.
+     */
+    public function updateProductMetadataAsAdmin(int $id, array $data, array $actor): void
+    {
+        $this->pdo->beginTransaction();
+        try {
+            $locking = $this->pdo->getAttribute(PDO::ATTR_DRIVER_NAME) === 'mysql'
+                ? ' FOR UPDATE' : '';
+            $statement = $this->pdo->prepare(
+                "SELECT id,category_id,internal_code,name,description,sex,color,status
+                 FROM products WHERE id = :id AND status <> 'deleted'" . $locking
+            );
+            $statement->execute(['id' => $id]);
+            $before = $statement->fetch(PDO::FETCH_ASSOC);
+            if (!$before) {
+                throw new \InvalidArgumentException('El artículo solicitado no existe.');
+            }
+
+            $this->pdo->prepare(
+                'UPDATE products SET name = :name, description = :description,
+                 sex = :sex, color = :color WHERE id = :id'
+            )->execute([
+                'name' => $data['name'],
+                'description' => $data['description'],
+                'sex' => $data['sex'],
+                'color' => $data['color'],
+                'id' => $id,
+            ]);
+            $after = array_merge($before, $data);
+            (new AuditRepository($this->pdo))->log([
+                'user_id' => $actor['id'] ?? null,
+                'user_label_snapshot' => $actor['display_name'] ?? null,
+                'module_code' => 'inventory',
+                'action_code' => 'product_metadata_updated',
+                'record_type' => 'product',
+                'record_id' => (string)$id,
+                'before' => $before,
+                'after' => $after,
+                'details' => ['descriptive_fields_only' => true],
+                'ip_address' => $_SERVER['REMOTE_ADDR'] ?? null,
+                'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? null,
+            ]);
+            $this->pdo->commit();
+        } catch (\Throwable $exception) {
+            if ($this->pdo->inTransaction()) $this->pdo->rollBack();
+            throw $exception;
+        }
+    }
+
     public function variantsForProduct(int $productId): array
     {
         $sql = <<<'SQL'

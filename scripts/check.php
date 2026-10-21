@@ -262,6 +262,10 @@ $required = [
     'tests/deployment_logic_test.php',
     'tests/server_publication_safety_test.php',
     'tests/admin_category_governance_test.php',
+    'tests/admin_duplicate_products_test.php',
+    'app/Views/inventory/duplicate-products.php',
+    'app/Views/inventory/product-edit.php',
+    'app/Services/CatalogDuplicateInspector.php',
     'scripts/verify-http-protection.ps1',
     'docs/PREPARACION_SERVIDOR_P4.md',
 ];

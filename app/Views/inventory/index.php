@@ -9,6 +9,7 @@ declare(strict_types=1);
     </div>
     <div class="inventory-actions">
         <?php if (in_array('ADMIN', (array) (sindesg_user()['role_codes'] ?? []), true)): ?>
+            <a class="secondary-button" href="<?= e(sindesg_url('?module=inventory&action=duplicate-products')) ?>">Revisar artículos repetidos</a>
             <a class="secondary-button" href="<?= e(sindesg_url('?module=inventory&action=categories')) ?>">Administrar categorías</a>
             <a class="secondary-button" href="<?= e(sindesg_url('?module=inventory&action=new-category')) ?>">+ Nueva categoría</a>
         <?php endif; ?>
@@ -109,6 +110,9 @@ declare(strict_types=1);
                 <div class="product-card-body">
                     <span class="product-category"><?= e($product['category_name']) ?></span>
                     <h2><?= e($product['name']) ?></h2>
+                    <?php if (!empty($possibleDuplicateIds[(int)$product['id']])): ?>
+                        <span class="catalog-possible-duplicate">Nombre repetido · Revisar</span>
+                    <?php endif; ?>
                     <small>Artículo del catálogo</small>
                     <div class="product-stock-line">
                         <span>Disponible</span>

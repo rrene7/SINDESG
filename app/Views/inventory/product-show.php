@@ -61,6 +61,12 @@ foreach ($variants as $variantStockRow) {
             <button class="secondary-button" type="submit">Guardar fotografía</button>
         </form>
 
+        <?php if (in_array('ADMIN', (array) (sindesg_user()['role_codes'] ?? []), true)): ?>
+            <div class="inventory-actions">
+                <a class="secondary-button" href="<?= e(sindesg_url('?module=inventory&action=edit-product&id=' . (int)$product['id'])) ?>">Editar datos del artículo</a>
+                <a class="secondary-button" href="<?= e(sindesg_url('?module=inventory&action=duplicate-products')) ?>">Revisar repetidos</a>
+            </div>
+        <?php endif; ?>
         <a class="secondary-button" href="<?= e(sindesg_url('?module=inventory')) ?>">← Volver al inventario</a>
     </div>
 </section>
