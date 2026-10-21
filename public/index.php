@@ -262,6 +262,7 @@ if ($currentModule === 'dashboard'
     $featuredProduct = null;
     $featuredSizes = [];
     $featuredStockBreakdown = ['central' => 0.0, 'p4' => 0.0, 'transit' => 0.0];
+    $recentDashboardProducts = [];
     $recentDashboardReceipts = [];
     $recentDashboardRequests = [];
     $dashboardCategoryFocus = [];
@@ -283,6 +284,7 @@ if ($currentModule === 'dashboard'
             $featuredStockBreakdown = $featuredProduct
                 ? $dashboardRepository->stockBreakdownForProduct((int) $featuredProduct['id'])
                 : ['central' => 0.0, 'p4' => 0.0, 'transit' => 0.0];
+            $recentDashboardProducts = $dashboardRepository->recentProducts(8);
             $recentDashboardReceipts = $dashboardRepository->recentReceipts(4);
             $recentDashboardRequests = $dashboardRepository->recentRequests(5);
             $dashboardCategoryFocus = $dashboardRepository->categoryFocusData($dashboardCategories);
@@ -292,7 +294,8 @@ if ($currentModule === 'dashboard'
             $featuredProduct = null;
             $featuredSizes = [];
             $featuredStockBreakdown = ['central' => 0.0, 'p4' => 0.0, 'transit' => 0.0];
-            $recentDashboardReceipts = [];
+            $recentDashboardProducts = [];
+    $recentDashboardReceipts = [];
             $recentDashboardRequests = [];
             $dashboardCategoryFocus = [];
             $dashboardOperationalSummary = [
