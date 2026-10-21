@@ -370,6 +370,21 @@ jobs:
       - name: Deployment logic test
         run: php tests/deployment_logic_test.php
 
+      - name: Institutional server publication safety
+        run: php tests/server_publication_safety_test.php
+
+      - name: Windows HTTP verification script syntax
+        shell: pwsh
+        run: |
+          $tokens = $null
+          $errors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile(
+            (Resolve-Path "./scripts/verify-http-protection.ps1"),
+            [ref]$tokens,
+            [ref]$errors
+          ) | Out-Null
+          if ($errors.Count -gt 0) { $errors | ForEach-Object { Write-Error $_ }; exit 1 }
+
       - name: Windows deployment script syntax
         shell: pwsh
         run: |
