@@ -218,6 +218,16 @@ final class InventoryController
         }
         unset($product);
 
+        // Show advisory markers to ADMIN only: never manipulate the source rows.
+        $possibleDuplicateIds = [];
+        if ($this->isCatalogAdministrator()) {
+            foreach (CatalogDuplicateInspector::groups($products) as $group) {
+                foreach ($group['items'] as $item) {
+                    $possibleDuplicateIds[(int)$item['id']] = true;
+                }
+            }
+        }
+
         return [
             'view' => SINDESG_ROOT . '/app/Views/inventory/index.php',
             'title' => 'Inventario',
@@ -228,6 +238,7 @@ final class InventoryController
                 'products' => $products,
                 'selectedCategoryId' => $categoryId,
                 'catalogSearch' => $search,
+                'possibleDuplicateIds' => $possibleDuplicateIds,
             ],
         ];
     }
