@@ -96,6 +96,7 @@ $required = [
     'app/Views/inventory/product-form.php',
     'app/Views/inventory/product-show.php',
     'app/Views/inventory/category-form.php',
+    'app/Views/inventory/categories-admin.php',
     'app/Views/inventory/unavailable.php',
     'app/Views/receipts/index.php',
     'app/Views/receipts/form.php',
@@ -260,6 +261,7 @@ $required = [
     'tests/manuals_logic_test.php',
     'tests/deployment_logic_test.php',
     'tests/server_publication_safety_test.php',
+    'tests/admin_category_governance_test.php',
     'scripts/verify-http-protection.ps1',
     'docs/PREPARACION_SERVIDOR_P4.md',
 ];
