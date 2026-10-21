@@ -27,6 +27,9 @@ $selectedSize = (int) ($reportFilters['size_id'] ?? 0);
     </div>
 </section>
 
+<?php if (sindesg_can('deliveries.view') && sindesg_role_action_allowed('deliveries', 'nominal-report', 'GET', (array)sindesg_user())): ?>
+<p class="reports-nominal-access"><a class="secondary-button" href="<?= e(sindesg_url('?module=deliveries&action=nominal-report')) ?>">Abrir reporte nominal por funcionario →</a></p>
+<?php endif; ?>
 <section class="reports-summary">
     <article><span>Disponible Central</span><strong><?= e(sindesg_units((float) $reportSummary['available_stock'])) ?></strong><small>Central físico <?= e(sindesg_units((float) $reportSummary['central_stock'])) ?> · comprometido <?= e(sindesg_units((float) $reportSummary['committed_stock'])) ?></small></article>
     <article><span>Stock institucional</span><strong><?= e(sindesg_units((float) $reportSummary['institutional_stock'])) ?></strong><small>P4 <?= e(sindesg_units((float) $reportSummary['p4_stock'])) ?> · tránsito <?= e(sindesg_units((float) $reportSummary['transit_stock'])) ?></small></article>
