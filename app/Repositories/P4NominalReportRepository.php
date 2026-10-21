@@ -102,6 +102,15 @@ final class P4NominalReportRepository
                           SELECT 1 FROM individual_delivery_items mixed
                           WHERE mixed.delivery_id=d.id AND mixed.request_item_id IS NULL
                         )
+                        AND NOT EXISTS(
+                          SELECT 1 FROM individual_delivery_items other_item
+                          JOIN service_request_items other_line ON other_line.id=other_item.request_item_id
+                          JOIN service_requests other_request ON other_request.id=other_line.request_id
+                          WHERE other_item.delivery_id=d.id
+                            AND (other_request.p4_warehouse_id<>d.p4_warehouse_id
+                                OR other_line.beneficiary_employee_id<>d.recipient_employee_id
+                                OR other_line.product_variant_id<>other_item.product_variant_id)
+                        )
                    ) AS last_safe_delivery_id,
                    (SELECT MAX(im.id)
                       FROM individual_delivery_items di
