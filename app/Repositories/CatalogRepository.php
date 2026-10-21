@@ -381,8 +381,10 @@ final class CatalogRepository
         $this->pdo->beginTransaction();
 
         try {
+            $categoryLock = $this->pdo->getAttribute(PDO::ATTR_DRIVER_NAME) === 'mysql'
+                ? ' FOR UPDATE' : '';
             $categoryStatement = $this->pdo->prepare(
-                'SELECT code FROM categories WHERE id = :id AND is_active = 1 LIMIT 1 FOR UPDATE'
+                'SELECT code FROM categories WHERE id = :id AND is_active = 1 LIMIT 1' . $categoryLock
             );
             $categoryStatement->execute(['id' => $data['category_id']]);
             $categoryCode = $categoryStatement->fetchColumn();
