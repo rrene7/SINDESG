@@ -26,6 +26,164 @@ final class CatalogRepository
         return $this->pdo->query($sql)->fetchAll();
     }
 
+    /** Only active categories are offered for new stock-bearing products. */
+    public function listActiveCategories(): array
+    {
+        return array_values(array_filter(
+            $this->listCategories(),
+            static fn (array $category): bool => (int) $category['is_active'] === 1
+        ));
+    }
+
+    public function getCategory(int $id): ?array
+    {
+        $statement = $this->pdo->prepare(
+            'SELECT c.id, c.code, c.slug, c.name, c.description, c.sort_order, c.is_active,
+                    (SELECT COUNT(*) FROM products p WHERE p.category_id = c.id) AS all_product_count
+             FROM categories c WHERE c.id = :id LIMIT 1'
+        );
+        $statement->execute(['id' => $id]);
+        return $statement->fetch(PDO::FETCH_ASSOC) ?: null;
+    }
+
+    /** Update public metadata; institutional code, slug and product relations never change. */
+    public function updateCategoryAsAdmin(int $id, array $input, array $actor): void
+    {
+        $this->pdo->beginTransaction();
+        try {
+            $before = $this->lockCategory($id);
+            if ($before === null) {
+                throw new \InvalidArgumentException('La categoría no existe.');
+            }
+            $duplicate = $this->pdo->prepare(
+                'SELECT id FROM categories
+                 WHERE LOWER(TRIM(name)) = LOWER(:name) AND id <> :id AND is_active = 1
+                 LIMIT 1'
+            );
+            $duplicate->execute(['name' => $input['name'], 'id' => $id]);
+            if ($duplicate->fetchColumn() !== false) {
+                throw new \InvalidArgumentException('Ya existe otra categoría activa con ese nombre.');
+            }
+            $this->pdo->prepare(
+                'UPDATE categories SET name = :name, description = :description,
+                 sort_order = :sort_order WHERE id = :id'
+            )->execute([
+                'name' => $input['name'],
+                'description' => $input['description'],
+                'sort_order' => $input['sort_order'],
+                'id' => $id,
+            ]);
+            $this->auditCategory($actor, 'category_updated', $id, $before, [
+                'code' => $before['code'],
+                'slug' => $before['slug'],
+                'name' => $input['name'],
+                'description' => $input['description'],
+                'sort_order' => $input['sort_order'],
+                'is_active' => (int) $before['is_active'],
+            ]);
+            $this->pdo->commit();
+        } catch (\Throwable $exception) {
+            if ($this->pdo->inTransaction()) $this->pdo->rollBack();
+            throw $exception;
+        }
+    }
+
+    /**
+     * Archive (= remove from active catalog) or restore. No physical deletion:
+     * preserve all original IDs and links for audit and institutional history.
+     */
+    public function setCategoryActiveAsAdmin(int $id, bool $active, string $reason, array $actor): void
+    {
+        $this->pdo->beginTransaction();
+        try {
+            $before = $this->lockCategory($id);
+            if ($before === null) {
+                throw new \InvalidArgumentException('La categoría no existe.');
+            }
+            if ((int) $before['is_active'] === (int) $active) {
+                throw new \InvalidArgumentException('La categoría ya tiene ese estado.');
+            }
+            if (!$active) {
+                $count = $this->pdo->prepare(
+                    'SELECT COUNT(*) FROM products WHERE category_id = :id'
+                );
+                $count->execute(['id' => $id]);
+                // Includes active, inactive AND historically deleted products.
+                // Keeping a category with references is safer than hiding stock.
+                if ((int) $count->fetchColumn() > 0) {
+                    throw new \InvalidArgumentException(
+                        'No se puede eliminar del catálogo: existen artículos vinculados, incluso históricos. '
+                        . 'Conserve o reorganice sus registros mediante un proceso auditado.'
+                    );
+                }
+            } else {
+                $duplicate = $this->pdo->prepare(
+                    'SELECT id FROM categories
+                     WHERE LOWER(TRIM(name)) = LOWER(:name) AND id <> :id AND is_active = 1
+                     LIMIT 1'
+                );
+                $duplicate->execute(['name' => $before['name'], 'id' => $id]);
+                if ($duplicate->fetchColumn() !== false) {
+                    throw new \InvalidArgumentException(
+                        'Ya existe una categoría activa con ese nombre; cambie el nombre antes de restaurar.'
+                    );
+                }
+            }
+
+            $this->pdo->prepare('UPDATE categories SET is_active = :active WHERE id = :id')
+                ->execute(['active' => $active ? 1 : 0, 'id' => $id]);
+            $after = $before;
+            $after['is_active'] = $active ? 1 : 0;
+            $this->auditCategory(
+                $actor,
+                $active ? 'category_restored' : 'category_archived',
+                $id,
+                $before,
+                $after,
+                ['reason' => $reason]
+            );
+            $this->pdo->commit();
+        } catch (\Throwable $exception) {
+            if ($this->pdo->inTransaction()) $this->pdo->rollBack();
+            throw $exception;
+        }
+    }
+
+    private function lockCategory(int $id): ?array
+    {
+        $lock = $this->pdo->getAttribute(PDO::ATTR_DRIVER_NAME) === 'mysql'
+            ? ' FOR UPDATE' : '';
+        $stmt = $this->pdo->prepare(
+            'SELECT id, code, slug, name, description, sort_order, is_active
+             FROM categories WHERE id = :id' . $lock
+        );
+        $stmt->execute(['id' => $id]);
+        return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+    }
+
+    private function auditCategory(
+        array $actor,
+        string $action,
+        int $categoryId,
+        ?array $before,
+        array $after,
+        ?array $details = null
+    ): void {
+        (new AuditRepository($this->pdo))->log([
+            'user_id' => $actor['id'] ?? null,
+            'user_label_snapshot' => $actor['display_name'] ?? null,
+            'module_code' => 'inventory',
+            'action_code' => $action,
+            'record_type' => 'category',
+            'record_id' => (string) $categoryId,
+            'before' => $before,
+            'after' => $after,
+            'details' => $details,
+            'ip_address' => $_SERVER['REMOTE_ADDR'] ?? null,
+            'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? null,
+        ]);
+    }
+
     public function stats(): array
     {
         $sql = <<<'SQL'
@@ -214,7 +372,7 @@ final class CatalogRepository
 
         try {
             $categoryStatement = $this->pdo->prepare(
-                'SELECT code FROM categories WHERE id = :id AND is_active = 1 LIMIT 1'
+                'SELECT code FROM categories WHERE id = :id AND is_active = 1 LIMIT 1 FOR UPDATE'
             );
             $categoryStatement->execute(['id' => $data['category_id']]);
             $categoryCode = $categoryStatement->fetchColumn();
