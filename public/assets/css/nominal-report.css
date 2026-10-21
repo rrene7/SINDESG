@@ -1,0 +1,314 @@
+/* SINDESG P4 — Nominal dotation report: isolated, high-contrast dark theme.
+   The main application defines --text / --panel but NOT --surface / --border.
+   Never allow white fallback panels to inherit the app's light typography. */
+.nomrep {
+    --nomrep-panel: #0b2a45;
+    --nomrep-panel-alt: #102f4c;
+    --nomrep-border: #32617f;
+    --nomrep-text: #f2f8fd;
+    --nomrep-muted: #c2d7e6;
+    --nomrep-link: #8bddff;
+    color: var(--nomrep-text);
+    display: grid;
+    gap: 15px;
+    margin-bottom: 24px;
+}
+.nomrep .nomrep-hero {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    align-items: center;
+    padding: 22px 25px;
+    border: 1px solid #2474a3;
+    border-radius: 15px;
+    background: linear-gradient(113deg, #092b49, #135778);
+    color: #f2f8fd;
+}
+.nomrep .nomrep-hero h1 {
+    color: #fff;
+    font-size: clamp(1.45rem, 2.2vw, 2rem);
+    margin: 6px 0;
+}
+.nomrep .nomrep-hero p {
+    color: #d9ecf8;
+    font-size: .88rem;
+    line-height: 1.5;
+    margin: 0;
+    max-width: 710px;
+}
+.nomrep .nomrep-hero-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.nomrep .nomrep-hero a,
+.nomrep .nomrep-hero button {
+    border: 1px solid #b8def3;
+    border-radius: 9px;
+    padding: 10px 13px;
+    background: #eef8ff;
+    color: #113753;
+    text-decoration: none;
+    font-weight: 750;
+    cursor: pointer;
+    font-size: .84rem;
+}
+.nomrep .nomrep-hero a:hover,
+.nomrep .nomrep-hero button:hover { background: #d7effd; }
+.nomrep .nomrep-panel {
+    background: var(--nomrep-panel);
+    border: 1px solid var(--nomrep-border);
+    border-radius: 13px;
+    padding: 19px 21px;
+    color: var(--nomrep-text);
+}
+.nomrep .nomrep-panel h2 {
+    color: #f4faff;
+    font-size: 1.11rem;
+    margin: 0 0 8px;
+    font-weight: 750;
+}
+.nomrep .nomrep-hint,
+.nomrep .nomrep-caption {
+    color: var(--nomrep-muted);
+    line-height: 1.6;
+    opacity: 1;
+}
+.nomrep .nomrep-hint { font-size: .84rem; margin: 5px 0 17px; }
+.nomrep .nomrep-caption { font-size: .8rem; margin: 10px 0 16px; }
+.nomrep .nomrep-filters {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 13px 15px;
+    align-items: end;
+}
+.nomrep .nomrep-filters label {
+    min-width: 0;
+    color: #e5f3fd;
+    font-size: .82rem;
+    font-weight: 700;
+    display: grid;
+    gap: 7px;
+}
+.nomrep .nomrep-filters label.nomrep-filter-search { grid-column: span 2; }
+.nomrep .nomrep-filters input,
+.nomrep .nomrep-filters select {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    height: 42px;
+    padding: 10px 12px;
+    border: 1px solid #5788a9;
+    border-radius: 8px;
+    background-color: #041a30;
+    color: #f7fbff;
+    color-scheme: dark;
+    font: inherit;
+    font-weight: 500;
+    box-sizing: border-box;
+}
+.nomrep .nomrep-filters input::placeholder { color: #a9c4d8; opacity: 1; }
+.nomrep .nomrep-filters input:focus-visible,
+.nomrep .nomrep-filters select:focus-visible,
+.nomrep a:focus-visible,
+.nomrep button:focus-visible {
+    outline: 3px solid #58d2ff;
+    outline-offset: 2px;
+}
+.nomrep .nomrep-filters select option { background: #071f37; color: #f7fbff; }
+.nomrep .nomrep-filter-actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    align-items: center;
+    min-height: 42px;
+}
+.nomrep .nomrep-submit,
+.nomrep .nomrep-page-link {
+    display: inline-block;
+    border: 1px solid #2797d5;
+    background: #08699f;
+    color: #fff;
+    padding: 10px 15px;
+    border-radius: 8px;
+    font-weight: 750;
+    text-decoration: none;
+    cursor: pointer;
+    font-size: .85rem;
+}
+.nomrep .nomrep-submit:hover,
+.nomrep .nomrep-page-link:hover { background: #0c80bd; }
+.nomrep .nomrep-reset {
+    color: var(--nomrep-link);
+    font-size: .85rem;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+.nomrep .nomrep-kpis {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 11px;
+}
+.nomrep .nomrep-kpi {
+    min-width: 0;
+    border: 1px solid var(--nomrep-border);
+    border-radius: 11px;
+    padding: 15px 18px;
+    background: var(--nomrep-panel-alt);
+    color: var(--nomrep-text);
+}
+.nomrep .nomrep-kpi span {
+    display: block;
+    color: #c4dbea;
+    font-size: .81rem;
+    font-weight: 650;
+    margin-bottom: 5px;
+}
+.nomrep .nomrep-kpi strong {
+    display: block;
+    color: #f7fbff;
+    font-size: 1.7rem;
+    font-variant-numeric: tabular-nums;
+}
+.nomrep .nomrep-table-wrap {
+    max-width: 100%;
+    overflow-x: auto;
+    border: 1px solid var(--nomrep-border);
+    border-radius: 10px;
+    scrollbar-color: #5788a9 #071f37;
+}
+.nomrep table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    min-width: 1670px;
+    font-size: .85rem;
+    color: var(--nomrep-text);
+}
+.nomrep th {
+    background: #18425f;
+    color: #f4faff;
+    font-size: .8rem;
+    font-weight: 750;
+    white-space: nowrap;
+    text-align: left;
+    border-bottom: 1px solid #527b99;
+}
+.nomrep th, .nomrep td {
+    padding: 13px 12px;
+    border-bottom: 1px solid #29506b;
+    vertical-align: top;
+}
+.nomrep tbody tr { background: #0b2a45; }
+.nomrep tbody tr:nth-child(even) { background: #11334f; }
+.nomrep tbody tr:hover { background: #194363; }
+.nomrep td { color: #edf7fd; }
+.nomrep td strong, .nomrep td small { display: block; }
+.nomrep td strong { color: #f7fbff; font-weight: 730; line-height: 1.45; }
+.nomrep td small {
+    color: #c1d6e5;
+    font-size: .76rem;
+    margin-top: 5px;
+    line-height: 1.45;
+    opacity: 1;
+}
+.nomrep .nomrep-qty {
+    text-align: right;
+    font-size: .9rem;
+    font-weight: 650;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+.nomrep .nomrep-state {
+    font-size: .81rem;
+    line-height: 1.5;
+    white-space: normal;
+    min-width: 185px;
+}
+.nomrep .nomrep-flag {
+    display: block;
+    padding: 6px 8px;
+    margin-top: 8px;
+    border: 1px solid #b77d29;
+    border-radius: 6px;
+    background: #3e2d1c;
+    color: #ffe6ad;
+    font-weight: 700;
+    font-size: .77rem;
+    max-width: 220px;
+}
+.nomrep .nomrep-actions {
+    display: grid;
+    gap: 7px;
+    min-width: 165px;
+}
+.nomrep .nomrep-actions a,
+.nomrep tbody a {
+    color: var(--nomrep-link);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    font-weight: 700;
+}
+.nomrep .nomrep-actions a:hover,
+.nomrep tbody a:hover { color: #d7f4ff; }
+.nomrep .nomrep-pagebar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 16px;
+    font-size: .87rem;
+    color: var(--nomrep-muted);
+}
+.nomrep .nomrep-pagebar strong { color: #fff; }
+.nomrep .nomrep-empty { padding: 26px; text-align: center; color: var(--nomrep-text); }
+.nomrep .nomrep-empty p { color: var(--nomrep-muted); }
+@media (max-width: 1100px) {
+    .nomrep .nomrep-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 680px) {
+    .nomrep .nomrep-hero, .nomrep .nomrep-panel { padding: 16px; }
+    .nomrep .nomrep-filters { grid-template-columns: 1fr; }
+    .nomrep .nomrep-filters label.nomrep-filter-search { grid-column: auto; }
+    .nomrep .nomrep-kpis { grid-template-columns: 1fr; }
+    .nomrep .nomrep-hero-actions { width: 100%; }
+}
+@media print {
+    @page { size: landscape; margin: 10mm; }
+    body { background: #fff !important; color: #111 !important; }
+    body * { visibility: hidden; }
+    .nomrep, .nomrep * { visibility: visible; }
+    .nomrep {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        background: #fff !important;
+        color: #111 !important;
+        display: block;
+    }
+    .nomrep .nomrep-hero, .nomrep .nomrep-panel,
+    .nomrep .nomrep-kpi, .nomrep tbody tr,
+    .nomrep tbody tr:nth-child(even) {
+        background: #fff !important;
+        color: #111 !important;
+        border-color: #888 !important;
+    }
+    .nomrep .nomrep-hero h1, .nomrep .nomrep-hero p,
+    .nomrep .nomrep-panel h2, .nomrep .nomrep-hint, .nomrep .nomrep-caption,
+    .nomrep .nomrep-kpi span, .nomrep .nomrep-kpi strong,
+    .nomrep th, .nomrep td, .nomrep td strong, .nomrep td small,
+    .nomrep .nomrep-state, .nomrep .nomrep-pagebar,
+    .nomrep .nomrep-actions a, .nomrep tbody a {
+        color: #111 !important;
+        text-shadow: none !important;
+    }
+    .nomrep th { background: #e8edf2 !important; border-color: #999 !important; }
+    .nomrep th, .nomrep td { border-bottom-color: #aaa !important; padding: 5px; }
+    .nomrep .nomrep-flag { background: #fff !important; color: #6b4000 !important; }
+    .nomrep .nomrep-hero-actions, .nomrep .nomrep-filters,
+    .nomrep .nomrep-filter-actions, .nomrep .nomrep-pagebar,
+    .nomrep .nomrep-actions { display: none !important; }
+    .nomrep .nomrep-table-wrap { overflow: visible; border: none; }
+    .nomrep table { min-width: 0; font-size: 7pt; }
+    .nomrep thead { display: table-header-group; }
+    .nomrep tr { break-inside: avoid; }
+}

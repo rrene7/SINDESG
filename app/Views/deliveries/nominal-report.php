@@ -30,53 +30,7 @@ $url=static function(int $page) use($f):string {
 };
 $units=static fn($n):string => sindesg_units((float)$n);
 ?>
-<style>
-.nomrep{display:grid;gap:15px;margin-bottom:24px}
-.nomrep .nomrep-hero{display:flex;justify-content:space-between;gap:15px;flex-wrap:wrap;align-items:center;padding:21px 24px;border-radius:15px;background:linear-gradient(113deg,#082c46,#11628a);color:#fff}
-.nomrep .nomrep-hero h1{color:#fff;font-size:clamp(1.45rem,2.2vw,2rem);margin:6px 0}
-.nomrep .nomrep-hero p{color:#cbe8f5;font-size:.87rem;margin:0;max-width:710px}
-.nomrep .nomrep-hero a,.nomrep .nomrep-hero button{border:1px solid #91c6e4;border-radius:9px;padding:10px 13px;background:#fff;color:#123c58;text-decoration:none;font-weight:700;cursor:pointer;font-size:.82rem}
-.nomrep .nomrep-hero-actions{display:flex;gap:8px;flex-wrap:wrap}
-.nomrep .nomrep-panel{background:var(--surface,#fff);border:1px solid var(--border,#d8e3eb);border-radius:13px;padding:17px}
-.nomrep .nomrep-panel h2{font-size:1.06rem;margin:0 0 8px}
-.nomrep .nomrep-hint{font-size:.78rem;opacity:.8;line-height:1.5}
-.nomrep .nomrep-filters{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:11px;align-items:end}
-.nomrep label{font-size:.78rem;font-weight:650;display:grid;gap:5px}
-.nomrep input,.nomrep select{width:100%;min-width:0;padding:10px 11px;border-radius:8px;border:1px solid #9ab6c9;background:var(--input-bg,#fff);color:inherit;font:inherit;box-sizing:border-box}
-.nomrep .nomrep-filter-actions{display:flex;gap:9px;flex-wrap:wrap;align-items:center}
-.nomrep .nomrep-submit,.nomrep .nomrep-page-link{display:inline-block;border:1px solid #167cb3;background:#1175ad;color:#fff;padding:10px 14px;border-radius:8px;font-weight:700;text-decoration:none;cursor:pointer;font-size:.83rem}
-.nomrep .nomrep-reset{font-size:.81rem}
-.nomrep .nomrep-kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:11px}
-.nomrep .nomrep-kpi{border:1px solid var(--border,#d8e3eb);border-radius:11px;padding:15px;background:var(--surface,#fff)}
-.nomrep .nomrep-kpi span{display:block;font-size:.75rem;opacity:.8}
-.nomrep .nomrep-kpi strong{font-size:1.6rem;font-variant-numeric:tabular-nums}
-.nomrep .nomrep-table-wrap{overflow-x:auto}
-.nomrep table{width:100%;border-collapse:collapse;min-width:1250px;font-size:.79rem}
-.nomrep th{background:#e6f1f8;color:#153950;font-size:.74rem;white-space:nowrap;text-align:left}
-.nomrep th,.nomrep td{padding:11px 12px;border-bottom:1px solid var(--border,#d8e3eb);vertical-align:top}
-.nomrep td strong,.nomrep td small{display:block}
-.nomrep td small{font-size:.7rem;margin-top:4px;opacity:.8}
-.nomrep .nomrep-qty{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
-.nomrep .nomrep-flag{display:block;color:#9d4d10;font-weight:700;margin-top:5px;font-size:.72rem;max-width:210px}
-.nomrep .nomrep-state{font-size:.76rem;line-height:1.45;white-space:normal;min-width:160px}
-.nomrep .nomrep-actions{display:grid;gap:5px;min-width:130px}
-.nomrep .nomrep-actions a{color:#1685b9;text-decoration:underline;font-weight:650}
-.nomrep .nomrep-pagebar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-top:15px;font-size:.85rem}
-.nomrep .nomrep-empty{padding:22px;text-align:center}
-.nomrep .nomrep-caption{font-size:.75rem;opacity:.8;line-height:1.5}
-@media(max-width:680px){.nomrep .nomrep-hero,.nomrep .nomrep-panel{padding:15px}.nomrep .nomrep-kpis{grid-template-columns:1fr}.nomrep .nomrep-hero-actions{width:100%}}
-@media print{
- body *{visibility:hidden}
- .nomrep,.nomrep *{visibility:visible}
- .nomrep{position:absolute;top:0;left:0;width:100%;color:#000}
- .nomrep .nomrep-hero{background:#fff;color:#000;border:1px solid #777}
- .nomrep .nomrep-hero h1,.nomrep .nomrep-hero p{color:#000}
- .nomrep .nomrep-hero-actions,.nomrep .nomrep-filters,.nomrep .nomrep-filter-actions,.nomrep .nomrep-pagebar,.nomrep .nomrep-actions{display:none!important}
- .nomrep .nomrep-table-wrap{overflow:visible}
- .nomrep table{min-width:0;font-size:7pt}
- .nomrep th,.nomrep td{padding:4px}
-}
-</style>
+
 <div class="nomrep" data-nominal-report>
     <header class="nomrep-hero">
         <div>
@@ -98,7 +52,7 @@ $units=static fn($n):string => sindesg_units((float)$n);
         <form class="nomrep-filters" method="get" action="<?= e(sindesg_url()) ?>" role="search">
             <input type="hidden" name="module" value="deliveries">
             <input type="hidden" name="action" value="nominal-report">
-            <label>Funcionario, cédula o artículo
+            <label class="nomrep-filter-search">Funcionario, cédula o artículo
                 <input type="search" name="q" value="<?= e($f['q']??'') ?>" maxlength="120" placeholder="Buscar en todos los renglones">
             </label>
             <label>Unidad del funcionario
