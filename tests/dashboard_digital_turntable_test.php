@@ -1,0 +1,94 @@
+<?php
+declare(strict_types=1);
+
+/**
+ * Presentation-only regression: no database dependency, uploads mutation or
+ * fabricated multi-view/360° product rotation.
+ */
+$root = dirname(__DIR__);
+$view = file_get_contents($root . '/app/Views/dashboard.php');
+$css = file_get_contents($root . '/public/assets/css/app.css');
+$javascript = file_get_contents($root . '/public/assets/js/app.js');
+$layout = file_get_contents($root . '/app/Views/layout.php');
+
+foreach (['view' => $view, 'css' => $css, 'javascript' => $javascript, 'layout' => $layout] as $name => $source) {
+    if (!is_string($source) || $source === '') {
+        throw new RuntimeException('No se pudo leer ' . $name);
+    }
+}
+
+$require = static function (string $source, array $checks, string $part): void {
+    foreach ($checks as $needle) {
+        if (!str_contains($source, $needle)) {
+            throw new RuntimeException('Falta en ' . $part . ': ' . $needle);
+        }
+    }
+};
+
+$require($view, [
+    'class="product-image-placeholder dashboard-product-image digital-turntable"',
+    'data-digital-turntable',
+    'data-feature-image',
+    'class="digital-turntable__product"',
+    'class="digital-turntable__platter"',
+    'class="digital-turntable__platter-rim"',
+    'class="digital-turntable__platter-surface"',
+    'class="digital-turntable__platter-orbit"',
+    'data-turntable-replay',
+    'type="button"',
+    'Repetir animación de presentación del artículo',
+    'PRESENTACIÓN 2D',
+    'sindesg_upload_url((string) $featuredProduct',
+    'data-dashboard-product-id',
+    'data-feature-available',
+    'data-feature-sizes',
+], 'vista');
+
+$require($javascript, [
+    "qs('[data-digital-turntable]', focusPanel)",
+    "qs('[data-turntable-replay]', focusPanel)",
+    "window.matchMedia('(prefers-reduced-motion: reduce)')",
+    'const replayPresentation = () => {',
+    "fields.turntable.classList.remove('is-presenting')",
+    'void fields.turntable.offsetWidth',
+    "fields.turntable.classList.add('is-presenting')",
+    "fields.replay?.addEventListener('click', replayPresentation)",
+    "fields.image?.addEventListener('click', replayPresentation)",
+    "renderImage(entry);\n            replayPresentation();",
+    "card.addEventListener('click'",
+    "card.addEventListener('keydown'",
+    'renderSizes(entry.sizes)',
+    'fields.available.textContent = available',
+], 'JavaScript');
+
+$require($css, [
+    '.dashboard-product-image.digital-turntable',
+    '.digital-turntable__product',
+    '.digital-turntable__product img',
+    '.digital-turntable__platter',
+    '.digital-turntable__platter-rim',
+    '.digital-turntable__platter-surface',
+    '.digital-turntable__platter-orbit',
+    '.digital-turntable__replay:focus-visible',
+    '@keyframes sindesg-item-present',
+    '@keyframes sindesg-pedestal-sweep',
+    '@media (max-width: 760px)',
+    '@media (prefers-reduced-motion: reduce)',
+    'animation: none !important',
+], 'CSS');
+
+$require($layout, ["sindesg_asset('css/app.css')", "sindesg_asset('js/app.js')"], 'carga de recursos');
+
+if (substr_count($view, 'data-feature-image') !== 1 ||
+    substr_count($view, 'data-digital-turntable') !== 1 ||
+    substr_count($view, 'data-turntable-replay') !== 1) {
+    throw new RuntimeException('Debe existir un único visor y un único control de repetición.');
+}
+
+if (str_contains($view, 'Últimos artículos incorporados')
+    || str_contains($view, 'data-dashboard-category-id')
+    || str_contains($view, 'data-dashboard-category-focus')) {
+    throw new RuntimeException('El plato no debe duplicar el carrusel de artículos.');
+}
+
+echo "[OK] Plato digital: visor persistente, animación 2D repetible, teclado, reducción de movimiento e inventario intacto.\n";

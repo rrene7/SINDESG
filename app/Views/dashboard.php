@@ -150,14 +150,30 @@ foreach (($dashboardProductFocus ?? []) as $productId => $entry) {
                     <?php endif; ?>
                 </div>
             </div>
-            <div class="product-image-placeholder dashboard-product-image" data-feature-image>
-                <?php if (!empty($featuredProduct['primary_image'])): ?>
-                    <img src="<?= e(sindesg_upload_url((string) $featuredProduct['primary_image'])) ?>" alt="<?= e($featuredName) ?>">
-                <?php else: ?>
-                    <div class="scan-ring"></div>
-                    <div class="product-monogram">PR</div>
-                    <span>Imagen pendiente</span>
-                <?php endif; ?>
+            <div class="product-image-placeholder dashboard-product-image digital-turntable"
+                 data-digital-turntable role="group"
+                 aria-label="Exhibición digital del artículo seleccionado; presentación visual en 2D">
+                <div class="digital-turntable__atmosphere" aria-hidden="true"></div>
+                <div class="digital-turntable__product" data-feature-image
+                     title="Tocar para repetir la presentación visual">
+                    <?php if (!empty($featuredProduct['primary_image'])): ?>
+                        <img src="<?= e(sindesg_upload_url((string) $featuredProduct['primary_image'])) ?>"
+                             alt="<?= e($featuredName) ?>">
+                    <?php else: ?>
+                        <div class="scan-ring"></div>
+                        <div class="product-monogram">PR</div>
+                        <span>Imagen pendiente</span>
+                    <?php endif; ?>
+                </div>
+                <div class="digital-turntable__platter" aria-hidden="true">
+                    <div class="digital-turntable__platter-rim"></div>
+                    <div class="digital-turntable__platter-surface"></div>
+                    <div class="digital-turntable__platter-orbit"></div>
+                </div>
+                <button class="digital-turntable__replay" type="button" data-turntable-replay
+                        aria-label="Repetir animación de presentación del artículo"
+                        title="Repetir presentación (efecto visual 2D)">↻ <span>Presentar</span></button>
+                <span class="digital-turntable__caption" aria-hidden="true">PLATAFORMA DIGITAL · PRESENTACIÓN 2D</span>
             </div>
         </div>
     </article>

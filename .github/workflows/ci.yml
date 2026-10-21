@@ -76,6 +76,11 @@ jobs:
       - name: Dashboard recently registered catalogue articles
         run: php tests/dashboard_recent_products_test.php
 
+      - name: Dashboard digital pedestal and animation
+        run: |
+          php tests/dashboard_digital_turntable_test.php
+          node --check public/assets/js/app.js
+
       - name: P4 dashboard flow isolation test
         run: php tests/p4_dashboard_flow_test.php
 
