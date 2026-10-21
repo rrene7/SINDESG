@@ -58,7 +58,7 @@ final class P4DeliveryGuard
                    WHERE linked.delivery_id=d.id
                      AND (request_owner.p4_warehouse_id<>d.p4_warehouse_id
                           OR line.beneficiary_employee_id<>d.recipient_employee_id
-                          OR line.product_variant_id<>linked.product_variant_id)
+                         )
                )
                LIMIT 1"
         );
