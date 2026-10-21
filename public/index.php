@@ -262,7 +262,8 @@ if ($currentModule === 'dashboard'
     $featuredProduct = null;
     $featuredSizes = [];
     $featuredStockBreakdown = ['central' => 0.0, 'p4' => 0.0, 'transit' => 0.0];
-    $recentDashboardProducts = [];
+    $dashboardProducts = [];
+    $dashboardProductFocus = [];
     $recentDashboardReceipts = [];
     $recentDashboardRequests = [];
     $dashboardCategoryFocus = [];
@@ -277,25 +278,28 @@ if ($currentModule === 'dashboard'
         try {
             $dashboardRepository = new DashboardRepository($database->connection('sindesg'));
             $dashboardCategories = $dashboardRepository->categoryCards();
-            $featuredProduct = $dashboardRepository->featuredProduct();
+            $dashboardProducts = $dashboardRepository->productCarouselCards();
+            $dashboardProductFocus = $dashboardRepository->productCarouselFocusData($dashboardProducts);
+            // Newest registered article is selected initially; any article
+            // can be selected interactively, regardless of stock.
+            $featuredProduct = $dashboardProducts[0] ?? null;
             $featuredSizes = $featuredProduct
                 ? $dashboardRepository->sizesForProduct((int) $featuredProduct['id'])
                 : [];
             $featuredStockBreakdown = $featuredProduct
                 ? $dashboardRepository->stockBreakdownForProduct((int) $featuredProduct['id'])
                 : ['central' => 0.0, 'p4' => 0.0, 'transit' => 0.0];
-            $recentDashboardProducts = $dashboardRepository->recentProducts(8);
             $recentDashboardReceipts = $dashboardRepository->recentReceipts(4);
             $recentDashboardRequests = $dashboardRepository->recentRequests(5);
-            $dashboardCategoryFocus = $dashboardRepository->categoryFocusData($dashboardCategories);
             $dashboardOperationalSummary = $dashboardRepository->operationalSummary();
         } catch (\Throwable $exception) {
             $dashboardCategories = [];
             $featuredProduct = null;
             $featuredSizes = [];
             $featuredStockBreakdown = ['central' => 0.0, 'p4' => 0.0, 'transit' => 0.0];
-            $recentDashboardProducts = [];
-    $recentDashboardReceipts = [];
+            $dashboardProducts = [];
+            $dashboardProductFocus = [];
+            $recentDashboardReceipts = [];
             $recentDashboardRequests = [];
             $dashboardCategoryFocus = [];
             $dashboardOperationalSummary = [
