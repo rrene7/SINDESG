@@ -12,7 +12,7 @@ final class CatalogService
     {
     }
 
-    public function createCategory(array $input): int
+    public function createCategory(array $input, ?array $actor = null): int
     {
         $name = trim((string) ($input['name'] ?? ''));
         $description = $this->nullableText($input['description'] ?? null);
@@ -34,7 +34,7 @@ final class CatalogService
             }
         }
 
-        return $this->repository->createCategory($slug, $name, $description);
+        return $this->repository->createCategory($slug, $name, $description, $actor);
     }
 
     /** Category metadata only; permanent code and canonical slug stay intact. */
