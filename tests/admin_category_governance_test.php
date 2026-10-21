@@ -92,7 +92,10 @@ $assert((int) $repo->getCategory(2)['is_active'] === 1, 'No restauró la categor
 $newId = $service->createCategory(['name'=>'Accesorios tácticos'], $actor);
 $new = $repo->getCategory($newId);
 $assert($new['code'] === sprintf('CAT-%06d', $newId), 'La secuencia de códigos falló');
-$assert($new['slug'] === 'accesorios-tacticos', 'El slug inicial es incorrecto');
+$assert(
+    $new['slug'] === 'accesorios-tacticos',
+    'Slug español distinto entre sistemas: esperado accesorios-tacticos, obtenido ' . $new['slug']
+);
 
 $events = $pdo->query('SELECT action_code, user_id, before_json, after_json FROM audit_logs ORDER BY id')->fetchAll(PDO::FETCH_ASSOC);
 $actions = array_column($events, 'action_code');
@@ -101,6 +104,22 @@ $assert($actions === ['category_updated','category_archived','category_restored'
 foreach ($events as $event) {
     $assert((int) $event['user_id'] === 77 && $event['after_json'] !== null,
         'La auditoría no identifica actor y estado posterior');
+}
+
+// Deterministic across Linux iconv and Windows XAMPP iconv.
+$accentCases = [
+    ['name' => 'Ñandú y pingüinos', 'slug' => 'nandu-y-pinguinos'],
+    ['name' => 'CAMISAS ÁÉÍÓÚ', 'slug' => 'camisas-aeiou'],
+    ['name' => "Accesorios ta\u{0301}cticos", 'slug' => 'accesorios-tacticos-2'],
+];
+foreach ($accentCases as $case) {
+    $id = $service->createCategory(['name' => $case['name']], $actor);
+    $actualSlug = (string) $repo->getCategory($id)['slug'];
+    $assert(
+        $actualSlug === $case['slug'],
+        'Normalización Unicode no portable para ' . $case['name']
+            . ': esperado ' . $case['slug'] . ', recibido ' . $actualSlug
+    );
 }
 
 $pdo->exec('DROP TABLE audit_logs');
@@ -116,6 +135,7 @@ try {
 
 // Route authorization and CSRF remain in the original application router.
 $bootstrap = (string) file_get_contents($root . '/app/bootstrap.php');
+$bootstrap = str_replace(["\r\n", "\r"], "\n", $bootstrap); // CRLF de Windows y LF de Linux
 $controller = (string) file_get_contents($root . '/app/Controllers/InventoryController.php');
 $index = (string) file_get_contents($root . '/app/Views/inventory/index.php');
 $adminView = (string) file_get_contents($root . '/app/Views/inventory/categories-admin.php');

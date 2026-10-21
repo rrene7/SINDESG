@@ -402,3 +402,27 @@ jobs:
             $errors | ForEach-Object { Write-Error $_.Message }
             exit 1
           }
+
+  windows-catalog:
+    name: Windows XAMPP catalog compatibility
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: PHP 8.2 with SQLite and mbstring
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: pdo_sqlite, sqlite3, mbstring, iconv
+          coverage: none
+
+      - name: Category administration and Spanish accents on Windows
+        shell: pwsh
+        run: |
+          php -l app/Services/CatalogService.php
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          php tests/admin_category_governance_test.php
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          php tests/category_auto_code_test.php
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
