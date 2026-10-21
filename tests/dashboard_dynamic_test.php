@@ -18,7 +18,8 @@ foreach ([
     'product_images',
     'recentReceipts',
     'stockBreakdownForProduct',
-    'categoryFocusData',
+    'productCarouselCards',
+    'productCarouselFocusData',
     'featuredProductForCategory',
     'recentRequests',
     'operationalSummary',
@@ -40,14 +41,14 @@ foreach ([
     'recentDashboardReceipts',
     'recentDashboardRequests',
     'dashboardOperationalSummary',
-    'dashboardCategoryFocus',
-    'data-dashboard-category-id',
-    'data-dashboard-category-focus',
+    'dashboardProductFocus',
+    'data-dashboard-product-id',
+    'data-dashboard-product-focus',
     'data-dashboard-focus-panel',
     'data-feature-category',
     'data-feature-available',
     'data-feature-sizes',
-    'Entrar a categoría',
+    'Ver artículo →',
     'sindesg_upload_url',
     'STOCK DISPONIBLE',
     'unidades libres para nuevas entregas',
@@ -75,7 +76,8 @@ if (
 
 foreach ([
     '$dashboardRepository->recentRequests(5)',
-    '$dashboardRepository->categoryFocusData($dashboardCategories)',
+    '$dashboardRepository->productCarouselCards()',
+    '$dashboardRepository->productCarouselFocusData($dashboardProducts)',
     '$dashboardRepository->operationalSummary()',
 ] as $fragment) {
     if (!str_contains($index, $fragment)) {
@@ -85,11 +87,11 @@ foreach ([
 }
 
 foreach ([
-    "querySelectorAll('[data-dashboard-category-id]')",
+    "querySelectorAll('[data-dashboard-product-id]')",
     "JSON.parse(focusPayload.textContent || '{}')",
-    'activateCategory',
+    'activateProduct',
     "candidate.classList.toggle('is-selected', active)",
-    "fields.link.textContent = product ? 'Abrir artículo →' : 'Abrir categoría →'",
+    "fields.link.textContent = 'Abrir artículo →'",
     'renderSizes(entry.sizes)',
 ] as $fragment) {
     if (!str_contains($javascript, $fragment)) {
@@ -98,4 +100,11 @@ foreach ([
     }
 }
 
-echo "[OK] Dashboard dinámico, operativo y selector de categorías validados." . PHP_EOL;
+if (str_contains($view, 'Últimos artículos incorporados')
+    || str_contains($view, 'data-dashboard-category-id')
+    || str_contains($view, 'data-dashboard-category-focus')) {
+    fwrite(STDERR, "[ERROR] El dashboard tiene carruseles duplicados u opciones antiguas de categorías." . PHP_EOL);
+    exit(1);
+}
+
+echo "[OK] Dashboard dinámico, operativo y selector de artículos validados." . PHP_EOL;

@@ -1,16 +1,18 @@
 <?php
 declare(strict_types=1);
 
-$cards = $dashboardCategories !== [] ? $dashboardCategories : $categories;
+$cards = $dashboardProducts ?? [];
+$selectedProductId = (int) ($featuredProduct['id'] ?? 0);
 $featuredInstitutionalStock = (float) ($featuredProduct['stock_total'] ?? 0);
-$featuredAvailableStock = (float) ($featuredStockBreakdown['available'] ?? $featuredProduct['stock_available'] ?? 0);
+$featuredAvailableStock = (float) ($featuredStockBreakdown['available'] ?? 0);
 $featuredCentralStock = (float) ($featuredStockBreakdown['central'] ?? 0);
 $featuredCommittedStock = (float) ($featuredStockBreakdown['committed'] ?? 0);
-$featuredName = (string) ($featuredProduct['name'] ?? 'Sin artículo destacado');
+$featuredName = (string) ($featuredProduct['name'] ?? 'Sin artículos registrados');
 $featuredCategory = (string) ($featuredProduct['category_name'] ?? 'Inventario');
-$featuredDescription = (string) ($featuredProduct['description'] ?? 'Cuando exista inventario, SINDESG mostrará aquí el artículo con mayor disponibilidad.');
+$featuredDescription = trim((string) ($featuredProduct['description'] ?? ''))
+    ?: 'Artículo del catálogo institucional. Seleccione otra tarjeta para consultar sus tallas y existencias.';
 $featuredUrl = $featuredProduct
-    ? sindesg_url('?module=inventory&action=product&id=' . (int) $featuredProduct['id'])
+    ? sindesg_url('?module=inventory&action=product&id=' . $selectedProductId)
     : sindesg_url('?module=inventory');
 
 $requestStatusLabels = [
@@ -23,75 +25,15 @@ $requestStatusLabels = [
     'closed' => 'Cerrada',
 ];
 
-$categoryInitials = static function (array $category): string {
-    $slug = (string) ($category['slug'] ?? 'categoria');
-    $parts = array_values(array_filter(explode('-', $slug)));
-
-    if (count($parts) > 1) {
-        return strtoupper(substr($parts[0], 0, 1) . substr($parts[1], 0, 1));
-    }
-
-    return strtoupper(substr($parts[0] ?? 'CA', 0, 2));
-};
-
-$featuredCategoryId = (int) ($featuredProduct['category_id'] ?? 0);
-if ($featuredCategoryId <= 0 && $cards !== []) {
-    $featuredCategoryId = (int) ($cards[0]['id'] ?? 0);
-}
-
-$categoryFocusPayload = [];
-foreach ($cards as $category) {
-    $categoryId = (int) ($category['id'] ?? 0);
-    if ($categoryId <= 0) {
-        continue;
-    }
-
-    $focus = $dashboardCategoryFocus[$categoryId] ?? [];
-    $focusProduct = is_array($focus['product'] ?? null) ? $focus['product'] : null;
-    $focusStock = is_array($focus['stock'] ?? null) ? $focus['stock'] : [];
-    $focusSizes = is_array($focus['sizes'] ?? null) ? $focus['sizes'] : [];
-    $categoryUrl = sindesg_url('?module=inventory&category_id=' . $categoryId);
-
-    $categoryFocusPayload[(string) $categoryId] = [
-        'category' => [
-            'id' => $categoryId,
-            'name' => (string) ($category['name'] ?? 'Categoría'),
-            'initials' => $categoryInitials($category),
-            'url' => $categoryUrl,
-        ],
-        'product' => $focusProduct === null ? null : [
-            'id' => (int) ($focusProduct['id'] ?? 0),
-            'name' => (string) ($focusProduct['name'] ?? 'Artículo'),
-            'internal_code' => (string) ($focusProduct['internal_code'] ?? ''),
-            'description' => (string) (
-                $focusProduct['description']
-                ?? 'Artículo seleccionado automáticamente por disponibilidad dentro de esta categoría.'
-            ),
-            'color' => (string) ($focusProduct['color'] ?? 'Artículo disponible'),
-            'sex' => (string) ($focusProduct['sex'] ?? 'no aplica'),
-            'url' => sindesg_url('?module=inventory&action=product&id=' . (int) ($focusProduct['id'] ?? 0)),
-            'image_url' => !empty($focusProduct['primary_image'])
-                ? sindesg_upload_url((string) $focusProduct['primary_image'])
-                : '',
-        ],
-        'stock' => [
-            'available' => (float) ($focusStock['available'] ?? $category['stock_available'] ?? 0),
-            'central' => (float) ($focusStock['central'] ?? 0),
-            'committed' => (float) ($focusStock['committed'] ?? 0),
-            'p4' => (float) ($focusStock['p4'] ?? 0),
-            'transit' => (float) ($focusStock['transit'] ?? 0),
-            'institutional' => $focusProduct !== null
-                ? (float) ($focusProduct['stock_total'] ?? 0)
-                : (float) ($category['stock_total'] ?? 0),
-        ],
-        'sizes' => array_map(
-            static fn (array $size): array => [
-                'name' => (string) ($size['size_name'] ?? 'S/T'),
-                'quantity' => (float) ($size['quantity_on_hand'] ?? 0),
-            ],
-            $focusSizes
-        ),
-    ];
+$productFocusPayload = [];
+foreach (($dashboardProductFocus ?? []) as $productId => $entry) {
+    $product = $entry['product'] ?? [];
+    $entry['product']['url'] = sindesg_url((string) ($product['url'] ?? '?module=inventory'));
+    $entry['product']['image_url'] = !empty($product['image_path'])
+        ? sindesg_upload_url((string) $product['image_path'])
+        : '';
+    unset($entry['product']['image_path']);
+    $productFocusPayload[(string) $productId] = $entry;
 }
 ?>
 <section class="hero">
@@ -109,109 +51,68 @@ foreach ($cards as $category) {
     </div>
 </section>
 
-<section class="section-block">
+<section class="section-block" aria-labelledby="product-carousel-heading">
     <div class="section-heading">
         <div>
-            <span class="eyebrow">CATÁLOGO VISUAL</span>
-            <h2>Categorías de uniformes y equipo</h2>
+            <span class="eyebrow">CATÁLOGO VISUAL · ARTÍCULOS</span>
+            <h2 id="product-carousel-heading">Uniformes, equipos y artículos registrados</h2>
+            <p class="product-carousel-hint">Seleccione un artículo para ver su imagen, tallas y existencias. Todos aparecen, incluso los que aún no tienen stock.</p>
         </div>
         <div class="carousel-controls">
-            <button type="button" data-carousel-prev aria-label="Anterior">←</button>
-            <button type="button" data-carousel-next aria-label="Siguiente">→</button>
+            <button type="button" data-carousel-prev aria-label="Anterior artículo">←</button>
+            <button type="button" data-carousel-next aria-label="Siguiente artículo">→</button>
         </div>
     </div>
 
-    <div class="category-carousel" data-carousel>
-        <?php foreach ($cards as $index => $category): ?>
-            <?php
-            $categoryId = (int) ($category['id'] ?? 0);
-            $initials = $categoryInitials($category);
-            $categoryHref = $categoryId > 0
-                ? sindesg_url('?module=inventory&category_id=' . $categoryId)
-                : sindesg_url('?module=inventory');
-            $focus = $dashboardCategoryFocus[$categoryId] ?? [];
-            $focusProduct = is_array($focus['product'] ?? null) ? $focus['product'] : null;
-            $categoryImage = $focusProduct !== null
-                ? (string) ($focusProduct['primary_image'] ?? '')
-                : '';
-            $categoryInstitutionalStock = (float) ($category['stock_total'] ?? 0);
-            $categoryAvailableStock = (float) ($category['stock_available'] ?? $categoryInstitutionalStock);
-            $isSelectedCategory = $categoryId > 0 && $categoryId === $featuredCategoryId;
-            ?>
-            <article class="category-card <?= $isSelectedCategory ? 'featured is-selected' : '' ?>"
-                     data-dashboard-category-id="<?= e($categoryId) ?>"
-                     data-searchable="<?= e($category['name']) ?>"
-                     role="button"
-                     tabindex="0"
-                     aria-pressed="<?= $isSelectedCategory ? 'true' : 'false' ?>">
-                <div class="category-photo-placeholder">
-                    <?php if ($categoryImage !== ''): ?>
-                        <img src="<?= e(sindesg_upload_url($categoryImage)) ?>" alt="<?= e($category['name']) ?>">
-                    <?php else: ?>
-                        <span><?= e($initials) ?></span>
-                        <small>Sin fotografía</small>
-                    <?php endif; ?>
-                </div>
-                <div class="category-card-copy">
-                    <strong><?= e($category['name']) ?></strong>
-                    <span class="stock-placeholder"><?= e(sindesg_units($categoryAvailableStock)) ?> disponibles</span>
-                    <small><?= e((int) ($category['product_count'] ?? 0)) ?> artículos · <?= e(sindesg_units($categoryInstitutionalStock)) ?> institucionales</small>
-                    <a class="category-enter-link" href="<?= e($categoryHref) ?>">Entrar a categoría →</a>
-                </div>
-            </article>
-        <?php endforeach; ?>
-    </div>
-</section>
-
-<section class="section-block dashboard-recent-products" aria-labelledby="dashboard-recent-products-title">
-    <div class="section-heading">
-        <div>
-            <span class="eyebrow">ACTUALIZACIONES DEL CATÁLOGO</span>
-            <h2 id="dashboard-recent-products-title">Últimos artículos incorporados</h2>
-            <p class="dashboard-recent-hint">Los artículos nuevos aparecen aquí aunque todavía no tengan existencias. El artículo destacado principal continúa seleccionándose por disponibilidad.</p>
-        </div>
-        <a class="dashboard-recent-all" href="<?= e(sindesg_url('?module=inventory')) ?>">Ver inventario completo →</a>
-    </div>
-
-    <?php if (($recentDashboardProducts ?? []) === []): ?>
-        <div class="dashboard-recent-empty">Aún no hay artículos activos registrados en el catálogo.</div>
+    <?php if ($cards === []): ?>
+        <div class="dashboard-product-empty">Todavía no hay artículos activos en el catálogo.</div>
     <?php else: ?>
-        <div class="dashboard-recent-grid">
-            <?php foreach ($recentDashboardProducts as $recentProduct): ?>
+        <div class="product-carousel" data-carousel aria-label="Carrusel de artículos del catálogo">
+            <?php foreach ($cards as $product): ?>
                 <?php
-                $recentId = (int) ($recentProduct['id'] ?? 0);
-                $recentImage = (string) ($recentProduct['primary_image'] ?? '');
-                $recentStock = (float) ($recentProduct['stock_total'] ?? 0);
+                    $productId = (int) ($product['id'] ?? 0);
+                    $photo = (string) ($product['primary_image'] ?? '');
+                    $focus = $dashboardProductFocus[$productId] ?? [];
+                    $available = (float) ($focus['stock']['available'] ?? 0);
+                    $institutional = (float) ($product['stock_total'] ?? 0);
+                    $selected = $productId === $selectedProductId;
                 ?>
-                <a class="dashboard-recent-product" href="<?= e(sindesg_url('?module=inventory&action=product&id=' . $recentId)) ?>">
-                    <span class="dashboard-recent-photo">
-                        <?php if ($recentImage !== ''): ?>
-                            <img src="<?= e(sindesg_upload_url($recentImage)) ?>" alt="<?= e($recentProduct['name']) ?>" loading="lazy">
+                <article class="product-carousel-card <?= $selected ? 'featured is-selected' : '' ?>"
+                         data-dashboard-product-id="<?= $productId ?>"
+                         data-searchable="<?= e($product['name'] . ' ' . $product['category_name']) ?>"
+                         role="button" tabindex="0" aria-pressed="<?= $selected ? 'true' : 'false' ?>"
+                         aria-label="Seleccionar <?= e($product['name']) ?>">
+                    <div class="product-carousel-photo">
+                        <?php if ($photo !== ''): ?>
+                            <img src="<?= e(sindesg_upload_url($photo)) ?>"
+                                 alt="<?= e($product['name']) ?>" loading="lazy">
                         <?php else: ?>
-                            <span class="dashboard-recent-monogram" aria-hidden="true"><?= e($categoryInitials(['slug' => (string) ($recentProduct['category_name'] ?? 'articulo')])) ?></span>
+                            <span aria-hidden="true">SG</span>
                             <small>Sin fotografía</small>
                         <?php endif; ?>
-                    </span>
-                    <span class="dashboard-recent-copy">
-                        <span class="dashboard-recent-category"><?= e($recentProduct['category_name']) ?></span>
-                        <strong><?= e($recentProduct['name']) ?></strong>
-                        <small class="dashboard-recent-code"><?= e((string) ($recentProduct['internal_code'] ?? '')) ?></small>
-                        <span class="dashboard-recent-stock">
-                            <?= $recentStock > 0
-                                ? 'Existencia institucional: ' . e(sindesg_units($recentStock))
-                                : 'Registrado · Sin existencias' ?>
+                    </div>
+                    <div class="product-carousel-copy">
+                        <small class="product-carousel-category"><?= e($product['category_name']) ?></small>
+                        <strong><?= e($product['name']) ?></strong>
+                        <small class="product-carousel-code"><?= e((string) ($product['internal_code'] ?? '')) ?></small>
+                        <span class="stock-placeholder">
+                            <?= $available > 0
+                                ? e(sindesg_units($available)) . ' disponibles'
+                                : 'Sin existencias disponibles' ?>
                         </span>
-                        <span class="dashboard-recent-open">Ver artículo →</span>
-                    </span>
-                </a>
+                        <small><?= e(sindesg_units($institutional)) ?> unidades institucionales</small>
+                        <a class="product-enter-link"
+                           href="<?= e(sindesg_url('?module=inventory&action=product&id=' . $productId)) ?>">Ver artículo →</a>
+                    </div>
+                </article>
             <?php endforeach; ?>
         </div>
     <?php endif; ?>
 </section>
 
-<script type="application/json" data-dashboard-category-focus>
+<script type="application/json" data-dashboard-product-focus>
 <?= json_encode(
-    $categoryFocusPayload,
+    $productFocusPayload,
     JSON_UNESCAPED_UNICODE
     | JSON_UNESCAPED_SLASHES
     | JSON_HEX_TAG
@@ -236,7 +137,7 @@ foreach ($cards as $category) {
 
         <div class="product-focus">
             <div class="product-copy">
-                <h3 data-feature-color><?= e($featuredProduct['color'] ?? 'Artículo disponible') ?></h3>
+                <h3 data-feature-color><?= e((string) ($featuredProduct['color'] ?? '') ?: 'Sin color registrado') ?></h3>
                 <p data-feature-description><?= e($featuredDescription) ?></p>
                 <div class="feature-tags" data-feature-tags>
                     <?php if ($featuredProduct): ?>
