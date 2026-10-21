@@ -31,6 +31,9 @@ jobs:
       - name: Project structure
         run: php scripts/check.php
 
+      - name: Administrator category governance and audit
+        run: php tests/admin_category_governance_test.php
+
       - name: Catalog schema test
         run: php tests/catalog_schema_test.php
 

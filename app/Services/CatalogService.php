@@ -12,7 +12,7 @@ final class CatalogService
     {
     }
 
-    public function createCategory(array $input): int
+    public function createCategory(array $input, ?array $actor = null): int
     {
         $name = trim((string) ($input['name'] ?? ''));
         $description = $this->nullableText($input['description'] ?? null);
@@ -34,7 +34,48 @@ final class CatalogService
             }
         }
 
-        return $this->repository->createCategory($slug, $name, $description);
+        return $this->repository->createCategory($slug, $name, $description, $actor);
+    }
+
+    /** Category metadata only; permanent code and canonical slug stay intact. */
+    public function updateCategory(int $categoryId, array $input, array $actor): void
+    {
+        if ($categoryId <= 0) {
+            throw new InvalidArgumentException('Identificador de categoría inválido.');
+        }
+        $name = trim((string) ($input['name'] ?? ''));
+        $description = $this->nullableText($input['description'] ?? null);
+        $sortOrder = filter_var(
+            $input['sort_order'] ?? null,
+            FILTER_VALIDATE_INT,
+            ['options' => ['min_range' => 0, 'max_range' => 1000000]]
+        );
+        if ($name === '' || mb_strlen($name) > 120) {
+            throw new InvalidArgumentException('Ingrese un nombre de 1 a 120 caracteres.');
+        }
+        if ($description !== null && mb_strlen($description) > 2000) {
+            throw new InvalidArgumentException('La descripción supera 2000 caracteres.');
+        }
+        if ($sortOrder === false) {
+            throw new InvalidArgumentException('El orden de presentación debe ser entre 0 y 1000000.');
+        }
+        $this->repository->updateCategoryAsAdmin($categoryId, [
+            'name' => $name,
+            'description' => $description,
+            'sort_order' => $sortOrder,
+        ], $actor);
+    }
+
+    public function changeCategoryStatus(int $categoryId, bool $active, string $reason, array $actor): void
+    {
+        if ($categoryId <= 0) {
+            throw new InvalidArgumentException('Identificador de categoría inválido.');
+        }
+        $reason = trim($reason);
+        if (mb_strlen($reason) < 8 || mb_strlen($reason) > 500) {
+            throw new InvalidArgumentException('Indique un motivo de 8 a 500 caracteres.');
+        }
+        $this->repository->setCategoryActiveAsAdmin($categoryId, $active, $reason, $actor);
     }
 
     public function createProduct(array $input, ?array $image): array

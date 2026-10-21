@@ -31,6 +31,12 @@ final class InventoryController
         string $method
     ): array {
         try {
+            if (in_array($action, [
+                'new-category', 'edit-category', 'categories', 'save-category',
+                'update-category', 'archive-category', 'restore-category'
+            ], true)) {
+                $this->assertCatalogAdministrator();
+            }
             if (strtoupper($method) === 'POST') {
                 if (!csrf_valid(isset($post['_token']) ? (string) $post['_token'] : null)) {
                     throw new InvalidArgumentException('La sesión del formulario venció. Intente nuevamente.');
@@ -42,9 +48,15 @@ final class InventoryController
             return $this->handleGet($action, $query);
         } catch (InvalidArgumentException $exception) {
             flash('error', $exception->getMessage());
-            $fallback = isset($post['product_id']) && (int) $post['product_id'] > 0
-                ? '?module=inventory&action=product&id=' . (int) $post['product_id']
-                : '?module=inventory';
+            $categoryAction = in_array($action, [
+                'new-category', 'edit-category', 'categories', 'save-category',
+                'update-category', 'archive-category', 'restore-category'
+            ], true);
+            $fallback = $categoryAction && $this->isCatalogAdministrator()
+                ? '?module=inventory&action=categories'
+                : (isset($post['product_id']) && (int) $post['product_id'] > 0
+                    ? '?module=inventory&action=product&id=' . (int) $post['product_id']
+                    : '?module=inventory');
             $this->redirect($fallback);
         } catch (Throwable $exception) {
             return [
@@ -59,6 +71,31 @@ final class InventoryController
 
     private function handleGet(string $action, array $query): array
     {
+        if ($action === 'categories') {
+            $allCategories = $this->repository->listCategories();
+            $detailed = [];
+            foreach ($allCategories as $category) {
+                $detailed[] = $this->repository->getCategory((int) $category['id']);
+            }
+            return [
+                'view' => SINDESG_ROOT . '/app/Views/inventory/categories-admin.php',
+                'title' => 'Administración de categorías',
+                'data' => ['managedCategories' => $detailed],
+            ];
+        }
+
+        if ($action === 'edit-category') {
+            $category = $this->repository->getCategory((int) ($query['id'] ?? 0));
+            if ($category === null) {
+                throw new InvalidArgumentException('La categoría solicitada no existe.');
+            }
+            return [
+                'view' => SINDESG_ROOT . '/app/Views/inventory/category-form.php',
+                'title' => 'Editar categoría',
+                'data' => ['category' => $category],
+            ];
+        }
+
         if ($action === 'new-category') {
             return [
                 'view' => SINDESG_ROOT . '/app/Views/inventory/category-form.php',
@@ -77,7 +114,7 @@ final class InventoryController
                 'view' => SINDESG_ROOT . '/app/Views/inventory/product-form.php',
                 'title' => 'Nuevo artículo',
                 'data' => [
-                    'catalogCategories' => $this->repository->listCategories(),
+                    'catalogCategories' => $this->repository->listActiveCategories(),
                     'returnTo' => $returnTo,
                 ],
             ];
@@ -150,7 +187,7 @@ final class InventoryController
             'data' => [
                 'catalogStats' => $this->repository->stats(),
                 'inventoryStats' => $this->inventory->overview(),
-                'catalogCategories' => $this->repository->listCategories(),
+                'catalogCategories' => $this->repository->listActiveCategories(),
                 'products' => $products,
                 'selectedCategoryId' => $categoryId,
                 'catalogSearch' => $search,
@@ -188,9 +225,40 @@ final class InventoryController
         }
 
         if ($action === 'save-category') {
-            $this->service->createCategory($post);
-            flash('success', 'Categoría creada correctamente.');
-            $this->redirect('?module=inventory');
+            $this->service->createCategory($post, (array) sindesg_user());
+            flash('success', 'Categoría creada con auditoría.');
+            $this->redirect('?module=inventory&action=categories');
+        }
+
+        if ($action === 'update-category') {
+            $categoryId = (int) ($post['category_id'] ?? 0);
+            $this->service->updateCategory($categoryId, $post, (array) sindesg_user());
+            flash('success', 'Categoría actualizada. Su código institucional e historial se conservan.');
+            $this->redirect('?module=inventory&action=categories');
+        }
+
+        if ($action === 'archive-category') {
+            if (($post['confirm'] ?? '') !== 'ARCHIVAR') {
+                throw new InvalidArgumentException('Debe confirmar ARCHIVAR para retirar la categoría del catálogo.');
+            }
+            $this->service->changeCategoryStatus(
+                (int) ($post['category_id'] ?? 0), false,
+                (string) ($post['reason'] ?? ''), (array) sindesg_user()
+            );
+            flash('success', 'Categoría retirada del catálogo activo; conserva su código y su historial.');
+            $this->redirect('?module=inventory&action=categories');
+        }
+
+        if ($action === 'restore-category') {
+            if (($post['confirm'] ?? '') !== 'RESTAURAR') {
+                throw new InvalidArgumentException('Debe confirmar RESTAURAR.');
+            }
+            $this->service->changeCategoryStatus(
+                (int) ($post['category_id'] ?? 0), true,
+                (string) ($post['reason'] ?? ''), (array) sindesg_user()
+            );
+            flash('success', 'Categoría reactivada.');
+            $this->redirect('?module=inventory&action=categories');
         }
 
         if ($action === 'save-product') {
@@ -229,6 +297,19 @@ final class InventoryController
         }
 
         throw new InvalidArgumentException('La operación solicitada no es válida.');
+    }
+
+    private function isCatalogAdministrator(): bool
+    {
+        $user = (array) sindesg_user();
+        return in_array('ADMIN', (array) ($user['role_codes'] ?? []), true);
+    }
+
+    private function assertCatalogAdministrator(): void
+    {
+        if (!$this->isCatalogAdministrator()) {
+            throw new InvalidArgumentException('Administración del catálogo: solo el rol ADMIN.');
+        }
     }
 
     private function redirect(string $path): never

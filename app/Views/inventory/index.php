@@ -8,7 +8,10 @@ declare(strict_types=1);
         <p>Administra el catálogo y consulta existencias calculadas desde movimientos. El saldo no se edita manualmente.</p>
     </div>
     <div class="inventory-actions">
-        <a class="secondary-button" href="<?= e(sindesg_url('?module=inventory&action=new-category')) ?>">+ Nueva categoría</a>
+        <?php if (in_array('ADMIN', (array) (sindesg_user()['role_codes'] ?? []), true)): ?>
+            <a class="secondary-button" href="<?= e(sindesg_url('?module=inventory&action=categories')) ?>">Administrar categorías</a>
+            <a class="secondary-button" href="<?= e(sindesg_url('?module=inventory&action=new-category')) ?>">+ Nueva categoría</a>
+        <?php endif; ?>
         <a class="primary-button" href="<?= e(sindesg_url('?module=inventory&action=new-product')) ?>">+ Nuevo artículo</a>
     </div>
 </section>
@@ -70,12 +73,17 @@ declare(strict_types=1);
 
 <section class="category-strip">
     <?php foreach ($catalogCategories as $category): ?>
-        <a href="<?= e(sindesg_url('?module=inventory&category_id=' . (int) $category['id'])) ?>"
-           class="<?= (int) $selectedCategoryId === (int) $category['id'] ? 'active' : '' ?>">
-            <span><?= e($category['code']) ?></span>
-            <strong><?= e($category['name']) ?></strong>
-            <small><?= e($category['product_count']) ?> artículos</small>
-        </a>
+        <div class="category-tile">
+            <a href="<?= e(sindesg_url('?module=inventory&category_id=' . (int) $category['id'])) ?>"
+               class="category-tile-filter <?= (int) $selectedCategoryId === (int) $category['id'] ? 'active' : '' ?>">
+                <span><?= e($category['code']) ?></span>
+                <strong><?= e($category['name']) ?></strong>
+                <small><?= e($category['product_count']) ?> artículos</small>
+            </a>
+            <?php if (in_array('ADMIN', (array) (sindesg_user()['role_codes'] ?? []), true)): ?>
+                <a class="category-tile-edit" href="<?= e(sindesg_url('?module=inventory&action=edit-category&id=' . (int) $category['id'])) ?>">Editar categoría</a>
+            <?php endif; ?>
+        </div>
     <?php endforeach; ?>
 </section>
 

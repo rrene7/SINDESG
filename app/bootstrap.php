@@ -242,6 +242,9 @@ function sindesg_permission_for(string $module, string $action = 'index', string
     }
 
     $manageGetActions = [
+        'new-category',
+        'edit-category',
+        'categories',
         'new',
         'create',
         'edit',
@@ -267,6 +270,14 @@ function sindesg_role_action_allowed(string $module, string $action, string $met
     if (in_array('ADMIN', $roles, true)) {
         return true;
     }
+    // Category maintenance is administrative, not an ordinary inventory action.
+    if ($module === 'inventory' && in_array($action, [
+        'new-category', 'edit-category', 'categories', 'save-category',
+        'update-category', 'archive-category', 'restore-category'
+    ], true)) {
+        return false;
+    }
+
     // Administration is reserved to ADMIN even if RBAC permissions are edited.
     if ($module === 'admin') {
         return false;
