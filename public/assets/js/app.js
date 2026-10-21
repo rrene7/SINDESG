@@ -7,7 +7,7 @@
 
     if (carousel && previous && next) {
         const move = (direction) => {
-            const card = qs('.category-card', carousel);
+            const card = qs('.product-carousel-card', carousel);
             const amount = card ? card.getBoundingClientRect().width + 16 : 280;
             carousel.scrollBy({ left: amount * direction, behavior: 'smooth' });
         };
@@ -16,17 +16,17 @@
         next.addEventListener('click', () => move(1));
     }
 
-    const focusPayload = qs('[data-dashboard-category-focus]');
+    const focusPayload = qs('[data-dashboard-product-focus]');
     const focusPanel = qs('[data-dashboard-focus-panel]');
-    const focusCards = Array.from(document.querySelectorAll('[data-dashboard-category-id]'));
+    const focusCards = Array.from(document.querySelectorAll('[data-dashboard-product-id]'));
 
     if (focusPayload && focusPanel && focusCards.length) {
-        let categoryFocus = {};
+        let productFocus = {};
 
         try {
-            categoryFocus = JSON.parse(focusPayload.textContent || '{}');
+            productFocus = JSON.parse(focusPayload.textContent || '{}');
         } catch (error) {
-            categoryFocus = {};
+            productFocus = {};
         }
 
         const fields = {
@@ -117,9 +117,9 @@
             });
         };
 
-        const activateCategory = (card) => {
-            const categoryId = String(card.dataset.dashboardCategoryId || '');
-            const entry = categoryFocus[categoryId];
+        const activateProduct = (card) => {
+            const productId = String(card.dataset.dashboardProductId || '');
+            const entry = productFocus[productId];
             if (!entry) return;
 
             focusCards.forEach((candidate) => {
@@ -133,18 +133,18 @@
             const stock = entry.stock || {};
             const category = entry.category || {};
 
-            if (fields.category) fields.category.textContent = category.name || 'Categoría';
-            if (fields.name) fields.name.textContent = product?.name || category.name || 'Sin artículo destacado';
-            if (fields.color) fields.color.textContent = product?.color || (product ? 'Artículo disponible' : 'Categoría sin artículos');
+            if (fields.category) fields.category.textContent = category.name || 'Inventario';
+            if (fields.name) fields.name.textContent = product?.name || 'Sin artículo seleccionado';
+            if (fields.color) fields.color.textContent = product?.color || 'Sin color registrado';
             if (fields.description) {
                 fields.description.textContent = product?.description
-                    || 'Esta categoría todavía no tiene artículos activos registrados en el catálogo.';
+                    || 'Artículo registrado sin descripción adicional.';
             }
             if (fields.icon) fields.icon.textContent = category.initials || 'SG';
 
             if (fields.link) {
-                fields.link.href = product?.url || category.url || '#';
-                fields.link.textContent = product ? 'Abrir artículo →' : 'Abrir categoría →';
+                fields.link.href = product?.url || '#';
+                fields.link.textContent = 'Abrir artículo →';
             }
 
             const institutional = value(stock.institutional);
@@ -182,7 +182,7 @@
         focusCards.forEach((card) => {
             card.addEventListener('click', (event) => {
                 if (event.target.closest('a')) return;
-                activateCategory(card);
+                activateProduct(card);
             });
 
             card.addEventListener('keydown', (event) => {
@@ -190,7 +190,7 @@
                 if (event.target.closest('a')) return;
 
                 event.preventDefault();
-                activateCategory(card);
+                activateProduct(card);
             });
         });
     }
