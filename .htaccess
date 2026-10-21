@@ -1,0 +1,16 @@
+# SINDESG (Apache/XAMPP): direct access to code and runtime data is forbidden.
+# Required: AllowOverride All and mod_rewrite; otherwise Apache must not serve the app.
+# Do NOT disable these rules to troubleshoot deployment. Verify the 403 responses.
+Options -Indexes
+RewriteEngine On
+
+# Internal application files, migration scripts, security settings and backups.
+RewriteRule ^(?:app|config|database|docs|scripts|tests)(?:/|$) - [F,L,NC]
+RewriteRule ^storage/(?:backups|cache|logs|deployments)(?:/|$) - [F,L,NC]
+
+# Never run uploaded scripts. Apache may interpret compound extensions, e.g. foo.php.jpg.
+RewriteRule ^storage/uploads/.*\.(?:php[0-9]?|phtml|phar|cgi|pl|py|sh|bat|cmd|ps1|asp|aspx|jsp)(?:\.|/|$) - [F,L,NC]
+
+# Deny dotfiles, version-control metadata, SQL dumps and sensitive source text.
+RewriteRule (^|/)\. - [F,L]
+RewriteRule \.(?:sql|sqlite|db|dump|ini|log|bak|zip|tar|gz|7z|ps1|sh|env|yml|yaml|md)$ - [F,L,NC]
