@@ -135,6 +135,7 @@ try {
 
 // Route authorization and CSRF remain in the original application router.
 $bootstrap = (string) file_get_contents($root . '/app/bootstrap.php');
+$bootstrap = str_replace(["\r\n", "\r"], "\n", $bootstrap); // CRLF de Windows y LF de Linux
 $controller = (string) file_get_contents($root . '/app/Controllers/InventoryController.php');
 $index = (string) file_get_contents($root . '/app/Views/inventory/index.php');
 $adminView = (string) file_get_contents($root . '/app/Views/inventory/categories-admin.php');
