@@ -288,11 +288,14 @@ SQL;
                      WHERE di.request_item_id=i.id AND d.status='draft'
                        AND d.p4_warehouse_id=r.p4_warehouse_id
                        AND d.recipient_employee_id=i.beneficiary_employee_id
-                       AND NOT EXISTS (
-                           SELECT 1 FROM individual_delivery_items other
-                           WHERE other.delivery_id=d.id AND other.request_item_id IS NULL
-                       )
-                   ) AS open_draft_count
+                   ) AS open_draft_count,
+                   (
+                     SELECT EXISTS (
+                         SELECT 1 FROM individual_delivery_items di
+                         JOIN individual_deliveries d ON d.id=di.delivery_id
+                         WHERE di.request_item_id=i.id AND d.status='draft'
+                     )
+                   ) AS blocking_draft_exists
         SQL;
         $stmt = $this->pdo->prepare($sql . ' ' . $from . ' ORDER BY i.id ASC LIMIT :limit OFFSET :offset');
         $bind($stmt);
