@@ -268,7 +268,23 @@ SQL;
                    r.request_code, r.requested_at, r.p4_warehouse_id,
                    w.organization_unit_name_snapshot AS p4_name,
                    pv.internal_code AS variant_code, p.name AS product_name,
-                   sz.name AS size_name
+                   sz.name AS size_name,
+                   (
+                     SELECT MIN(d.id)
+                     FROM individual_delivery_items di
+                     JOIN individual_deliveries d ON d.id=di.delivery_id
+                     WHERE di.request_item_id=i.id AND d.status='draft'
+                       AND d.p4_warehouse_id=r.p4_warehouse_id
+                       AND d.recipient_employee_id=i.beneficiary_employee_id
+                   ) AS draft_delivery_id,
+                   (
+                     SELECT COUNT(DISTINCT d.id)
+                     FROM individual_delivery_items di
+                     JOIN individual_deliveries d ON d.id=di.delivery_id
+                     WHERE di.request_item_id=i.id AND d.status='draft'
+                       AND d.p4_warehouse_id=r.p4_warehouse_id
+                       AND d.recipient_employee_id=i.beneficiary_employee_id
+                   ) AS open_draft_count
         SQL;
         $stmt = $this->pdo->prepare($sql . ' ' . $from . ' ORDER BY i.id ASC LIMIT :limit OFFSET :offset');
         $bind($stmt);
