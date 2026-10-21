@@ -111,6 +111,8 @@ final class P4NominalReportRepository
                                 OR other_line.beneficiary_employee_id<>d.recipient_employee_id
                                 OR other_line.product_variant_id<>other_item.product_variant_id)
                         )
+                      ORDER BY d.delivered_at DESC, d.id DESC
+                      LIMIT 1
                    ) AS last_safe_delivery_id,
                    (SELECT MAX(im.id)
                       FROM individual_delivery_items di
