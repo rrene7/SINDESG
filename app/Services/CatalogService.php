@@ -140,6 +140,37 @@ final class CatalogService
         return ['id' => $productId, 'image_warning' => $warning];
     }
 
+    /** Fix descriptive catalogue inconsistencies without touching inventory. */
+    public function updateProductMetadata(int $productId, array $input, array $actor): void
+    {
+        if ($productId <= 0) {
+            throw new InvalidArgumentException('Identificador de artículo inválido.');
+        }
+        $name = trim((string)($input['name'] ?? ''));
+        $description = $this->nullableText($input['description'] ?? null);
+        $sex = trim((string)($input['sex'] ?? ''));
+        $color = $this->nullableText($input['color'] ?? null);
+
+        if ($name === '' || mb_strlen($name) > 180) {
+            throw new InvalidArgumentException('El nombre debe tener de 1 a 180 caracteres.');
+        }
+        if ($description !== null && mb_strlen($description) > 4000) {
+            throw new InvalidArgumentException('La descripción supera 4000 caracteres.');
+        }
+        if (!in_array($sex, ['no_aplica','unisex','masculino','femenino'], true)) {
+            throw new InvalidArgumentException('Aplicación del artículo inválida.');
+        }
+        if ($color !== null && mb_strlen($color) > 80) {
+            throw new InvalidArgumentException('El color supera 80 caracteres.');
+        }
+        $this->repository->updateProductMetadataAsAdmin($productId, [
+            'name' => $name,
+            'description' => $description,
+            'sex' => $sex,
+            'color' => $color,
+        ], $actor);
+    }
+
     public function replaceProductImage(int $productId, ?array $image): void
     {
         if ($productId <= 0) {
