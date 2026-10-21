@@ -160,4 +160,20 @@ if(!str_contains($controller,"if (\$action === 'nominal-report')")
    || !str_contains($bootstrap,"['index', 'new', 'show', 'nominal-report']")) {
     throw new RuntimeException('Dedicated guarded nominal report route missing.');
 }
+
+// Historical cross-P4 linkage must not expose a mixed receipt to a Pacora user.
+require dirname(__DIR__).'/app/Services/P4DeliveryGuard.php';
+$pdo->exec('INSERT INTO individual_delivery_items VALUES (24,11,1,300,1)');
+$afterMix=$repo->page(101,false,array_merge($f,['q'=>'Funcionario 001']))['rows'][0];
+if((int)$afterMix['last_safe_delivery_id']!==10) {
+    throw new RuntimeException('Mixed warehouse receipt was offered as a safe link.');
+}
+$guard=new \App\Services\P4DeliveryGuard($pdo);
+$denied=false;
+try { $guard->assertDelivery(101,11); } catch (RuntimeException $e) { $denied=true; }
+if(!$denied) {
+    throw new RuntimeException('Mixed-warehouse direct receipt URL bypassed P4 guard.');
+}
+$guard->assertDelivery(101,10);
+
 echo "[OK] P4 nominal report: count/page, 160+ rows, isolation, evidence, state, anomalies and UI.\n";
