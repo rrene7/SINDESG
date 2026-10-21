@@ -157,6 +157,65 @@ if (is_file($databaseConfigPath)) {
     );
 }
 
+// Publication safety is mandatory on the server, not on a local XAMPP pilot.
+// A file's presence cannot prove AllowOverride works: verify the HTTP 403s.
+if ($environment === 'production') {
+    $apacheRulesPath = $root . '/.htaccess';
+    $apacheRules = is_file($apacheRulesPath) ? file_get_contents($apacheRulesPath) : false;
+    if (!is_string($apacheRules)
+        || !str_contains($apacheRules, 'RewriteEngine On')
+        || !str_contains($apacheRules, 'app|config|database|docs|scripts|tests')
+        || !str_contains($apacheRules, 'storage/(?:backups|cache|logs|deployments)')
+        || !str_contains($apacheRules, 'storage/uploads/')
+    ) {
+        $error('Protección HTTP', '.htaccess de SINDESG ausente o incompleto; no publicar archivos internos.');
+    } else {
+        $ok('Protección HTTP', 'Reglas locales presentes. Pendiente comprobar 403 por HTTPS desde otra estación.');
+    }
+
+    if (!is_file($databaseConfigPath)) {
+        $error('Credenciales de producción', 'Se requiere config/database.php privado, nunca el ejemplo.');
+    } else {
+        try {
+            $productionConnections = require $databaseConfigPath;
+            if (!is_array($productionConnections)) {
+                throw new RuntimeException('Configuración de conexiones inválida.');
+            }
+
+            $dbUsers = [];
+            foreach (['sindesg', 'rrhh'] as $connectionName) {
+                $details = $productionConnections[$connectionName] ?? null;
+                if (!is_array($details)) {
+                    $error('Cuenta ' . strtoupper($connectionName), 'Falta la conexión privada.');
+                    continue;
+                }
+                $username = trim((string) ($details['username'] ?? ''));
+                $password = (string) ($details['password'] ?? '');
+                $databaseName = trim((string) ($details['database'] ?? ''));
+                $expectedName = $connectionName === 'rrhh' ? 'rrhh2029' : 'sindesg';
+                if ($databaseName !== $expectedName || $username === ''
+                    || strtolower($username) === 'root' || $password === '') {
+                    $error('Cuenta ' . strtoupper($connectionName),
+                        'Requiere base correcta, usuario no root y contraseña no vacía.');
+                } else {
+                    $ok('Cuenta ' . strtoupper($connectionName),
+                        'Base y cuenta dedicada configuradas.');
+                }
+                $dbUsers[$connectionName] = $username;
+            }
+            if (isset($dbUsers['rrhh'], $dbUsers['sindesg'])
+                && $dbUsers['rrhh'] === $dbUsers['sindesg']) {
+                $error('Separación de cuentas', 'Use cuentas distintas para SINDESG y RRHH de solo lectura.');
+            }
+            if (($productionConnections['rrhh']['read_only'] ?? false) !== true) {
+                $error('RRHH producción', 'La conexión RRHH requiere read_only => true.');
+            }
+        } catch (Throwable $exception) {
+            $error('Credenciales de producción', 'No fue posible validar la configuración privada.');
+        }
+    }
+}
+
 $schemaDirectory = $root . '/database/schema';
 $schemaFiles = glob($schemaDirectory . '/*.sql') ?: [];
 $schemaNumbers = [];
