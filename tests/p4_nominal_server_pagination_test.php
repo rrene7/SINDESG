@@ -22,6 +22,8 @@ CREATE TABLE service_request_items (
 CREATE TABLE product_variants (id INTEGER, product_id INTEGER, internal_code TEXT, size_id INTEGER);
 CREATE TABLE products (id INTEGER, name TEXT);
 CREATE TABLE sizes (id INTEGER, name TEXT);
+CREATE TABLE individual_deliveries (id INTEGER, p4_warehouse_id INTEGER, recipient_employee_id INTEGER, status TEXT);
+CREATE TABLE individual_delivery_items (id INTEGER, delivery_id INTEGER, request_item_id INTEGER);
 INSERT INTO warehouses VALUES
  (6,'P4',1,'Pacora'),(4,'P4',1,'Colón'),(9,'P4',0,'Inactivo');
 INSERT INTO security_user_p4_scopes VALUES (101,6),(101,9),(202,4);
@@ -55,10 +57,27 @@ $stmt->execute([171,4,1,4000,'Almacén inactivo','I-171',1,0]);
 $stmt->execute([172,1,1,4001,'Ya entregado','P-172',1,1]);
 $stmt->execute([173,1,1,null,'Consolidado','P-173',1,0]);
 
+// Two open drafts for one recipient; a confirmed and a foreign-warehouse
+// draft must not be reported as drafts belonging to this nominal line.
+$pdo->exec(<<<'SQL'
+INSERT INTO individual_deliveries VALUES
+ (501,6,1001,'draft'),(502,6,1001,'draft'),
+ (503,6,1001,'confirmed'),(504,4,1001,'draft'),
+ (505,6,1155,'draft'),(506,6,1002,'draft');
+INSERT INTO individual_delivery_items VALUES
+ (1,501,1),(2,502,1),(3,503,1),(4,504,1),
+ (5,505,155),(6,506,2);
+SQL);
 $repo = new DeliveryRepository($pdo);
 $p1 = $repo->pendingNominalPageForUser(101);
 if ($p1['total'] !== 160 || $p1['page'] !== 1 || $p1['pages'] !== 7
-    || count($p1['rows']) !== 25 || (int)$p1['rows'][0]['request_item_id'] !== 1) {
+    || count($p1['rows']) !== 25 || (int)$p1['rows'][0]['request_item_id'] !== 1
+    || (int)$p1['rows'][0]['draft_delivery_id'] !== 501
+    || (int)$p1['rows'][0]['open_draft_count'] !== 2
+    || (int)$p1['rows'][1]['draft_delivery_id'] !== 506
+    || (int)$p1['rows'][1]['open_draft_count'] !== 1
+    || !empty($p1['rows'][2]['draft_delivery_id'])
+    || (int)$p1['rows'][2]['open_draft_count'] !== 0) {
     throw new RuntimeException('P4 total must cover all 160 nominal lines beyond old LIMIT 100.');
 }
 $p5 = $repo->pendingNominalPageForUser(101,'','','',5,25);
@@ -71,11 +90,14 @@ if ($last['page'] !== 7 || count($last['rows']) !== 10
     throw new RuntimeException('Last page clamp or final rows are incorrect.');
 }
 $search = $repo->pendingNominalPageForUser(101,'Funcionario 150');
-if ($search['total'] !== 1 || (int)$search['rows'][0]['request_item_id'] !== 150) {
+if ($search['total'] !== 1 || (int)$search['rows'][0]['request_item_id'] !== 150
+    || (int)$search['rows'][0]['open_draft_count'] !== 0) {
     throw new RuntimeException('Search did not cover results beyond 100.');
 }
 $percent = $repo->pendingNominalPageForUser(101,'%');
-if ($percent['total'] !== 1 || (int)$percent['rows'][0]['request_item_id'] !== 155) {
+if ($percent['total'] !== 1 || (int)$percent['rows'][0]['request_item_id'] !== 155
+    || (int)$percent['rows'][0]['draft_delivery_id'] !== 505
+    || (int)$percent['rows'][0]['open_draft_count'] !== 1) {
     throw new RuntimeException('LIKE wildcard not safely escaped.');
 }
 $filtered = $repo->pendingNominalPageForUser(101,'','9.5','PACORA-B',1,10);
@@ -105,6 +127,13 @@ foreach (['method="get"','name="q"','name="size"','name="request"',
     if (!str_contains($view,$token)) {
         throw new RuntimeException('Server-side delivery view contract missing: ' . $token);
     }
+}
+if (!str_contains($view, 'Continuar borrador')
+    || !str_contains($view, "'open_draft_count'")
+    || !str_contains($view, "'draft_delivery_id'")
+    || !str_contains($view, 'revisar posibles duplicados')
+    || !str_contains($view, "?module=deliveries&action=show&id=")) {
+    throw new RuntimeException('Existing nominal draft warning/resume links missing.');
 }
 if (!str_contains($controller,'pendingNominalPageForUser(')
     || !str_contains($controller,'pendingNominalOptionsForUser(')
