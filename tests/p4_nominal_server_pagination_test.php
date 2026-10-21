@@ -63,10 +63,12 @@ $pdo->exec(<<<'SQL'
 INSERT INTO individual_deliveries VALUES
  (501,6,1001,'draft'),(502,6,1001,'draft'),
  (503,6,1001,'confirmed'),(504,4,1001,'draft'),
- (505,6,1155,'draft'),(506,6,1002,'draft'),(507,6,1003,'draft');
+ (505,6,1155,'draft'),(506,6,1002,'draft'),(507,6,1003,'draft'),
+ (508,4,1004,'draft');
 INSERT INTO individual_delivery_items VALUES
  (1,501,1),(2,502,1),(3,503,1),(4,504,1),
- (5,505,155),(6,506,2),(7,507,3),(8,507,NULL);
+ (5,505,155),(6,506,2),(7,507,3),(8,507,NULL),
+ (9,508,4);
 SQL);
 $repo = new DeliveryRepository($pdo);
 $p1 = $repo->pendingNominalPageForUser(101);
@@ -77,7 +79,11 @@ if ($p1['total'] !== 160 || $p1['page'] !== 1 || $p1['pages'] !== 7
     || (int)$p1['rows'][1]['draft_delivery_id'] !== 506
     || (int)$p1['rows'][1]['open_draft_count'] !== 1
     || !empty($p1['rows'][2]['draft_delivery_id'])
-    || (int)$p1['rows'][2]['open_draft_count'] !== 0) {
+    || (int)$p1['rows'][2]['open_draft_count'] !== 1
+    || (int)$p1['rows'][2]['blocking_draft_exists'] !== 1
+    || !empty($p1['rows'][3]['draft_delivery_id'])
+    || (int)$p1['rows'][3]['open_draft_count'] !== 0
+    || (int)$p1['rows'][3]['blocking_draft_exists'] !== 1) {
     throw new RuntimeException('P4 total, draft guard or pages incorrect across 160 nominal lines.');
 }
 $p5 = $repo->pendingNominalPageForUser(101,'','','',5,25);
@@ -129,6 +135,9 @@ foreach (['method="get"','name="q"','name="size"','name="request"',
     }
 }
 if (!str_contains($view, 'Continuar borrador')
+    || !str_contains($view, 'Existe un borrador relacionado que requiere revisión')
+    || !str_contains($view, '$safeDraftId > 0')
+    || !str_contains($view, "'blocking_draft_exists'")
     || !str_contains($view, "'open_draft_count'")
     || !str_contains($view, "'draft_delivery_id'")
     || !str_contains($view, 'revisar posibles duplicados')
