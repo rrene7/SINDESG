@@ -395,6 +395,15 @@ SQL;
         $this->pdo->beginTransaction();
 
         try {
+            // Lock the nominal parent line before any ordinary SELECT can create an
+            // InnoDB REPEATABLE READ snapshot. Concurrent nominal draft creations
+            // for this request line therefore serialize before duplicate detection.
+            if (($linkedLine === null) !== ($linkedQuantity === null)) {
+                throw new RuntimeException('Datos de entrega nominal incompletos.');
+            }
+            if ($linkedLine !== null) {
+                $this->assertNominalDraftAvailableForUpdate($data, $linkedLine, $linkedQuantity);
+            }
             if (!$this->p4IsActive((int) $data['p4_warehouse_id'])) {
                 throw new RuntimeException('El P4 seleccionado no está activo.');
             }
@@ -506,6 +515,73 @@ SQL;
                 $this->pdo->rollBack();
             }
             throw $exception;
+        }
+    }
+
+    /**
+     * Must run inside createDraft's transaction, before any non-locking read.
+     * This does not change or delete previous drafts, receipts or stock.
+     */
+    private function assertNominalDraftAvailableForUpdate(
+        array $data,
+        array $linkedLine,
+        float $linkedQuantity
+    ): void {
+        $itemId = (int) ($linkedLine['request_item_id'] ?? 0);
+        if ($itemId <= 0 || !is_finite($linkedQuantity) || $linkedQuantity <= 0) {
+            throw new RuntimeException('Cantidad o renglón nominal inválido.');
+        }
+
+        // MySQL/MariaDB (InnoDB) holds this lock until commit/rollback. SQLite
+        // lacks FOR UPDATE and its isolated tests use serialized transactions.
+        $forUpdate = $this->pdo->getAttribute(PDO::ATTR_DRIVER_NAME) === 'mysql'
+            ? ' FOR UPDATE' : '';
+        $stmt = $this->pdo->prepare(<<<'SQL'
+            SELECT i.id, i.product_variant_id, i.beneficiary_employee_id,
+                   i.quantity_received, i.quantity_delivered,
+                   r.p4_warehouse_id, r.status AS request_status,
+                   w.warehouse_type, w.is_active
+            FROM service_request_items i
+            JOIN service_requests r ON r.id=i.request_id
+            JOIN warehouses w ON w.id=r.p4_warehouse_id
+            WHERE i.id=:request_item_id
+            LIMIT 1
+        SQL . $forUpdate);
+        $stmt->execute(['request_item_id'=>$itemId]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$row
+            || (int) $row['p4_warehouse_id'] !== (int) $data['p4_warehouse_id']
+            || (int) $row['p4_warehouse_id'] !== (int) ($linkedLine['p4_warehouse_id'] ?? 0)
+            || (int) $row['beneficiary_employee_id'] <= 0
+            || (int) $row['beneficiary_employee_id'] !== (int) $data['recipient_employee_id']
+            || (int) $row['beneficiary_employee_id'] !== (int) ($linkedLine['beneficiary_employee_id'] ?? 0)
+            || (int) $row['product_variant_id'] !== (int) ($linkedLine['product_variant_id'] ?? 0)
+            || $row['warehouse_type'] !== 'P4'
+            || (int) $row['is_active'] !== 1
+            || !in_array($row['request_status'], ['approved','partially_approved','fulfilled'], true)) {
+            throw new RuntimeException('El renglón nominal ya no corresponde a una entrega P4 autorizada.');
+        }
+
+        $pending = (float) $row['quantity_received'] - (float) $row['quantity_delivered'];
+        if ($pending <= 0.000001 || $linkedQuantity > $pending + 0.000001) {
+            throw new RuntimeException('La cantidad supera lo recibido y pendiente para ese beneficiario.');
+        }
+
+        // This first consistent read happens after the parent row lock. A
+        // concurrent creator must wait on the same row before seeing this state.
+        $existing = $this->pdo->prepare(<<<'SQL'
+            SELECT d.id
+            FROM individual_delivery_items di
+            JOIN individual_deliveries d ON d.id=di.delivery_id
+            WHERE di.request_item_id=:request_item_id AND d.status='draft'
+            ORDER BY d.id ASC
+            LIMIT 1
+        SQL);
+        $existing->execute(['request_item_id'=>$itemId]);
+        if ($existing->fetchColumn() !== false) {
+            throw new RuntimeException(
+                'Ya existe un borrador abierto para esta dotación. Regrese a Entregas pendientes para revisarlo.'
+            );
         }
     }
 
