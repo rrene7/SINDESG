@@ -410,7 +410,7 @@ foreach ($nominalProducts ?? [] as $product) {
         </div>
     </div>
     <form method="post" enctype="multipart/form-data"
-          action="<?= e(sindesg_url('?module=requests&action=import-nominal-file')) ?>">
+          action="<?= e(sindesg_url('?module=requests&action=preview-nominal-file')) ?>">
         <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
         <input type="hidden" name="request_id" value="<?= (int) $serviceRequest['id'] ?>">
         <?php
@@ -427,6 +427,7 @@ foreach ($nominalProducts ?? [] as $product) {
             <span>Excel/CSV nominal (máximo 15 MB) *</span>
             <input type="file" name="nominal_workbook" accept=".xlsx,.csv" required>
         </label>
+        <?php if (sindesg_role_action_allowed('requests', 'import-nominal-file', 'POST', (array) sindesg_user())): ?>
         <label class="request-cell-sub">
             <input type="checkbox" name="allow_partial" value="1">
             Autorizo cargar solo los funcionarios y tallas verificados; las filas
@@ -440,19 +441,21 @@ foreach ($nominalProducts ?? [] as $product) {
             beneficiario</strong>. No constituye inventario, despacho ni dotación.
             Esta opción NO permite saltarse filas con identidad sin validar.
         </label>
+        <?php endif; ?>
         <div class="request-nominal-actions">
-            <button type="submit" class="secondary-button"
-                    formaction="<?= e(sindesg_url('?module=requests&action=preview-nominal-file')) ?>">
+            <button type="submit" class="secondary-button">
                 Prevalidar y ver incidencias sin guardar
             </button>
-            <button type="submit" class="primary-button">
+            <?php if (sindesg_role_action_allowed('requests', 'import-nominal-file', 'POST', (array) sindesg_user())): ?>
+            <button type="submit" class="primary-button"
+                    formaction="<?= e(sindesg_url('?module=requests&action=import-nominal-file')) ?>">
                 Cargar todos los funcionarios verificados al borrador
             </button>
+            <?php endif; ?>
         </div>
         <p class="request-cell-sub">
-            La importación NO aprueba ni transfiere existencias. Si encuentra
-            diferencias sin autorización para importación parcial, no guardará ninguna fila.
-            El Central revisará la solicitud antes de reservar stock real.
+            La prevalidación solo consulta RRHH2029 y presenta incidencias.
+            No incorpora funcionarios al borrador ni altera existencias.
         </p>
     </form>
 </section>
@@ -471,7 +474,7 @@ foreach ($nominalProducts ?? [] as $product) {
             </p>
         </div>
     </div>
-    <?php if (!empty($nominalReviewFileReady)): ?>
+    <?php if (!empty($nominalReviewFileReady) && sindesg_role_action_allowed('requests', 'import-from-nominal-preview', 'POST', (array) sindesg_user())): ?>
         <form method="post" class="p4-import-from-preview"
               action="<?= e(sindesg_url('?module=requests&action=import-from-nominal-preview')) ?>">
             <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
@@ -512,9 +515,9 @@ foreach ($nominalProducts ?? [] as $product) {
         </form>
     <?php else: ?>
         <p class="request-cell-sub">
-            La carga directa solo está disponible para los archivos
-            previsualizados después de esta actualización. Prevalide
-            el Excel una vez para activar «Cargar al sistema».
+            Esta prevalidación es informativa. La importación y las
+            validaciones excepcionales requieren permisos separados.
+            Corrija las incidencias del Excel antes de continuar.
         </p>
     <?php endif; ?>
     <div class="request-verification-summary">
@@ -557,7 +560,7 @@ foreach ($nominalProducts ?? [] as $product) {
             }
         }
         ?>
-        <?php if ($approvableCount > 0): ?>
+        <?php if ($approvableCount > 0 && sindesg_role_action_allowed('requests', 'validate-nominal-selected', 'POST', (array) sindesg_user())): ?>
             <form id="p4-bulk-review-form" method="post"
                   action="<?= e(sindesg_url('?module=requests&action=validate-nominal-selected')) ?>"
                   class="p4-bulk-review-toolbar">
@@ -615,6 +618,7 @@ foreach ($nominalProducts ?? [] as $product) {
                             <?php if (
                                 (int) ($issue['excel_row'] ?? 0) > 0
                                 && \App\Services\NominalBulkRequestService::isManuallyValidatable($issue)
+                                && sindesg_role_action_allowed('requests', 'validate-nominal-selected', 'POST', (array) sindesg_user())
                             ): ?>
                                 <label class="p4-bulk-review-checkbox">
                                     <input type="checkbox" name="review_rows[]"
@@ -632,6 +636,7 @@ foreach ($nominalProducts ?? [] as $product) {
             </table>
         </div>
     <?php endif; ?>
+    <?php if (sindesg_role_action_allowed('requests', 'validate-nominal-selected', 'POST', (array) sindesg_user())): ?>
     <p class="request-cell-sub">
         Marque las diferencias de nombres que el P4 haya comprobado contra el
         expediente institucional y pulse «Validar seleccionados» una sola vez.
@@ -649,6 +654,13 @@ foreach ($nominalProducts ?? [] as $product) {
         Cuando la nómina ya figure en el borrador, continúe con
         «Revisar y enviar al Central», sin repetir la importación.
     </p>
+    <?php else: ?>
+    <p class="request-cell-sub">
+        Resultado de prevalidación sin cambios de datos. Revise las incidencias y
+        corrija la plantilla en Excel. No se habilitan acciones de importación ni
+        confirmación excepcional de identidades para este rol.
+    </p>
+    <?php endif; ?>
 </section>
 <?php endif; ?>
 <?php endif; ?>
