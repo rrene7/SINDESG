@@ -64,7 +64,7 @@ final class RequestsController
                 $isPost = strtoupper($method) === 'POST';
                 $allowedActions = $isPost
                     ? ['save', 'add-item', 'remove-item', 'submit']
-                    : ['new', 'show'];
+                    : ['new', 'show', 'download-nominal-template'];
                 if (!in_array($action, $allowedActions, true)) {
                     throw new InvalidArgumentException('Esta operación no está habilitada para P4.');
                 }
