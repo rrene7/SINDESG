@@ -38,6 +38,14 @@ final class WarehousesController
         string $method
     ): array {
         try {
+            // Segunda barrera cuando el controlador se invoca directamente;
+            // no confiar solo en los botones visibles ni en el enrutador.
+            if (!sindesg_role_action_allowed('warehouses', $action, $method, (array) sindesg_user())
+                || !sindesg_can(sindesg_permission_for('warehouses', $action, $method) ?? 'warehouses.view')) {
+                throw new InvalidArgumentException(
+                    'Administración de P4 restringida. Almacén Central solo consulta almacenes y seguimiento.'
+                );
+            }
             if (strtoupper($method) === 'POST') {
                 if (!csrf_valid(isset($post['_token']) ? (string) $post['_token'] : null)) {
                     throw new InvalidArgumentException(
@@ -53,7 +61,7 @@ final class WarehousesController
             flash('error', $exception->getMessage());
             $this->redirect($action === 'toggle'
                 ? '?module=warehouses&action=show&id=' . (int) ($post['warehouse_id'] ?? 0)
-                : '?module=warehouses&action=new');
+                : '?module=warehouses');
         } catch (Throwable $exception) {
             return [
                 'view' => SINDESG_ROOT . '/app/Views/warehouses/unavailable.php',
