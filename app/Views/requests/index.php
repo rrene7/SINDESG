@@ -16,12 +16,18 @@ $statusLabels = [
     <div>
         <span class="eyebrow">FASE 7 · NECESIDAD LOGÍSTICA</span>
         <h1>Solicitudes P4 → Almacén Central</h1>
-        <p>Registre necesidades, revise disponibilidad y deje aprobadas las cantidades que la Fase 8 podrá distribuir físicamente.</p>
+        <p>Los P4 registran y envían sus necesidades. Almacén Central recibe, revisa y decide las solicitudes antes de su distribución.</p>
     </div>
+    <?php if (sindesg_role_action_allowed('requests', 'new', 'GET', (array) sindesg_user())): ?>
     <div class="request-bottom-actions">
-        <a class="secondary-button" href="<?= e(sindesg_url('?module=requests&action=import-boots')) ?>">Revisar Excel de dotación P4</a>
+        <?php if (sindesg_role_action_allowed('requests', 'import-boots', 'GET', (array) sindesg_user())): ?>
+            <a class="secondary-button" href="<?= e(sindesg_url('?module=requests&action=import-boots')) ?>">Revisar Excel de dotación P4</a>
+        <?php endif; ?>
         <a class="primary-button" href="<?= e(sindesg_url('?module=requests&action=new')) ?>">+ Nueva solicitud</a>
     </div>
+    <?php else: ?>
+        <div class="request-role-note" role="status">Gestión del Almacén Central: revise las solicitudes enviadas por los P4. La creación corresponde a cada unidad P4.</div>
+    <?php endif; ?>
 </section>
 
 <section class="request-stats">
@@ -42,7 +48,7 @@ foreach ($serviceRequests as $candidate) {
     }
 }
 ?>
-<?php if ($draftReady !== null): ?>
+<?php if ($draftReady !== null && sindesg_role_action_allowed('requests', 'submit', 'POST', (array) sindesg_user())): ?>
 <section class="request-panel request-draft-next-step" role="status">
     <div class="request-section-head">
         <div>

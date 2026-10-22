@@ -235,3 +235,46 @@ form[action*='import-nominal-file'] label:has(input[type='checkbox']){display:fl
 .request-nominal-help {margin:12px 0 0}
 @media(max-width:760px){.request-nominal-tools {grid-template-columns:1fr 1fr}.request-nominal-tools label:first-child {grid-column:1/-1}}
 @media(max-width:450px){.request-nominal-tools {grid-template-columns:1fr}.request-nominal-tools label:first-child {grid-column:auto}.request-nominal-pagination {justify-content:space-between}}
+
+
+/* Formulario de solicitud: el nombre largo de las Direcciones no debe forzar
+   el ancho del grid ni sacar el formulario del margen izquierdo del visor. */
+.request-hero,.request-detail-hero,.request-panel,.request-form,
+.request-form-grid,.request-section-head {
+    min-width: 0;
+    max-width: 100%;
+}
+.request-form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.request-form-grid > label,.request-form-grid > label > select,
+.request-form-grid > label > input,.request-employee-picker {
+    min-width: 0;
+    max-width: 100%;
+}
+.request-hero > div,.request-detail-hero > div,.request-section-head > div {
+    min-width: 0;
+}
+.request-hero h1,.request-section-head h2 {
+    overflow-wrap: anywhere;
+}
+.request-role-note {
+    max-width: 500px;
+    margin: 0;
+    padding: 12px 15px;
+    border: 1px solid rgba(79,178,232,.35);
+    border-radius: 12px;
+    background: rgba(8,41,70,.64);
+    color: #cae4f4;
+    font-size: .82rem;
+    line-height: 1.55;
+}
+@media(max-width: 900px) {
+    .request-form-grid { grid-template-columns: minmax(0,1fr); }
+    .request-hero,.request-detail-hero { flex-wrap: wrap; }
+    .request-role-note { max-width:100%; }
+}
+@media(max-width: 480px) {
+    .request-hero,.request-detail-hero { padding: 20px 16px; }
+    .request-panel { padding: 18px 14px; }
+}

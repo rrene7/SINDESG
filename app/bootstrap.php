@@ -286,6 +286,15 @@ function sindesg_role_action_allowed(string $module, string $action, string $met
         return false;
     }
 
+    // El Almacén Central recibe y revisa solicitudes P4, pero nunca las
+    // origina, edita, envía ni importa a nombre de una Dirección o Zona.
+    // ADMIN conserva el acceso excepcional, sujeto al RBAC y auditoría.
+    if ($module === 'requests' && in_array('CENTRAL', $roles, true)) {
+        return strtoupper($method) === 'POST'
+            ? in_array($action, ['start-review', 'decide'], true)
+            : in_array($action, ['index', 'show', 'central-review'], true);
+    }
+
     // Stock-compensating adjustments: Central prepares; only ADMIN confirms.
     // This role check supplements, never replaces, module RBAC permissions.
     if ($module === 'adjustments') {

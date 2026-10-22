@@ -63,7 +63,7 @@ foreach ($nominalProducts ?? [] as $product) {
     </div>
 </section>
 
-<?php if ($serviceRequest['status'] === 'draft' && $requestItems !== []): ?>
+<?php if ($serviceRequest['status'] === 'draft' && $requestItems !== [] && sindesg_role_action_allowed('requests', 'submit', 'POST', (array) sindesg_user())): ?>
 <section class="request-panel request-draft-next-step" role="status">
     <div class="request-section-head">
         <div>
@@ -114,13 +114,15 @@ foreach ($nominalProducts ?? [] as $product) {
         <span class="eyebrow">FLUJO</span>
         <h2><?= e($statusLabels[$serviceRequest['status']] ?? $serviceRequest['status']) ?></h2>
 
-        <?php if ($serviceRequest['status'] === 'draft'): ?>
+        <?php if ($serviceRequest['status'] === 'draft' && sindesg_role_action_allowed('requests', 'submit', 'POST', (array) sindesg_user())): ?>
             <p>Agregue todos los artículos requeridos y luego envíe la solicitud al Almacén Central.</p>
             <form method="post" action="<?= e(sindesg_url('?module=requests&action=submit')) ?>">
                 <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
                 <input type="hidden" name="request_id" value="<?= e($serviceRequest['id']) ?>">
                 <button class="primary-button request-full-button" type="submit" <?= $requestItems === [] ? 'disabled' : '' ?>>Enviar solicitud</button>
             </form>
+        <?php elseif ($serviceRequest['status'] === 'draft'): ?>
+            <p>Solicitud en preparación por su P4 de origen. Almacén Central podrá revisarla cuando haya sido enviada.</p>
         <?php elseif ($serviceRequest['status'] === 'submitted' && sindesg_role_action_allowed('requests', 'central-review', 'GET', (array) sindesg_user())): ?>
             <p>La solicitud fue enviada y está pendiente de revisión en Servicios Generales.</p>
             <p class="request-cell-sub">Antes de aprobar, consulte el consolidado por talla del Almacén Central.</p>
@@ -179,7 +181,7 @@ foreach ($nominalProducts ?? [] as $product) {
 </section>
 <?php endif; ?>
 
-<?php if ($serviceRequest['status'] === 'draft'): ?>
+<?php if ($serviceRequest['status'] === 'draft' && sindesg_role_action_allowed('requests', 'submit', 'POST', (array) sindesg_user())): ?>
 <section class="request-panel">
     <div class="request-section-head">
         <div>
@@ -267,7 +269,7 @@ foreach ($nominalProducts ?? [] as $product) {
         <div class="responsive-table">
             <table>
                 <thead>
-                <tr><th>Artículo</th><th>Variante</th><th>Talla</th><th>Beneficiario</th><th>Solicitado</th><th>Stock central</th><th>Comprometible</th><th>Aprobado</th><th>Despachado</th><th>Recibido P4</th><th>Entregado funcionario</th><th>Situación</th><?php if ($serviceRequest['status'] === 'draft'): ?><th></th><?php endif; ?></tr>
+                <tr><th>Artículo</th><th>Variante</th><th>Talla</th><th>Beneficiario</th><th>Solicitado</th><th>Stock central</th><th>Comprometible</th><th>Aprobado</th><th>Despachado</th><th>Recibido P4</th><th>Entregado funcionario</th><th>Situación</th><?php if ($serviceRequest['status'] === 'draft' && sindesg_role_action_allowed('requests', 'submit', 'POST', (array) sindesg_user())): ?><th></th><?php endif; ?></tr>
                 </thead>
                 <tbody>
                 <?php foreach ($requestItems as $item): ?>
@@ -312,7 +314,7 @@ foreach ($nominalProducts ?? [] as $product) {
                             <?php endif; ?>
                         </td>
                         <td><span class="request-nominal-state state-<?= e($nominalState['key']) ?>"><?= e($nominalState['label']) ?></span></td>
-                        <?php if ($serviceRequest['status'] === 'draft'): ?>
+                        <?php if ($serviceRequest['status'] === 'draft' && sindesg_role_action_allowed('requests', 'submit', 'POST', (array) sindesg_user())): ?>
                             <td>
                                 <form method="post" action="<?= e(sindesg_url('?module=requests&action=remove-item')) ?>">
                                     <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
@@ -337,7 +339,7 @@ foreach ($nominalProducts ?? [] as $product) {
     <?php endif; ?>
 </section>
 
-<?php if ($serviceRequest['status'] === 'draft'): ?>
+<?php if ($serviceRequest['status'] === 'draft' && sindesg_role_action_allowed('requests', 'submit', 'POST', (array) sindesg_user())): ?>
 <section class="request-panel">
     <div class="request-section-head">
         <div>
