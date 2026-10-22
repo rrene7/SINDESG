@@ -362,7 +362,7 @@ function sindesg_role_action_allowed(string $module, string $action, string $met
         }
         if ($module !== 'requests') return false;
         $allowed = strtoupper($method) === 'POST'
-            ? ['save', 'add-item', 'remove-item', 'submit']
+            ? ['save', 'add-item', 'remove-item', 'submit', 'preview-nominal-file']
             : ['new', 'show', 'download-nominal-template'];
         return in_array($action, $allowed, true);
     }
