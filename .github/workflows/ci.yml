@@ -315,6 +315,9 @@ jobs:
       - name: P4 native Excel template round-trip test
         run: php tests/p4_nominal_xlsx_template_test.php
 
+      - name: P4 nominal XLSX download authorization
+        run: php tests/p4_nominal_template_access_test.php
+
       - name: P4 nominal bulk capture test
         run: php tests/p4_nominal_bulk_test.php
 
@@ -456,6 +459,12 @@ jobs:
         shell: pwsh
         run: |
           php tests/central_admin_privileges_test.php
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: P4 blank Excel template download permission on Windows
+        shell: pwsh
+        run: |
+          php tests/p4_nominal_template_access_test.php
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: P4 requests and Central role separation on Windows
