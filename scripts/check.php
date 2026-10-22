@@ -214,6 +214,7 @@ $required = [
     'tests/requests_schema_test.php',
     'tests/requests_logic_test.php',
     'tests/central_p4_review_tracking_test.php',
+    'tests/requests_central_origin_separation_test.php',
     'tests/requests_stock_test.php',
     'tests/distribution_schema_test.php',
     'tests/distribution_logic_test.php',
