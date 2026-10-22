@@ -229,6 +229,8 @@ $required = [
     'tests/asset_cache_busting_test.php',
     'tests/adjustments_schema_test.php',
     'tests/adjustments_logic_test.php',
+    'tests/adjustments_independent_approval_test.php',
+    'app/Services/AdjustmentApprovalPolicy.php',
     'tests/adjustments_accounting_test.php',
     'tests/reports_logic_test.php',
     'tests/reports_export_test.php',
