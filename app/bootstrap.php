@@ -269,6 +269,14 @@ function sindesg_permission_for(string $module, string $action = 'index', string
 function sindesg_role_action_allowed(string $module, string $action, string $method, array $user): bool
 {
     $roles = (array) ($user['role_codes'] ?? []);
+    // The nominal XLSX is a blank P4 work template. It is never a generic
+    // requests.view export: allow GET only to ADMIN or a non-Central P4.
+    if ($module === 'requests' && $action === 'download-nominal-template') {
+        return strtoupper($method) === 'GET'
+            && (in_array('ADMIN', $roles, true)
+                || (in_array('P4', $roles, true)
+                    && !in_array('CENTRAL', $roles, true)));
+    }
     if (in_array('ADMIN', $roles, true)) {
         return true;
     }
