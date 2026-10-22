@@ -75,6 +75,8 @@ $heroLabel = $isCentral ? 'ALMACÉN CENTRAL' : ($isTransit ? 'INVENTARIO EN TRÁ
                 </div>
             <?php endif; ?>
 
+            <?php if (sindesg_role_action_allowed('warehouses', 'toggle', 'POST', (array) sindesg_user())
+                && sindesg_can('warehouses.manage')): ?>
             <form method="post" action="<?= e(sindesg_url('?module=warehouses&action=toggle')) ?>" class="warehouse-toggle-form">
                 <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
                 <input type="hidden" name="warehouse_id" value="<?= e($warehouse['id']) ?>">
@@ -83,6 +85,7 @@ $heroLabel = $isCentral ? 'ALMACÉN CENTRAL' : ($isTransit ? 'INVENTARIO EN TRÁ
                     <?= (int) $warehouse['is_active'] === 1 ? 'Inactivar P4' : 'Reactivar P4' ?>
                 </button>
             </form>
+            <?php endif; ?>
         <?php endif; ?>
     </aside>
 </section>
