@@ -98,7 +98,8 @@ $ensure(str_contains($view, "action=preview-nominal-file")
     && str_contains($view,"sindesg_role_action_allowed('requests', 'import-from-nominal-preview', 'POST'")
     && str_contains($view,"sindesg_role_action_allowed('requests', 'validate-nominal-selected', 'POST'"),
     'La interfaz mezcla prevalidación con botones restringidos.');
-$ensure(str_contains($view, 'Esta prevalidación es informativa.'),
-    'Al P4 debe explicarse que el resultado no importa personas.');
+$ensure(str_contains($view, 'La prevalidación solo consulta RRHH2029 y presenta incidencias.')
+    && str_contains($view, 'Esta prevalidación es informativa.') === false,
+    'La prevalidación y la carga posterior deben estar claramente diferenciadas.');
 
 echo "[OK] Prevalidación nominal P4: POST, CSRF, solicitud asignada activa, Excel privado y sin permisos de importación.\n";
