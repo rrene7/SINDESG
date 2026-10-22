@@ -30,6 +30,10 @@ $cases = [
     ['requests','start-review','POST',$central,true],
     // Creación por unidad P4 y función excepcional ADMIN conservadas.
     ['requests','new','GET',$p4,true],
+    ['requests','download-nominal-template','GET',$p4,true],
+    ['requests','download-nominal-template','POST',$p4,false],
+    ['requests','download-nominal-template','GET',$central,false],
+    ['requests','download-nominal-template','GET',$both,false],
     ['requests','save','POST',$p4,true],
     ['requests','add-item','POST',$p4,true],
     ['requests','submit','POST',$p4,true],
