@@ -246,6 +246,7 @@ $required = [
     'tests/p4_nominal_xlsx_template_test.php',
     'tests/p4_nominal_template_access_test.php',
     'tests/p4_nominal_prevalidation_access_test.php',
+    'tests/p4_nominal_workflow_restoration_test.php',
     'tests/p4_nominal_bulk_test.php',
     'tests/p4_nominal_reconciliation_test.php',
     'tests/p4_last_incidents_test.php',
