@@ -225,7 +225,7 @@ final class AdjustmentRepository
         return $row ?: null;
     }
 
-    public function createDraft(array $data): int
+    public function createDraft(array $data, array $actor): int
     {
         $this->pdo->beginTransaction();
 
@@ -327,6 +327,16 @@ final class AdjustmentRepository
                  WHERE id = :id'
             )->execute(['code' => $code, 'id' => $id]);
 
+            $this->auditAdjustment($actor, 'adjustment_draft_created', $id, null, [
+                'code' => $code,
+                'type' => $data['adjustment_type'],
+                'warehouse_id' => $data['warehouse_id'],
+                'variant_id' => $data['product_variant_id'],
+                'quantity' => $data['quantity'],
+                'document_number' => $data['document_number'],
+                'reason' => $data['reason'],
+                'status' => 'draft',
+            ]);
             $this->pdo->commit();
             return $id;
         } catch (\Throwable $exception) {
@@ -397,7 +407,7 @@ final class AdjustmentRepository
         return (float) ($statement->fetchColumn() ?: 0);
     }
 
-    public function confirm(int $adjustmentId): array
+    public function confirm(int $adjustmentId, array $actor): array
     {
         $this->pdo->beginTransaction();
 
@@ -411,6 +421,14 @@ final class AdjustmentRepository
 
             if ($adjustment['status'] !== 'draft') {
                 throw new RuntimeException('Solo se pueden confirmar ajustes en borrador.');
+            }
+
+            \App\Services\AdjustmentApprovalPolicy::assertDifferentActor(
+                $this->draftCreatorId($adjustmentId), $actor
+            );
+            if (!in_array((string) $adjustment['adjustment_type'], self::SOURCE_TYPES, true)
+                && trim((string) ($adjustment['document_number'] ?? '')) === '') {
+                throw new RuntimeException('No se confirma un movimiento de almacén sin acta o documento de soporte.');
             }
 
             $warehouse = $this->lockWarehouse((int) $adjustment['warehouse_id']);
@@ -661,6 +679,18 @@ final class AdjustmentRepository
                 'id' => $adjustmentId,
             ]);
 
+            $this->auditAdjustment($actor, 'adjustment_confirmed', $adjustmentId,
+                ['status' => 'draft'], [
+                    'status' => 'confirmed',
+                    'warehouse_id' => (int) $adjustment['warehouse_id'],
+                    'type' => $type,
+                    'quantity' => $effectiveQuantity,
+                    'document_number' => $adjustment['document_number'],
+                    'primary_stock_before' => $primaryBefore,
+                    'primary_stock_after' => $primaryAfter,
+                    'replacement_stock_before' => $replacementBefore,
+                    'replacement_stock_after' => $replacementAfter,
+                ]);
             $this->pdo->commit();
 
             return ['already_confirmed' => false];
@@ -672,7 +702,7 @@ final class AdjustmentRepository
         }
     }
 
-    public function cancel(int $adjustmentId): void
+    public function cancel(int $adjustmentId, array $actor): void
     {
         $this->pdo->beginTransaction();
 
@@ -683,12 +713,20 @@ final class AdjustmentRepository
                 throw new RuntimeException('Solo un ajuste en borrador puede cancelarse.');
             }
 
+            $creatorId = $this->draftCreatorId($adjustmentId);
+            if (!in_array('ADMIN', (array) ($actor['role_codes'] ?? []), true)
+                && ($creatorId === null || $creatorId !== (int) ($actor['id'] ?? 0))) {
+                throw new RuntimeException('Solo el creador o ADMIN pueden cancelar este borrador.');
+            }
+
             $this->pdo->prepare(
                 'UPDATE inventory_adjustments
                  SET status = "cancelled", cancelled_at = NOW()
                  WHERE id = :id'
             )->execute(['id' => $adjustmentId]);
 
+            $this->auditAdjustment($actor, 'adjustment_draft_cancelled', $adjustmentId,
+                ['status' => 'draft'], ['status' => 'cancelled']);
             $this->pdo->commit();
         } catch (\Throwable $exception) {
             if ($this->pdo->inTransaction()) {
@@ -696,6 +734,46 @@ final class AdjustmentRepository
             }
             throw $exception;
         }
+    }
+
+    /**
+     * The original logged-in account, not the RRHH employee on the paper
+     * form, identifies who prepared the adjustment.
+     */
+    public function draftCreatorId(int $adjustmentId): ?int
+    {
+        $statement = $this->pdo->prepare(<<<'SQL'
+            SELECT user_id FROM audit_logs
+            WHERE module_code = 'adjustments'
+              AND action_code = 'adjustment_draft_created'
+              AND record_type = 'inventory_adjustment'
+              AND record_id = :record_id
+            ORDER BY id ASC
+            LIMIT 1
+        SQL);
+        $statement->execute(['record_id' => (string) $adjustmentId]);
+        $value = $statement->fetchColumn();
+        return $value === false || (int) $value <= 0 ? null : (int) $value;
+    }
+
+    private function auditAdjustment(
+        array $actor, string $action, int $id, ?array $before, array $after
+    ): void {
+        (new AuditRepository($this->pdo))->log([
+            'user_id' => (int) ($actor['id'] ?? 0),
+            'user_label_snapshot' => (string) ($actor['display_name'] ?? ''),
+            'module_code' => 'adjustments',
+            'action_code' => $action,
+            'record_type' => 'inventory_adjustment',
+            'record_id' => (string) $id,
+            'before' => $before,
+            'after' => $after,
+            'details' => [
+                'workflow' => 'draft_then_independent_admin_confirmation',
+            ],
+            'ip_address' => $_SERVER['REMOTE_ADDR'] ?? null,
+            'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? null,
+        ]);
     }
 
     private function lockAdjustment(int $adjustmentId): array
