@@ -299,8 +299,13 @@ foreach (($dashboardProductFocus ?? []) as $productId => $entry) {
     </article>
 </section>
 
+<?php // The institutional module directory is for ADMIN; operational users
+      // retain their own activity panels and the permission-filtered top menu. ?>
+<?php if (\App\Services\DashboardModuleTiles::visibleFor((array) sindesg_user())): ?>
 <section class="module-grid">
     <?php foreach ($modules as $key => $moduleItem): ?>
+        <?php if (!sindesg_can(sindesg_permission_for($key, 'index', 'GET') ?? 'dashboard.view')
+            || !sindesg_role_action_allowed($key, 'index', 'GET', (array) sindesg_user())) continue; ?>
         <a class="module-card" href="<?= e(sindesg_url('?module=' . $key)) ?>" data-searchable="<?= e($moduleItem['label']) ?>">
             <span class="module-icon"><?= e($moduleItem['icon']) ?></span>
             <span class="module-copy">
@@ -312,6 +317,7 @@ foreach (($dashboardProductFocus ?? []) as $productId => $entry) {
         </a>
     <?php endforeach; ?>
 </section>
+<?php endif; ?>
 
 <section class="system-strip">
     <div>
