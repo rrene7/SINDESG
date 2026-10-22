@@ -28,8 +28,9 @@ final class AdjustmentService
     ) {
     }
 
-    public function createDraft(array $input): int
+    public function createDraft(array $input, array $actor): int
     {
+        AdjustmentApprovalPolicy::assertDraftAllowed($actor);
         $type = trim((string) ($input['adjustment_type'] ?? ''));
         if (!in_array($type, self::TYPES, true)) {
             throw new InvalidArgumentException('Seleccione un tipo de operación válido.');
@@ -48,11 +49,10 @@ final class AdjustmentService
         }
 
         $document = $this->nullableText($input['document_number'] ?? null);
-        if (
-            in_array($type, ['writeoff', 'authorized_adjustment', 'cycle_count'], true)
-            && $document === null
-        ) {
-            throw new InvalidArgumentException('Esta operación requiere documento o acta de soporte.');
+        if (!in_array($type, AdjustmentRepository::SOURCE_TYPES, true) && $document === null) {
+            throw new InvalidArgumentException(
+                'Todo ajuste físico de almacén requiere número de acta, incidencia o documento de soporte.'
+            );
         }
 
         $sourceDeliveryItemId = (int) ($input['source_delivery_item_id'] ?? 0);
@@ -183,25 +183,27 @@ final class AdjustmentService
             'document_number' => $document,
             'reason' => $reason,
             'notes' => $this->nullableText($input['notes'] ?? null),
-        ]);
+        ], $actor);
     }
 
-    public function confirm(int $adjustmentId): array
+    public function confirm(int $adjustmentId, array $actor): array
     {
+        AdjustmentApprovalPolicy::assertConfirmAllowed($actor);
         if ($adjustmentId <= 0) {
             throw new InvalidArgumentException('El ajuste seleccionado no es válido.');
         }
 
-        return $this->repository->confirm($adjustmentId);
+        return $this->repository->confirm($adjustmentId, $actor);
     }
 
-    public function cancel(int $adjustmentId): void
+    public function cancel(int $adjustmentId, array $actor): void
     {
+        AdjustmentApprovalPolicy::assertDraftAllowed($actor);
         if ($adjustmentId <= 0) {
             throw new InvalidArgumentException('El ajuste seleccionado no es válido.');
         }
 
-        $this->repository->cancel($adjustmentId);
+        $this->repository->cancel($adjustmentId, $actor);
     }
 
     private function normalizeDateTime(string $value): string
