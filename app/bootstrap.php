@@ -281,6 +281,18 @@ function sindesg_role_action_allowed(string $module, string $action, string $met
         return false;
     }
 
+    // Stock-compensating adjustments: Central prepares; only ADMIN confirms.
+    // This role check supplements, never replaces, module RBAC permissions.
+    if ($module === 'adjustments') {
+        if ($action === 'confirm') {
+            return false; // ADMIN returned true above; reject all others.
+        }
+        return in_array('CENTRAL', $roles, true)
+            && (strtoupper($method) === 'POST'
+                ? in_array($action, ['save', 'cancel'], true)
+                : in_array($action, ['index', 'new', 'show'], true));
+    }
+
     // Administration is reserved to ADMIN even if RBAC permissions are edited.
     if ($module === 'admin') {
         return false;
