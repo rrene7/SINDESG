@@ -277,6 +277,15 @@ function sindesg_role_action_allowed(string $module, string $action, string $met
                 || (in_array('P4', $roles, true)
                     && !in_array('CENTRAL', $roles, true)));
     }
+    // Prevalidación nominal: nunca accesible a VIEWER ni CENTRAL aunque
+    // tengan otro permiso de módulo. Solo POST P4 con ámbito o ADMIN.
+    // La solicitud y almacén concretos se comprueban en RequestsController.
+    if ($module === 'requests' && $action === 'preview-nominal-file') {
+        return strtoupper($method) === 'POST'
+            && (in_array('ADMIN', $roles, true)
+                || (in_array('P4', $roles, true)
+                    && !in_array('CENTRAL', $roles, true)));
+    }
     if (in_array('ADMIN', $roles, true)) {
         return true;
     }
@@ -362,7 +371,7 @@ function sindesg_role_action_allowed(string $module, string $action, string $met
         }
         if ($module !== 'requests') return false;
         $allowed = strtoupper($method) === 'POST'
-            ? ['save', 'add-item', 'remove-item', 'submit']
+            ? ['save', 'add-item', 'remove-item', 'submit', 'preview-nominal-file']
             : ['new', 'show', 'download-nominal-template'];
         return in_array($action, $allowed, true);
     }

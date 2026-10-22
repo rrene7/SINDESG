@@ -27,7 +27,6 @@ $assert(sindesg_role_action_allowed('requests','download-nominal-template','GET'
 
 foreach ([
     ['import-nominal-file','POST'],
-    ['preview-nominal-file','POST'],
     ['import-from-nominal-preview','POST'],
     ['validate-nominal-row','POST'],
     ['validate-nominal-selected','POST'],

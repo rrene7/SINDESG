@@ -24,7 +24,7 @@ foreach ([[10,102],[10,103],[10,104],[20,101],[0,101],[10,0]] as [$user,$request
     catch (RuntimeException $e) { /* expected */ }
 }
 $controller = (string)file_get_contents(dirname(__DIR__).'/app/Controllers/RequestsController.php');
-foreach (['assertRequest($userId', "['save', 'add-item', 'remove-item', 'submit']", '$post[\'requested_by_employee_id\']', '$guard->allowed($userId'] as $needle) {
+foreach (['assertRequest($userId', "['save', 'add-item', 'remove-item', 'submit', 'preview-nominal-file']", '$post[\'requested_by_employee_id\']', '$guard->allowed($userId'] as $needle) {
     if (!str_contains($controller, $needle)) throw new RuntimeException('Request route scope missing: '.$needle);
 }
 echo "[OK] Pacora P4 draft submission cannot access another unit or inactive warehouse.\n";
