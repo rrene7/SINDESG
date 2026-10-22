@@ -210,6 +210,7 @@ $required = [
     'tests/people_direction_office_test.php',
     'tests/warehouses_schema_test.php',
     'tests/warehouses_logic_test.php',
+    'tests/central_admin_privileges_test.php',
     'tests/warehouses_rrhh_test.php',
     'tests/requests_schema_test.php',
     'tests/requests_logic_test.php',
