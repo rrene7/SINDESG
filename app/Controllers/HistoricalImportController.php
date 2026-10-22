@@ -38,6 +38,12 @@ final class HistoricalImportController
         array $files,
         string $method
     ): array {
+        // Defensa adicional ante invocación directa del controlador.
+        // La migración histórica y el catálogo de referencia son funciones ADMIN.
+        if (!sindesg_role_action_allowed('migration', $action, $method, (array) sindesg_user())
+            || !sindesg_can(sindesg_permission_for('migration', $action, $method) ?? 'migration.view')) {
+            throw new InvalidArgumentException('La migración histórica está reservada al Administrador.');
+        }
         try {
             if (strtoupper($method) === 'POST') {
                 if (!csrf_valid(isset($post['_token']) ? (string) $post['_token'] : null)) {
