@@ -5,6 +5,7 @@ namespace App\Controllers;
 
 use App\Repositories\AdjustmentRepository;
 use App\Services\AdjustmentService;
+use App\Services\AdjustmentApprovalPolicy;
 use App\Services\RrhhEmployeeDirectory;
 use App\Support\Database;
 use InvalidArgumentException;
@@ -76,6 +77,7 @@ final class AdjustmentController
     private function handleGet(string $action, array $query): array
     {
         if ($action === 'new') {
+            AdjustmentApprovalPolicy::assertDraftAllowed((array) sindesg_user());
             $sourceItemId = (int) ($query['source_delivery_item_id'] ?? 0);
             $sourceDeliveryItem = $sourceItemId > 0
                 ? $this->repository->sourceDeliveryItem($sourceItemId)
@@ -110,6 +112,7 @@ final class AdjustmentController
         }
 
         if ($action === 'show') {
+            AdjustmentApprovalPolicy::assertDraftAllowed((array) sindesg_user());
             $adjustmentId = (int) ($query['id'] ?? 0);
             $adjustment = $this->repository->find($adjustmentId);
 
@@ -117,11 +120,21 @@ final class AdjustmentController
                 throw new InvalidArgumentException('El ajuste solicitado no existe.');
             }
 
+            $creatorId = $this->repository->draftCreatorId($adjustmentId);
+            $actor = (array) sindesg_user();
+            $canConfirm = AdjustmentApprovalPolicy::canConfirm($actor)
+                && $creatorId !== null && $creatorId !== (int) ($actor['id'] ?? 0);
+
             return [
                 'view' => SINDESG_ROOT . '/app/Views/adjustments/show.php',
                 'title' => (string) $adjustment['adjustment_code'],
                 'data' => [
                     'adjustment' => $adjustment,
+                    'adjustmentCreatorId' => $creatorId,
+                    'canConfirmAdjustment' => $canConfirm,
+                    'canCancelAdjustment' => AdjustmentApprovalPolicy::canDraft($actor)
+                        && (in_array('ADMIN', (array) ($actor['role_codes'] ?? []), true)
+                            || $creatorId === (int) ($actor['id'] ?? 0)),
                     'currentPrimaryStock' => $this->repository->physicalStock(
                         (int) $adjustment['warehouse_id'],
                         (int) $adjustment['product_variant_id']
@@ -136,6 +149,7 @@ final class AdjustmentController
             ];
         }
 
+        AdjustmentApprovalPolicy::assertDraftAllowed((array) sindesg_user());
         return [
             'view' => SINDESG_ROOT . '/app/Views/adjustments/index.php',
             'title' => 'Ajustes y devoluciones',
@@ -149,14 +163,14 @@ final class AdjustmentController
     private function handlePost(string $action, array $post): array
     {
         if ($action === 'save') {
-            $id = $this->service->createDraft($post);
-            flash('success', 'Operación creada en borrador. Revise el impacto antes de confirmar.');
+            $id = $this->service->createDraft($post, (array) sindesg_user());
+            flash('success', 'Borrador registrado con auditoría. ADMIN debe confirmar antes de afectar el kardex.');
             $this->redirect('?module=adjustments&action=show&id=' . $id);
         }
 
         if ($action === 'confirm') {
             $id = (int) ($post['adjustment_id'] ?? 0);
-            $result = $this->service->confirm($id);
+            $result = $this->service->confirm($id, (array) sindesg_user());
             flash(
                 'success',
                 !empty($result['already_confirmed'])
@@ -168,7 +182,7 @@ final class AdjustmentController
 
         if ($action === 'cancel') {
             $id = (int) ($post['adjustment_id'] ?? 0);
-            $this->service->cancel($id);
+            $this->service->cancel($id, (array) sindesg_user());
             flash('success', 'Borrador cancelado sin modificar inventario.');
             $this->redirect('?module=adjustments&action=show&id=' . $id);
         }
