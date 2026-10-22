@@ -201,6 +201,9 @@ jobs:
       - name: Warehouses logic test
         run: php tests/warehouses_logic_test.php
 
+      - name: Central role restrictions for administration and P4 network
+        run: php tests/central_admin_privileges_test.php
+
       - name: Warehouses RRHH test
         run: php tests/warehouses_rrhh_test.php
 
@@ -447,6 +450,12 @@ jobs:
           php tests/admin_duplicate_products_test.php
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           php tests/category_auto_code_test.php
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Central administrative access boundaries on Windows
+        shell: pwsh
+        run: |
+          php tests/central_admin_privileges_test.php
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: P4 requests and Central role separation on Windows
