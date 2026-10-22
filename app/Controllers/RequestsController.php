@@ -46,6 +46,15 @@ final class RequestsController
         try {
             $current = (array) sindesg_user();
             $roles = (array) ($current['role_codes'] ?? []);
+            // Defensa adicional: incluso si un llamador omite el router, Central
+            // no debe crear ni modificar solicitudes originadas por un P4.
+            if (in_array('CENTRAL', $roles, true)
+                && !in_array('ADMIN', $roles, true)
+                && !sindesg_role_action_allowed('requests', $action, $method, $current)) {
+                throw new InvalidArgumentException(
+                    'Almacén Central recibe, revisa y decide solicitudes. Cada P4 debe crear y enviar la suya.'
+                );
+            }
             $isP4Operator = in_array('P4', $roles, true)
                 && !in_array('ADMIN', $roles, true)
                 && !in_array('CENTRAL', $roles, true);
@@ -85,6 +94,11 @@ final class RequestsController
             flash('error', $exception->getMessage());
 
             $requestId = (int) ($post['request_id'] ?? $query['id'] ?? 0);
+            $roles = (array) (sindesg_user()['role_codes'] ?? []);
+            if (in_array('CENTRAL', $roles, true) && !in_array('ADMIN', $roles, true)
+                && !sindesg_role_action_allowed('requests', $action, $method, (array) sindesg_user())) {
+                $this->redirect('?module=requests');
+            }
             $this->redirect($action === 'preview-boots'
                 ? '?module=requests&action=import-boots'
                 : ($requestId > 0
