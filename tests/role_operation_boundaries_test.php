@@ -9,6 +9,32 @@ $viewer = ['role_codes' => ['VIEWER']];
 $both = ['role_codes' => ['CENTRAL','P4']];
 
 $cases = [
+    // El Almacén Central NO se convierte en P4 aunque posea requests.manage.
+    ['requests','index','GET',$central,true],
+    ['requests','show','GET',$central,true],
+    ['requests','central-review','GET',$central,true],
+    ['requests','new','GET',$central,false],
+    ['requests','new','GET',$both,false],
+    ['requests','save','POST',$central,false],
+    ['requests','add-item','POST',$central,false],
+    ['requests','remove-item','POST',$central,false],
+    ['requests','submit','POST',$central,false],
+    ['requests','add-nominal-bulk','POST',$central,false],
+    ['requests','import-nominal-file','POST',$central,false],
+    ['requests','preview-nominal-file','POST',$central,false],
+    ['requests','import-boots','GET',$central,false],
+    ['requests','download-nominal-template','GET',$central,false],
+    ['requests','validate-nominal-row','POST',$central,false],
+    ['requests','validate-nominal-selected','POST',$central,false],
+    ['requests','decide','POST',$central,true],
+    ['requests','start-review','POST',$central,true],
+    // Creación por unidad P4 y función excepcional ADMIN conservadas.
+    ['requests','new','GET',$p4,true],
+    ['requests','save','POST',$p4,true],
+    ['requests','add-item','POST',$p4,true],
+    ['requests','submit','POST',$p4,true],
+    ['requests','new','GET',$admin,true],
+    ['requests','save','POST',$admin,true],
     ['requests','central-review','GET',$p4,false],
     ['requests','start-review','POST',$p4,false],
     ['requests','decide','POST',$p4,false],
