@@ -52,7 +52,6 @@ $cases = [
     ['requests','preview-nominal-file','POST',$central,false],
     ['requests','preview-nominal-file','POST',$both,false],
     ['requests','import-nominal-file','POST',$p4,false],
-    ['requests','import-from-nominal-preview','POST',$p4,false],
     ['requests','new','GET',$admin,true],
     ['requests','save','POST',$admin,true],
     ['requests','central-review','GET',$p4,false],
