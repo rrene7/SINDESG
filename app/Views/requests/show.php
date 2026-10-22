@@ -515,9 +515,9 @@ foreach ($nominalProducts ?? [] as $product) {
         </form>
     <?php else: ?>
         <p class="request-cell-sub">
-            Esta prevalidación es informativa. La importación y las
-            validaciones excepcionales requieren permisos separados.
-            Corrija las incidencias del Excel antes de continuar.
+            La prevalidación no encontró un archivo temporal disponible para su
+            incorporación. Vuelva a adjuntar y prevalidar el Excel si desea
+            cargar los registros verificados al borrador.
         </p>
     <?php endif; ?>
     <div class="request-verification-summary">
@@ -566,7 +566,13 @@ foreach ($nominalProducts ?? [] as $product) {
                   class="p4-bulk-review-toolbar">
                 <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
                 <input type="hidden" name="request_id" value="<?= (int) $serviceRequest['id'] ?>">
-                <input type="hidden" name="confirm_bulk" value="1">
+                <label class="request-cell-sub">
+                    <input type="checkbox" name="confirm_bulk" value="1" required>
+                    Confirmo que revisé la identidad institucional de cada fila
+                    seleccionada con evidencia independiente, especialmente cuando
+                    el nombre del Excel y el de RRHH son personas aparentemente distintas.
+                    No seleccionaré filas sin identidad comprobada.
+                </label>
                 <button type="button" class="secondary-button" data-p4-review-select-all>
                     Seleccionar todas las incidencias
                 </button>
