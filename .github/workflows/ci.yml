@@ -321,6 +321,9 @@ jobs:
       - name: P4 assigned-warehouse Excel nominal prevalidation permissions
         run: php tests/p4_nominal_prevalidation_access_test.php
 
+      - name: P4 original nominal approval and staged import workflow
+        run: php tests/p4_nominal_workflow_restoration_test.php
+
       - name: P4 nominal bulk capture test
         run: php tests/p4_nominal_bulk_test.php
 
@@ -462,6 +465,12 @@ jobs:
         shell: pwsh
         run: |
           php tests/central_admin_privileges_test.php
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: P4 nominal review and staged draft import on Windows
+        shell: pwsh
+        run: |
+          php tests/p4_nominal_workflow_restoration_test.php
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: P4 nominal prevalidation and cross-warehouse denial on Windows

@@ -22,14 +22,15 @@ foreach ([$central,$both,$viewer] as $actor) {
     $assert(!sindesg_role_action_allowed('requests','download-nominal-template','GET',$actor),
         'Plantilla habilitada para rol distinto de P4/ADMIN.');
 }
+$assert(sindesg_role_action_allowed('requests','import-from-nominal-preview','POST',$p4)
+    && sindesg_role_action_allowed('requests','validate-nominal-selected','POST',$p4),
+    'El P4 debe conservar el flujo validación + carga al borrador.');
 $assert(sindesg_role_action_allowed('requests','download-nominal-template','GET',$admin),
     'ADMIN perdió acceso existente a plantillas.');
 
 foreach ([
     ['import-nominal-file','POST'],
-    ['import-from-nominal-preview','POST'],
     ['validate-nominal-row','POST'],
-    ['validate-nominal-selected','POST'],
     ['central-review','GET'],
     ['decide','POST'],
 ] as [$action,$method]) {

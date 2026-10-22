@@ -14,6 +14,9 @@ $both = ['role_codes' => ['CENTRAL','P4']];
 $viewer = ['role_codes' => ['VIEWER']];
 $admin = ['role_codes' => ['ADMIN']];
 
+$ensure(sindesg_role_action_allowed('requests', 'validate-nominal-selected', 'POST', $p4)
+    && sindesg_role_action_allowed('requests', 'import-from-nominal-preview', 'POST', $p4),
+    'El P4 no puede completar la conciliación nominal autorizada.');
 $ensure(sindesg_role_action_allowed('requests', 'preview-nominal-file', 'POST', $p4),
     'El P4 debe poder prevalidar su Excel nominal por POST.');
 $ensure(sindesg_permission_for('requests', 'preview-nominal-file', 'POST') === 'requests.manage',
@@ -26,8 +29,7 @@ foreach ([$central, $both, $viewer] as $actor) {
 }
 $ensure(sindesg_role_action_allowed('requests', 'preview-nominal-file', 'POST', $admin),
     'El ADMIN mantiene la prevalidación excepcional.');
-foreach (['import-nominal-file', 'import-from-nominal-preview',
-    'validate-nominal-row', 'validate-nominal-selected', 'decide'] as $action) {
+foreach (['import-nominal-file', 'validate-nominal-row', 'decide'] as $action) {
     $ensure(!sindesg_role_action_allowed('requests', $action, 'POST', $p4),
         'La prevalidación no puede conceder importación o aprobación: ' . $action);
 }
@@ -96,7 +98,8 @@ $ensure(str_contains($view, "action=preview-nominal-file")
     && str_contains($view,"sindesg_role_action_allowed('requests', 'import-from-nominal-preview', 'POST'")
     && str_contains($view,"sindesg_role_action_allowed('requests', 'validate-nominal-selected', 'POST'"),
     'La interfaz mezcla prevalidación con botones restringidos.');
-$ensure(str_contains($view, 'Esta prevalidación es informativa.'),
-    'Al P4 debe explicarse que el resultado no importa personas.');
+$ensure(str_contains($view, 'La prevalidación solo consulta RRHH2029 y presenta incidencias.')
+    && str_contains($view, 'Esta prevalidación es informativa.') === false,
+    'La prevalidación y la carga posterior deben estar claramente diferenciadas.');
 
 echo "[OK] Prevalidación nominal P4: POST, CSRF, solicitud asignada activa, Excel privado y sin permisos de importación.\n";

@@ -286,6 +286,19 @@ function sindesg_role_action_allowed(string $module, string $action, string $met
                 || (in_array('P4', $roles, true)
                     && !in_array('CENTRAL', $roles, true)));
     }
+    // Retomar el flujo original del P4 después de prevalidar.
+    // La confirmación de incidencias escribe solo evidencias auditables;
+    // importar desde la vista previa escribe solo filas del borrador.
+    // Ambas acciones exigen POST, requests.manage, sesión y
+    // pertenencia al P4 activo verificada por RequestsController.
+    if ($module === 'requests' && in_array($action, [
+        'validate-nominal-selected', 'import-from-nominal-preview'
+    ], true)) {
+        return strtoupper($method) === 'POST'
+            && (in_array('ADMIN', $roles, true)
+                || (in_array('P4', $roles, true)
+                    && !in_array('CENTRAL', $roles, true)));
+    }
     if (in_array('ADMIN', $roles, true)) {
         return true;
     }
@@ -371,7 +384,8 @@ function sindesg_role_action_allowed(string $module, string $action, string $met
         }
         if ($module !== 'requests') return false;
         $allowed = strtoupper($method) === 'POST'
-            ? ['save', 'add-item', 'remove-item', 'submit', 'preview-nominal-file']
+            ? ['save', 'add-item', 'remove-item', 'submit', 'preview-nominal-file',
+                'validate-nominal-selected', 'import-from-nominal-preview']
             : ['new', 'show', 'download-nominal-template'];
         return in_array($action, $allowed, true);
     }
