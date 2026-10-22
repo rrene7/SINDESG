@@ -290,7 +290,10 @@ function sindesg_role_action_allowed(string $module, string $action, string $met
     // Quienes solo tienen warehouses.view conservan consulta y seguimiento;
     // warehouses.manage nunca habilita creación/inactivación a CENTRAL.
     if ($module === 'warehouses') {
-        return strtoupper($method) === 'GET'
+        // P4 sin rol Central no puede listar/consultar otros P4;
+        // no hay aislamiento por fila en warehouses/show.
+        return (!in_array('P4', $roles, true) || in_array('CENTRAL', $roles, true))
+            && strtoupper($method) === 'GET'
             && in_array($action, ['index', 'show'], true);
     }
 
