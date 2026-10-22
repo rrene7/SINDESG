@@ -73,6 +73,9 @@ jobs:
       - name: Dynamic dashboard test
         run: php tests/dashboard_dynamic_test.php
 
+      - name: Admin-only Dashboard lower module tiles
+        run: php tests/dashboard_admin_module_tiles_test.php
+
       - name: Dashboard recently registered catalogue articles
         run: php tests/dashboard_recent_products_test.php
 
@@ -438,6 +441,12 @@ jobs:
           php tests/admin_duplicate_products_test.php
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           php tests/category_auto_code_test.php
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Admin-only Dashboard module tiles on Windows
+        shell: pwsh
+        run: |
+          php tests/dashboard_admin_module_tiles_test.php
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Dashboard turntable on Windows CRLF
