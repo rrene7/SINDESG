@@ -258,6 +258,9 @@ jobs:
       - name: Adjustments logic test
         run: php tests/adjustments_logic_test.php
 
+      - name: Adjustment independent administrator approval
+        run: php tests/adjustments_independent_approval_test.php
+
       - name: Adjustments accounting test
         run: php tests/adjustments_accounting_test.php
 
@@ -441,6 +444,12 @@ jobs:
           php tests/admin_duplicate_products_test.php
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           php tests/category_auto_code_test.php
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Adjustment independent approval on Windows
+        shell: pwsh
+        run: |
+          php tests/adjustments_independent_approval_test.php
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Admin-only Dashboard module tiles on Windows

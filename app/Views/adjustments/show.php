@@ -89,16 +89,29 @@ $expectedText = match ($type) {
                     <strong><?= e(sindesg_units((float) $currentReplacementStock)) ?></strong>
                 <?php endif; ?>
             </p>
-            <form method="post" action="<?= e(sindesg_url('?module=adjustments&action=confirm')) ?>">
-                <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
-                <input type="hidden" name="adjustment_id" value="<?= e($adjustment['id']) ?>">
-                <button class="primary-button adjustment-full-button" type="submit">Confirmar operación</button>
-            </form>
-            <form method="post" action="<?= e(sindesg_url('?module=adjustments&action=cancel')) ?>" class="adjustment-cancel-form">
-                <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
-                <input type="hidden" name="adjustment_id" value="<?= e($adjustment['id']) ?>">
-                <button class="adjustment-danger-button" type="submit">Cancelar borrador</button>
-            </form>
+            <div class="adjustment-audit-note">
+                <strong>Separación de funciones</strong>
+                <p>Almacén Central prepara el borrador. La confirmación requiere un usuario ADMIN diferente al creador y queda registrada en Auditoría, junto al documento de soporte.</p>
+                <?php if ($adjustmentCreatorId === null): ?>
+                    <p>Este borrador no tiene creador autenticado verificable. No se puede confirmar; debe regularizarse mediante un nuevo borrador documentado.</p>
+                <?php endif; ?>
+            </div>
+            <?php if ($canConfirmAdjustment): ?>
+                <form method="post" action="<?= e(sindesg_url('?module=adjustments&action=confirm')) ?>">
+                    <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
+                    <input type="hidden" name="adjustment_id" value="<?= e($adjustment['id']) ?>">
+                    <button class="primary-button adjustment-full-button" type="submit">Confirmar ajuste como ADMIN</button>
+                </form>
+            <?php else: ?>
+                <p class="adjustment-audit-note">Pendiente de validación por un Administrador distinto del creador. Este borrador no afecta existencias.</p>
+            <?php endif; ?>
+            <?php if ($canCancelAdjustment): ?>
+                <form method="post" action="<?= e(sindesg_url('?module=adjustments&action=cancel')) ?>" class="adjustment-cancel-form">
+                    <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
+                    <input type="hidden" name="adjustment_id" value="<?= e($adjustment['id']) ?>">
+                    <button class="adjustment-danger-button" type="submit">Cancelar borrador</button>
+                </form>
+            <?php endif; ?>
         <?php elseif ($adjustment['status'] === 'confirmed'): ?>
             <p>La operación ya fue aplicada al kardex y no debe editarse. Cualquier corrección posterior se registra mediante otra operación compensatoria.</p>
             <button class="secondary-button adjustment-full-button" type="button" onclick="window.print()">Imprimir registro</button>

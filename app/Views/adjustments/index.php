@@ -19,7 +19,7 @@ $statusLabels = ['draft' => 'Borrador', 'confirmed' => 'Confirmado', 'cancelled'
     <div>
         <span class="eyebrow">FASE 10 · MOVIMIENTOS COMPENSATORIOS</span>
         <h1>Cambios, devoluciones, bajas y ajustes</h1>
-        <p>Corrija la realidad física sin editar saldos ni borrar movimientos anteriores. Cada operación queda vinculada al kardex y a su responsable.</p>
+        <p>Registre incidencias y prepare borradores con documento de soporte. Solo otro usuario ADMIN podrá confirmar movimientos compensatorios en el kardex.</p>
     </div>
     <a class="primary-button" href="<?= e(sindesg_url('?module=adjustments&action=new')) ?>">+ Nuevo ajuste</a>
 </section>
