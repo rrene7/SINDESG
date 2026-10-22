@@ -35,7 +35,8 @@ final class InventoryController
             if (in_array($action, [
                 'new-category', 'edit-category', 'categories', 'save-category',
                 'update-category', 'archive-category', 'restore-category',
-                'duplicate-products', 'edit-product', 'update-product'
+                'duplicate-products', 'edit-product', 'update-product',
+                'prepare-footwear'
             ], true)) {
                 $this->assertCatalogAdministrator();
             }

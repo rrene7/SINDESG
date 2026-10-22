@@ -286,6 +286,28 @@ function sindesg_role_action_allowed(string $module, string $action, string $met
         return false;
     }
 
+    // La estructura institucional de P4 es competencia exclusiva de ADMIN.
+    // Quienes solo tienen warehouses.view conservan consulta y seguimiento;
+    // warehouses.manage nunca habilita creación/inactivación a CENTRAL.
+    if ($module === 'warehouses') {
+        // P4 sin rol Central no puede listar/consultar otros P4;
+        // no hay aislamiento por fila en warehouses/show.
+        return (!in_array('P4', $roles, true) || in_array('CENTRAL', $roles, true))
+            && strtoupper($method) === 'GET'
+            && in_array($action, ['index', 'show'], true);
+    }
+
+    // Los lotes históricos pueden alterar catálogo de referencia y trazabilidad.
+    // Su mantenimiento es administrativo, incluso si se otorgase migration.manage.
+    if ($module === 'migration') {
+        return false;
+    }
+
+    // Preparar en masa el catálogo base de calzado no es una recepción cotidiana.
+    if ($module === 'inventory' && $action === 'prepare-footwear') {
+        return false;
+    }
+
     // El Almacén Central recibe y revisa solicitudes P4, pero nunca las
     // origina, edita, envía ni importa a nombre de una Dirección o Zona.
     // ADMIN conserva el acceso excepcional, sujeto al RBAC y auditoría.

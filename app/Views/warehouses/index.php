@@ -7,7 +7,10 @@ declare(strict_types=1);
         <h1>Almacenes y P4</h1>
         <p>El Almacén Central concentra la recepción institucional. Cada P4 se habilita explícitamente y se vincula a una unidad vigente de RRHH2029.</p>
     </div>
-    <a class="primary-button" href="<?= e(sindesg_url('?module=warehouses&action=new')) ?>">+ Habilitar P4</a>
+    <?php if (sindesg_role_action_allowed('warehouses', 'new', 'GET', (array) sindesg_user())
+        && sindesg_can('warehouses.manage')): ?>
+        <a class="primary-button" href="<?= e(sindesg_url('?module=warehouses&action=new')) ?>">+ Habilitar P4</a>
+    <?php endif; ?>
 </section>
 
 <section class="warehouse-stats">

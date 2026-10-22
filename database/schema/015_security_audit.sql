@@ -158,7 +158,7 @@ INNER JOIN security_permissions p ON p.code IN (
     'receipts.view','receipts.manage',
     'production.view','production.manage',
     'people.view',
-    'warehouses.view','warehouses.manage',
+    'warehouses.view',
     'requests.view','requests.manage',
     'distribution.view','distribution.manage',
     'deliveries.view','deliveries.manage',
