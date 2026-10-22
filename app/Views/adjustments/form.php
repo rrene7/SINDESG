@@ -23,7 +23,7 @@ $warehouseTypes = [
         <h1><?= $isSourceOperation ? 'Devolver, cambiar o reponer' : 'Nueva operación de inventario' ?></h1>
         <p><?= $isSourceOperation
             ? 'La operación quedará enlazada a la entrega original y al funcionario.'
-            : 'Seleccione el tipo de ajuste. El saldo solo cambia al confirmar el borrador.' ?></p>
+            : 'El Almacén Central prepara el borrador; un Administrador distinto deberá aprobarlo antes de modificar stock.' ?></p>
     </div>
     <a class="secondary-button" href="<?= e(sindesg_url('?module=adjustments')) ?>">← Volver</a>
 </section>
@@ -197,7 +197,9 @@ $warehouseTypes = [
 
             <label>
                 <span>Documento / acta</span>
-                <input type="text" name="document_number" maxlength="120" placeholder="Obligatorio para baja, ajuste autorizado y conteo">
+                <input type="text" name="document_number" maxlength="120"
+                       <?= !$isSourceOperation ? 'required' : '' ?>
+                       placeholder="<?= $isSourceOperation ? 'Referencia documental (opcional)' : 'Acta, incidencia o autorización obligatoria' ?>">
             </label>
 
             <label>
