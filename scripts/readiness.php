@@ -87,7 +87,7 @@ if ($environment === 'production') {
         $ok('Base URL', 'auto: ruta detectada por la petición HTTP (validar desde el navegador)');
     } elseif ($baseUrl === '/' || $baseUrl === ''
         || (str_starts_with($baseUrl, '/')
-            && preg_match('~^/(?:[A-Za-z0-9_.~-]+)(?:/[A-Za-z0-9_.~-]+)*$~D', rtrim($baseUrl, '/')))) {
+            && preg_match('~^/(?:[A-Za-z0-9_.-]+)(?:/[A-Za-z0-9_.-]+)*$~D', rtrim($baseUrl, '/')))) {
         $ok('Base URL', $baseUrl === '' ? '/' : $baseUrl);
     } else {
         $error('Base URL', 'Use auto, / o una ruta absoluta sin dominio.');
