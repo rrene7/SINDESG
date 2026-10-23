@@ -56,6 +56,13 @@ foreach ($nominalProducts ?? [] as $product) {
         <h1><?= e($serviceRequest['p4_name_snapshot'] ?: $serviceRequest['p4_internal_name']) ?></h1>
         <p><?= e($serviceRequest['requested_by_label_snapshot']) ?> · <?= e(date('d/m/Y H:i', strtotime((string) $serviceRequest['requested_at']))) ?></p>
     </div>
+    <?php if (in_array($serviceRequest['status'], ['submitted', 'in_review'], true)
+        && sindesg_role_action_allowed('requests', 'central-review', 'GET', (array) sindesg_user())): ?>
+        <a class="primary-button request-hero-review-action"
+           href="<?= e(sindesg_url('?module=requests&action=central-review&id=' . (int) $serviceRequest['id'])) ?>">
+            <?= $serviceRequest['status'] === 'submitted' ? 'Iniciar revisión por tallas' : 'Revisar y aprobar por tallas' ?> →
+        </a>
+    <?php endif; ?>
     <div class="request-detail-status">
         <span class="request-status <?= e($serviceRequest['status']) ?>"><?= e($statusLabels[$serviceRequest['status']] ?? $serviceRequest['status']) ?></span>
         <strong><?= e(sindesg_units($totalRequested)) ?></strong>
@@ -125,12 +132,11 @@ foreach ($nominalProducts ?? [] as $product) {
             <p>Solicitud en preparación por su P4 de origen. Almacén Central podrá revisarla cuando haya sido enviada.</p>
         <?php elseif ($serviceRequest['status'] === 'submitted' && sindesg_role_action_allowed('requests', 'central-review', 'GET', (array) sindesg_user())): ?>
             <p>La solicitud fue enviada y está pendiente de revisión en Servicios Generales.</p>
-            <p class="request-cell-sub">Antes de aprobar, consulte el consolidado por talla del Almacén Central.</p>
-            <form method="post" action="<?= e(sindesg_url('?module=requests&action=start-review')) ?>">
-                <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
-                <input type="hidden" name="request_id" value="<?= e($serviceRequest['id']) ?>">
-                <button class="primary-button request-full-button" type="submit">Iniciar revisión</button>
-            </form>
+            <p class="request-cell-sub">Inicie la revisión desde el consolidado por artículo y talla; los beneficiarios permanecen disponibles para consulta detallada.</p>
+            <a class="primary-button request-full-button"
+               href="<?= e(sindesg_url('?module=requests&action=central-review&id=' . (int) $serviceRequest['id'])) ?>">
+                Iniciar revisión agrupada →
+            </a>
         <?php elseif ($serviceRequest['status'] === 'in_review' && sindesg_role_action_allowed('requests', 'central-review', 'GET', (array) sindesg_user())): ?>
             <p>Revise las cantidades por talla en la pantalla del Central. La aprobación compromete disponibilidad, pero todavía no mueve inventario.</p>
             <a class="primary-button request-full-button" href="<?= e(sindesg_url('?module=requests&action=central-review&id=' . (int) $serviceRequest['id'])) ?>">Revisar y aprobar por talla →</a>
@@ -671,60 +677,7 @@ foreach ($nominalProducts ?? [] as $product) {
 <?php endif; ?>
 <?php endif; ?>
 
-<?php if ($serviceRequest['status'] === 'in_review' && $requestItems !== [] && sindesg_role_action_allowed('requests', 'central-review', 'GET', (array) sindesg_user())): ?>
-<section class="request-panel review-panel">
-    <p class="request-cell-sub">
-        Para solicitudes grandes, recomendamos la
-        <a href="<?= e(sindesg_url('?module=requests&action=central-review&id=' . (int) $serviceRequest['id'])) ?>">revisión agrupada por tallas</a>
-        en lugar de aprobar a cada funcionario por separado.
-    </p>
-    <div class="request-section-head">
-        <div>
-            <span class="eyebrow">DECISIÓN</span>
-            <h2>Registrar aprobación</h2>
-            <p>Puede aprobar cero, parte o todo. El sistema valida el stock comprometible por variante.</p>
-        </div>
-    </div>
 
-    <form method="post" action="<?= e(sindesg_url('?module=requests&action=decide')) ?>" class="request-review-form">
-        <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
-        <input type="hidden" name="request_id" value="<?= e($serviceRequest['id']) ?>">
-
-        <div class="request-review-lines">
-            <?php foreach ($requestItems as $item): ?>
-                <label>
-                    <span><?= e($item['product_name'] . (!empty($item['size_name']) ? ' · Talla ' . $item['size_name'] : '')) ?></span>
-                    <small>Solicitado <?= e(sindesg_units((float) $item['quantity_requested'])) ?> · Comprometible <?= e(sindesg_units((float) $item['available_to_approve'])) ?></small>
-                    <input type="number"
-                           name="approved_quantity[<?= e($item['id']) ?>]"
-                           min="0"
-                           max="<?= e($item['quantity_requested']) ?>"
-                           step="0.001"
-                           value="<?= e($item['quantity_requested']) ?>"
-                           required>
-                </label>
-            <?php endforeach; ?>
-        </div>
-
-        <div class="request-employee-picker" data-reviewer-picker data-search-url="<?= e($employeeSearchUrl) ?>">
-            <label>
-                <span>Funcionario revisor *</span>
-                <input type="search" data-reviewer-search autocomplete="off" placeholder="Nombre, cédula o posición..." required>
-                <input type="hidden" name="reviewed_by_employee_id" data-reviewer-id>
-            </label>
-            <div class="request-picker-results" data-reviewer-results hidden></div>
-            <div class="request-picker-selection" data-reviewer-selection hidden></div>
-        </div>
-
-        <label class="request-notes-field">
-            <span>Observación de revisión</span>
-            <textarea name="review_notes" rows="3" placeholder="Motivo de ajuste, rechazo o aprobación parcial."></textarea>
-        </label>
-
-        <button class="primary-button request-full-button" type="submit">Registrar decisión</button>
-    </form>
-</section>
-<?php endif; ?>
 
 <div class="request-bottom-actions">
     <a class="secondary-button" href="<?= e(sindesg_url('?module=requests')) ?>">← Solicitudes</a>
