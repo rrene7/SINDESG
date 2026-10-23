@@ -824,17 +824,19 @@ final class RequestRepository
                 throw new RuntimeException('Solo puede reabrirse una solicitud rechazada.');
             }
             $check = $this->pdo->prepare(<<<'SQL'
-                SELECT
-                    COUNT(*) AS item_count,
-                    COALESCE(SUM(i.quantity_approved),0) AS approved,
-                    COALESCE(SUM(i.quantity_dispatched),0) AS dispatched,
-                    COALESCE(SUM(i.quantity_received),0) AS received
+                SELECT i.quantity_approved, i.quantity_dispatched, i.quantity_received
                 FROM service_request_items i
                 WHERE i.request_id = :request_id
                 FOR UPDATE
             SQL);
             $check->execute(['request_id' => $requestId]);
-            $totals = $check->fetch() ?: [];
+            $rows = $check->fetchAll();
+            $totals = [
+                'item_count' => count($rows),
+                'approved' => array_sum(array_column($rows, 'quantity_approved')),
+                'dispatched' => array_sum(array_column($rows, 'quantity_dispatched')),
+                'received' => array_sum(array_column($rows, 'quantity_received')),
+            ];
             if ((int) ($totals['item_count'] ?? 0) < 1
                 || (float) ($totals['approved'] ?? 0) !== 0.0
                 || (float) ($totals['dispatched'] ?? 0) !== 0.0
