@@ -109,6 +109,9 @@ jobs:
       - name: P4 compact recent movements panel
         run: php tests/p4_recent_activity_compact_test.php
 
+      - name: P4 Central relationship card separation
+        run: php tests/p4_central_relationship_card_test.php
+
       - name: Main P4 warehouse scope foundation test
         run: php tests/p4_warehouse_scope_foundation_test.php
 
@@ -490,6 +493,12 @@ jobs:
           php-version: '8.2'
           extensions: pdo_sqlite, sqlite3, mbstring, iconv
           coverage: none
+
+      - name: P4 Central relationship card on Windows
+        shell: pwsh
+        run: |
+          php tests/p4_central_relationship_card_test.php
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: P4 compact recent movements on Windows
         shell: pwsh
