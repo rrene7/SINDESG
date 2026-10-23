@@ -27,7 +27,7 @@ $totalAvailable = array_sum(array_map(
 <section class="request-panel central-overview" aria-label="Resumen de la solicitud">
     <div class="request-section-head">
         <div><span class="eyebrow">CONSOLIDADO DEL CENTRAL</span>
-            <h2>Dotación agrupada, sin abrir 722 expedientes</h2>
+            <h2>Dotación agrupada de <?= (int) $totalNominees ?> renglones</h2>
             <p>Una fila por talla y artículo. Los funcionarios se consultan desplegando el grupo cuando sea necesario.</p>
         </div>
     </div>
