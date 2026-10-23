@@ -111,13 +111,13 @@ $check(substr_count($grouped, 'data-label=') >= 8
     && str_contains($grouped, 'data-central-requested=')
     && str_contains($grouped, 'Solicitado: <?= e(sindesg_units((float) $item[\'quantity_requested\'])) ?>'),
     'Cada tarjeta movil debe identificar los totales por talla y la necesidad nominal individual.');
-$check(str_contains($js, 'selectedPeople')
-    && str_contains($js, 'requestedTotal')
-    && str_contains($js, 'Aprobación parcial:')
-    && str_contains($js, 'Verifique los funcionarios incluidos')
-    && str_contains($js, 'desired > available')
-    && str_contains($js, 'totalForGroup > available'),
-    'La selección parcial debe mostrar cuantos funcionarios cubre, advertir limites y confirmar la decision nominal.');
+$check(str_contains($js, 'data-central-selected')
+    && str_contains($js, 'lastValidated')
+    && str_contains($js, 'markChanged')
+    && str_contains($js, 'given > Math.min(expected, available)')
+    && str_contains($js, "action === 'reject'")
+    && str_contains($js, "action === 'approve'"),
+    'La selección parcial debe informar cantidades, validar y separar aprobación de rechazo.');
 $check(str_contains($css, '@media (max-width: 760px)')
     && str_contains($css, '.central-size-table tr:not(.central-detail-row)')
     && str_contains($css, 'content: attr(data-label)')
