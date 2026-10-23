@@ -101,36 +101,38 @@ $ready = !empty($p4ScopeReady) && !empty($p4OperationsReadable)
 .p4-dashboard-v2 .p4-v2-steps{display:flex;flex-wrap:wrap;gap:8px}
 .p4-dashboard-v2 .p4-v2-steps span{padding:9px 11px;border:1px solid #285776;border-radius:8px;color:#c5e1f0;font-size:.78rem}
 .p4-dashboard-v2 .p4-v2-signature-note{margin-top:10px;color:#9ac1d6;font-size:.75rem}
-.p4-dashboard-v2 .p4-v2-central-panel{border-color:#26729d;background:linear-gradient(120deg,#06213b,#052b45)}
-.p4-dashboard-v2 .p4-v2-central-heading{margin-bottom:14px}
-.p4-dashboard-v2 .p4-v2-central-heading h2{font-size:1.18rem}
-.p4-dashboard-v2 .p4-v2-central-action{display:inline-flex;align-items:center;padding:10px 13px;border-radius:9px;border:1px solid #5cbbec;background:#126a9e;color:#fff;text-decoration:none;font-size:.82rem;font-weight:750}
-.p4-dashboard-v2 .p4-v2-central-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:12px}
-.p4-dashboard-v2 .p4-v2-central-stat{border:1px solid #276186;border-radius:10px;padding:12px 14px;background:#041a31;min-width:0}
-.p4-dashboard-v2 .p4-v2-central-stat strong{display:block;font-size:1.4rem;font-variant-numeric:tabular-nums}
-.p4-dashboard-v2 .p4-v2-central-stat span{font-size:.8rem;color:#d8eeff}
-.p4-dashboard-v2 .p4-v2-central-columns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
-.p4-dashboard-v2 .p4-v2-central-column{border:1px solid #225a7f;border-radius:12px;background:#061d34;padding:13px;min-width:0}
-.p4-dashboard-v2 .p4-v2-central-column h3{font-size:.95rem;margin:0 0 6px}
-.p4-dashboard-v2 .p4-v2-central-column>p{font-size:.76rem;color:#a6c9e2;line-height:1.4;margin:0 0 10px}
+.p4-dashboard-v2 .p4-v2-central-panel{border-color:#24668e;padding:15px 18px;background:#071d34}
+.p4-dashboard-v2 .p4-v2-central-heading{margin-bottom:13px}
+.p4-dashboard-v2 .p4-v2-central-heading h2{font-size:1.08rem;margin:0}
+.p4-dashboard-v2 .p4-v2-central-toolbar{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.p4-dashboard-v2 .p4-v2-central-action{display:inline-flex;align-items:center;padding:8px 12px;border-radius:8px;border:1px solid #479acd;background:#126c9c;color:#fff;text-decoration:none;font-size:.8rem;font-weight:700;min-height:38px}
+.p4-dashboard-v2 .p4-v2-central-stats{display:flex;gap:8px;flex-wrap:wrap}
+.p4-dashboard-v2 .p4-v2-central-stat{display:inline-flex;align-items:center;gap:6px;border:1px solid #2b607f;border-radius:8px;padding:7px 9px;background:#092740;white-space:nowrap}
+.p4-dashboard-v2 .p4-v2-central-stat strong{font-size:.95rem;font-variant-numeric:tabular-nums}
+.p4-dashboard-v2 .p4-v2-central-stat span{font-size:.75rem;color:#c0dce9}
+.p4-dashboard-v2 .p4-v2-central-columns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.p4-dashboard-v2 .p4-v2-central-column{border:1px solid #225270;border-radius:10px;background:#061b30;padding:11px;min-width:0}
+.p4-dashboard-v2 .p4-v2-central-column-head{display:flex;align-items:baseline;justify-content:space-between;gap:7px;margin:0 0 8px}
+.p4-dashboard-v2 .p4-v2-central-column-head h3{font-size:.9rem;margin:0}
+.p4-dashboard-v2 .p4-v2-central-column-head small{font-size:.7rem;color:#88aec7;white-space:nowrap}
 .p4-dashboard-v2 .p4-v2-central-list{display:grid;gap:6px}
-.p4-dashboard-v2 .p4-v2-central-entry{padding:10px 11px;border:1px solid #225471;border-radius:8px;min-width:0}
-.p4-dashboard-v2 .p4-v2-central-entry-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-start;gap:7px;margin-bottom:5px}
-.p4-dashboard-v2 .p4-v2-central-entry-head a,.p4-dashboard-v2 .p4-v2-central-entry-head strong{color:#b6e9ff;text-decoration:none;font-size:.83rem}
-.p4-dashboard-v2 .p4-v2-central-entry-head span{color:#e5f6ff;font-size:.73rem;font-weight:700}
-.p4-dashboard-v2 .p4-v2-central-entry-title{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;font-size:.77rem;line-height:1.42;overflow-wrap:anywhere;margin-bottom:4px;color:#e6f2fb}
-.p4-dashboard-v2 .p4-v2-central-entry>small{display:block;font-size:.72rem;color:#a4c7df}
-.p4-dashboard-v2 .p4-v2-central-more{margin-top:8px;border:1px solid #275875;border-radius:8px}
-.p4-dashboard-v2 .p4-v2-central-more summary{cursor:pointer;color:#9fddfb;min-height:42px;padding:10px;font-weight:700;font-size:.78rem}
+.p4-dashboard-v2 .p4-v2-central-entry{border:1px solid #244d68;border-radius:7px;padding:9px 10px;min-width:0}
+.p4-dashboard-v2 .p4-v2-central-entry-head{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:4px}
+.p4-dashboard-v2 .p4-v2-central-entry-head a,.p4-dashboard-v2 .p4-v2-central-entry-head strong{color:#a4e5ff;text-decoration:none;font-size:.83rem;font-weight:720}
+.p4-dashboard-v2 .p4-v2-central-entry-head a:hover{text-decoration:underline}
+.p4-dashboard-v2 .p4-v2-central-entry-head a:focus-visible,.p4-dashboard-v2 .p4-v2-central-action:focus-visible{outline:2px solid #8be2ff;outline-offset:3px}
+.p4-dashboard-v2 .p4-v2-central-entry-status{font-size:.75rem;color:#c1dff1;white-space:nowrap}
+.p4-dashboard-v2 .p4-v2-central-entry-line{font-size:.79rem;line-height:1.4;color:#ebf5fd;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
+.p4-dashboard-v2 .p4-v2-central-entry-meta{font-size:.7rem;color:#9fc0d7;display:flex;flex-wrap:wrap;gap:10px;margin-top:3px}
+.p4-dashboard-v2 .p4-v2-central-more{margin-top:7px;border:1px solid #275875;border-radius:7px}
+.p4-dashboard-v2 .p4-v2-central-more summary{cursor:pointer;color:#a5ddf7;min-height:40px;padding:10px;font-weight:700;font-size:.78rem}
 .p4-dashboard-v2 .p4-v2-central-more summary:focus-visible{outline:2px solid #86dbff;outline-offset:2px}
 .p4-dashboard-v2 .p4-v2-central-more .p4-v2-open-label{display:none}
 .p4-dashboard-v2 .p4-v2-central-more[open] .p4-v2-open-label{display:inline}
 .p4-dashboard-v2 .p4-v2-central-more[open] .p4-v2-closed-label{display:none}
-.p4-dashboard-v2 .p4-v2-central-overflow{max-height:260px;overflow:auto;display:grid;gap:6px;padding:7px}
-.p4-dashboard-v2 .p4-v2-central-stages{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px}
-.p4-dashboard-v2 .p4-v2-central-stages span{border:1px solid #326583;border-radius:999px;padding:7px 10px;color:#beddf0;font-size:.74rem}
-.p4-dashboard-v2 .p4-v2-central-caption{margin:9px 0 0;color:#9ac3db;font-size:.72rem;line-height:1.5}
-@media(max-width:760px){.p4-dashboard-v2 .p4-v2-central-columns{grid-template-columns:1fr}.p4-dashboard-v2 .p4-v2-central-stats{grid-template-columns:1fr 1fr}}
+.p4-dashboard-v2 .p4-v2-central-overflow{max-height:240px;overflow:auto;display:grid;gap:5px;padding:7px}
+@media(max-width:790px){.p4-dashboard-v2 .p4-v2-central-heading{align-items:flex-start}.p4-dashboard-v2 .p4-v2-central-columns{grid-template-columns:1fr}}
+@media(max-width:440px){.p4-dashboard-v2 .p4-v2-central-toolbar{width:100%;justify-content:space-between}.p4-dashboard-v2 .p4-v2-central-stats{width:100%}.p4-dashboard-v2 .p4-v2-central-stat{flex:1}.p4-dashboard-v2 .p4-v2-central-entry-line{-webkit-line-clamp:2}}
 
 @media(max-width:1050px){.p4-dashboard-v2 .p4-v2-metrics{grid-template-columns:repeat(3,minmax(140px,1fr))}}
 @media(max-width:690px){.p4-dashboard-v2 .p4-v2-metrics{grid-template-columns:repeat(2,minmax(130px,1fr))}.p4-dashboard-v2 .p4-v2-activity-row{grid-template-columns:1fr;gap:4px}}
@@ -171,56 +173,56 @@ $ready = !empty($p4ScopeReady) && !empty($p4OperationsReadable)
         </section>
         <section class="p4-v2-panel p4-v2-central-panel" aria-labelledby="p4-central-title">
             <div class="p4-v2-heading p4-v2-central-heading">
-                <div><span class="eyebrow">RELACIÓN LOGÍSTICA · P4 ↔ ALMACÉN CENTRAL</span>
-                    <h2 id="p4-central-title">Solicitudes al Almacén Central</h2></div>
-                <?php if (sindesg_can('requests.manage') &&
-                    sindesg_role_action_allowed('requests','new','GET',(array)sindesg_user())): ?>
-                    <a class="p4-v2-central-action" href="<?= e(sindesg_url('?module=requests&action=new')) ?>">+ Nueva solicitud a Central</a>
-                <?php endif; ?>
-            </div>
-            <div class="p4-v2-central-stats">
-                <div class="p4-v2-central-stat"><strong><?= e(sindesg_units((int)$totals['requests_waiting_central'])) ?></strong><span>Solicitudes enviadas o en revisión por Central</span></div>
-                <div class="p4-v2-central-stat"><strong><?= e(sindesg_units((int)$totals['transfers_to_receive'])) ?></strong><span>Transferencias despachadas pendientes de recibir en P4</span></div>
+                <h2 id="p4-central-title">Solicitudes al Almacén Central</h2>
+                <div class="p4-v2-central-toolbar">
+                    <div class="p4-v2-central-stats" aria-label="Pendientes entre P4 y Central">
+                        <span class="p4-v2-central-stat">
+                            <strong><?= e(sindesg_units((int)$totals['requests_waiting_central'])) ?></strong>
+                            <span>En Central</span>
+                        </span>
+                        <span class="p4-v2-central-stat">
+                            <strong><?= e(sindesg_units((int)$totals['transfers_to_receive'])) ?></strong>
+                            <span>Por recibir</span>
+                        </span>
+                    </div>
+                    <?php if (sindesg_can('requests.manage') &&
+                        sindesg_role_action_allowed('requests','new','GET',(array)sindesg_user())): ?>
+                        <a class="p4-v2-central-action" href="<?= e(sindesg_url('?module=requests&action=new')) ?>">+ Nueva solicitud</a>
+                    <?php endif; ?>
+                </div>
             </div>
             <div class="p4-v2-central-columns">
                 <div class="p4-v2-central-column">
-                    <h3>Solicitudes del P4 a Central</h3>
-                    <p>Documentos que el P4 envió para revisión, aprobación y atención.</p>
+                    <div class="p4-v2-central-column-head"><h3>Solicitudes</h3><small>P4 → Central</small></div>
                     <div class="p4-v2-central-list">
                         <?php $rows = $centralRequestPreview; require __DIR__.'/partials/p4-central-log.php'; ?>
-                        <?php if (!$centralRequestPreview): ?><p class="p4-v2-note">No hay solicitudes registradas en tus almacenes.</p><?php endif; ?>
+                        <?php if (!$centralRequestPreview): ?><p class="p4-v2-note">Sin solicitudes.</p><?php endif; ?>
                     </div>
                     <?php if ($centralRequestExtra): ?>
                         <details class="p4-v2-central-more"><summary>
-                            <span class="p4-v2-closed-label">Ver <?= e(count($centralRequestExtra)) ?> solicitudes más ↓</span>
-                            <span class="p4-v2-open-label">Ocultar solicitudes adicionales ↑</span>
+                            <span class="p4-v2-closed-label">Ver <?= e(count($centralRequestExtra)) ?> más ↓</span>
+                            <span class="p4-v2-open-label">Mostrar menos ↑</span>
                         </summary><div class="p4-v2-central-overflow">
                             <?php $rows = $centralRequestExtra; require __DIR__.'/partials/p4-central-log.php'; ?>
                         </div></details>
                     <?php endif; ?>
                 </div>
                 <div class="p4-v2-central-column">
-                    <h3>Despachos de Central hacia el P4</h3>
-                    <p>Preparación, despacho, traslado y recepción de mercancía.</p>
+                    <div class="p4-v2-central-column-head"><h3>Despachos</h3><small>Central → P4</small></div>
                     <div class="p4-v2-central-list">
                         <?php $rows = $centralTransferPreview; require __DIR__.'/partials/p4-central-log.php'; ?>
-                        <?php if (!$centralTransferPreview): ?><p class="p4-v2-note">No hay transferencias registradas para tus almacenes.</p><?php endif; ?>
+                        <?php if (!$centralTransferPreview): ?><p class="p4-v2-note">Sin despachos.</p><?php endif; ?>
                     </div>
                     <?php if ($centralTransferExtra): ?>
                         <details class="p4-v2-central-more"><summary>
-                            <span class="p4-v2-closed-label">Ver <?= e(count($centralTransferExtra)) ?> transferencias más ↓</span>
-                            <span class="p4-v2-open-label">Ocultar transferencias adicionales ↑</span>
+                            <span class="p4-v2-closed-label">Ver <?= e(count($centralTransferExtra)) ?> más ↓</span>
+                            <span class="p4-v2-open-label">Mostrar menos ↑</span>
                         </summary><div class="p4-v2-central-overflow">
                             <?php $rows = $centralTransferExtra; require __DIR__.'/partials/p4-central-log.php'; ?>
                         </div></details>
                     <?php endif; ?>
                 </div>
             </div>
-            <div class="p4-v2-central-stages" aria-label="Etapas generales de relación P4 y Central">
-                <span>1 · Solicitud del P4</span><span>2 · Revisión y aprobación Central</span>
-                <span>3 · Despacho hacia P4</span><span>4 · Recepción en P4</span>
-            </div>
-            <p class="p4-v2-central-caption">Solicitudes y transferencias se muestran por separado y con sus códigos originales; una transferencia no implica asociación automática con una solicitud determinada.</p>
         </section>
         <section class="p4-v2-panel">
             <div class="p4-v2-heading">
