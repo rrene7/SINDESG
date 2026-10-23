@@ -583,10 +583,19 @@ final class DistributionRepository
             $this->lockWarehouse($transitId);
 
             $items = $this->lockedItems($distributionId);
+            // La existencia debe cubrir la SUMA de las asignaciones nominales
+            // de cada variante, no cada funcionario de forma independiente.
+            $requiredByVariant = [];
             foreach ($items as $item) {
-                if ($this->stock($sourceId, (int) $item['product_variant_id']) + 0.000001 < (float) $item['quantity']) {
+                $variantId = (int) $item['product_variant_id'];
+                $requiredByVariant[$variantId] = ($requiredByVariant[$variantId] ?? 0.0)
+                    + (float) $item['quantity'];
+            }
+            foreach ($requiredByVariant as $variantId => $required) {
+                if ($this->stock($sourceId, (int) $variantId) + 0.000001 < $required) {
                     throw new RuntimeException(
-                        'El stock del Almacén Central cambió y ya no permite despachar toda la transferencia.'
+                        'El stock total del Almacén Central es insuficiente para despachar '
+                        . 'todos los funcionarios de la misma talla.'
                     );
                 }
             }

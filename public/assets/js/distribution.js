@@ -108,3 +108,147 @@
         });
     });
 })();
+
+
+/* Distribución: resumen por artículo y talla, con asignaciones nominales
+ * existentes. Validar solo calcula: no realiza solicitudes HTTP ni POST. */
+(() => {
+    const init = () => {
+        const form = document.querySelector('[data-distribution-grouped]');
+        if (!form) return;
+        const groups = Array.from(form.querySelectorAll('[data-transfer-group]'));
+        const allRows = Array.from(form.querySelectorAll('[data-transfer-item]'));
+        const summary = form.querySelector('[data-transfer-message]');
+        const selectedGlobal = form.querySelector('[data-transfer-global-selected]');
+        const validateButton = form.querySelector('[data-transfer-validate]');
+        let validated = false;
+        const amount = (raw) => {
+            if (String(raw).trim() === '') return NaN;
+            const number = Number(raw);
+            return Number.isFinite(number) && number >= 0 ? number : NaN;
+        };
+        const display = value => Number(value.toFixed(3)).toLocaleString('es-PA', {
+            maximumFractionDigits: 3
+        });
+        const forGroup = group => allRows.filter(
+            row => row.dataset.variantId === group.dataset.variantId
+        );
+        const sum = rows => rows.reduce((total, row) => total + (amount(row.value) || 0), 0);
+        const invalidate = () => {
+            validated = false;
+            if (summary) summary.dataset.validated = 'no';
+        };
+        const update = () => {
+            let total = 0;
+            groups.forEach(group => {
+                const rows = forGroup(group);
+                const selected = sum(rows);
+                const persons = rows.filter(row => amount(row.value) > 0).length;
+                const message = group.querySelector('[data-transfer-selected]');
+                if (message) message.textContent = display(selected) + ' de '
+                    + display(amount(group.dataset.pending)) + ' unidades · '
+                    + persons + ' de ' + rows.length + ' destinatarios';
+                total += selected;
+            });
+            if (selectedGlobal) selectedGlobal.textContent = display(total);
+            if (summary) summary.textContent = display(total)
+                + ' unidades seleccionadas. Validar no guarda ninguna transferencia.';
+            return total;
+        };
+        const apply = (group) => {
+            const field = group.querySelector('[data-transfer-group-quantity]');
+            const desired = amount(field.value);
+            if (!Number.isFinite(desired)) {
+                invalidate();
+                if (summary) summary.textContent = 'Introduzca una cantidad numérica válida.';
+                return;
+            }
+            const limit = Math.min(amount(group.dataset.pending), amount(group.dataset.stock));
+            let remaining = Math.min(desired, limit);
+            forGroup(group).forEach(row => {
+                const chosen = Math.min(amount(row.dataset.max), Math.max(0, remaining));
+                row.value = chosen.toFixed(3);
+                remaining = Math.max(0, remaining - chosen);
+            });
+            invalidate();
+            update();
+            if (desired > limit && summary) {
+                summary.textContent = 'La talla supera el límite visible de saldo/stock. '
+                    + 'Se distribuyeron como máximo ' + display(limit)
+                    + ' unidades; corrija la cantidad solicitada y valide nuevamente.';
+            }
+        };
+        groups.forEach(group => {
+            const field = group.querySelector('[data-transfer-group-quantity]');
+            const applyButton = group.querySelector('[data-transfer-apply]');
+            if (field) {
+                field.addEventListener('change', () => apply(group));
+                field.addEventListener('input', invalidate);
+            }
+            if (applyButton) applyButton.addEventListener('click', () => apply(group));
+            forGroup(group).forEach(row => row.addEventListener('input', () => {
+                const groupTotal = sum(forGroup(group));
+                if (field) field.value = groupTotal.toFixed(3);
+                invalidate();
+                update();
+            }));
+        });
+        const validate = () => {
+            let approved = 0;
+            let hasError = false;
+            for (const group of groups) {
+                const requested = amount(group.querySelector('[data-transfer-group-quantity]').value);
+                const pending = amount(group.dataset.pending);
+                const stock = amount(group.dataset.stock);
+                const rows = forGroup(group);
+                const total = sum(rows);
+                if (!Number.isFinite(requested) || !Number.isFinite(stock)
+                    || !Number.isFinite(pending) || requested > Math.min(stock, pending) + 0.000001
+                    || Math.abs(requested - total) > 0.000001
+                    || rows.some(row => {
+                        const q = amount(row.value);
+                        return !Number.isFinite(q) || q > amount(row.dataset.max) + 0.000001;
+                    })) {
+                    hasError = true;
+                }
+                approved += total;
+            }
+            if (hasError || approved <= 0) {
+                validated = false;
+                if (summary) summary.textContent = hasError
+                    ? 'La cantidad de una talla no coincide con sus destinatarios, supera el saldo o el stock visible. Corrija y valide nuevamente.'
+                    : 'No hay cantidades seleccionadas. Nada se preparó; elija al menos una unidad.';
+                return false;
+            }
+            validated = true;
+            if (summary) {
+                summary.dataset.validated = 'yes';
+                summary.textContent = 'VALIDACIÓN CORRECTA SIN GUARDAR: '
+                    + display(approved) + ' unidades asignadas nominalmente. '
+                    + 'Preparar la transferencia requiere una confirmación adicional.';
+            }
+            return true;
+        };
+        if (validateButton) validateButton.addEventListener('click', validate);
+        form.addEventListener('submit', event => {
+            if (!validated) {
+                event.preventDefault();
+                if (summary) summary.textContent = 'Primero pulse «Validar sin guardar». No se ha creado ninguna transferencia.';
+                return;
+            }
+            if (!validate()) {
+                event.preventDefault();
+                return;
+            }
+            if (!window.confirm('Preparar transferencia con '
+                + (selectedGlobal ? selectedGlobal.textContent : 'las cantidades indicadas')
+                + ' unidades nominales. Esto crea un documento en estado preparado; NO despacha inventario. ¿Continuar?')) {
+                event.preventDefault();
+            }
+        });
+        update();
+    };
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init, {once: true});
+    } else init();
+})();
