@@ -59,8 +59,8 @@ foreach ([
     'Comprometido',
     'institucionales',
     'Solicitudes y distribución',
-    'listas para distribuir',
-    'en tránsito',
+    'Listas para distribuir',
+    'En tránsito',
     'P4 activos',
 ] as $fragment) {
     if (!str_contains($view, $fragment)) {
