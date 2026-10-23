@@ -26,6 +26,7 @@ CREATE TABLE IF NOT EXISTS p4_incident_cases (
  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
  PRIMARY KEY(id),
  UNIQUE KEY uq_p4_incident_case_code(case_code),
+ UNIQUE KEY uq_p4_incident_single_adjustment(linked_adjustment_id),
  KEY idx_p4_incident_source(delivery_item_id, status),
  KEY idx_p4_incident_queue(status, created_at),
  KEY idx_p4_incident_scope(warehouse_id, created_at),
