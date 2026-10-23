@@ -21,7 +21,10 @@ $statusLabels = ['draft' => 'Borrador', 'confirmed' => 'Confirmado', 'cancelled'
         <h1>Cambios, devoluciones, bajas y ajustes</h1>
         <p>Registre incidencias y prepare borradores con documento de soporte. Solo otro usuario ADMIN podrá confirmar movimientos compensatorios en el kardex.</p>
     </div>
-    <a class="primary-button" href="<?= e(sindesg_url('?module=adjustments&action=new')) ?>">+ Nuevo ajuste</a>
+    <div class="adjustment-section-head">
+        <a class="secondary-button" href="<?= e(sindesg_url('?module=incidents')) ?>">Incidencias reportadas por P4 →</a>
+        <a class="primary-button" href="<?= e(sindesg_url('?module=adjustments&action=new')) ?>">+ Nuevo ajuste</a>
+    </div>
 </section>
 
 <section class="adjustment-stats">

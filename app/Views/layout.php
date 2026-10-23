@@ -40,6 +40,9 @@ $authUser = sindesg_user();
     <?php if ($currentModule === 'deliveries' && $currentAction === 'nominal-report'): ?>
         <link rel="stylesheet" href="<?= e(sindesg_asset('css/nominal-report.css')) ?>">
     <?php endif; ?>
+    <?php if ($currentModule === 'incidents'): ?>
+        <link rel="stylesheet" href="<?= e(sindesg_asset('css/incidents.css')) ?>">
+    <?php endif; ?>
     <?php if ($currentModule === 'adjustments'): ?>
         <link rel="stylesheet" href="<?= e(sindesg_asset('css/adjustments.css')) ?>">
     <?php endif; ?>
@@ -102,7 +105,7 @@ $authUser = sindesg_user();
     </nav>
 
     <div class="more-menu" data-more-menu hidden>
-        <?php foreach (['production', 'deliveries', 'adjustments', 'warehouses', 'people', 'migration', 'audit', 'admin'] as $navKey): ?>
+        <?php foreach (['production', 'deliveries', 'incidents', 'adjustments', 'warehouses', 'people', 'migration', 'audit', 'admin'] as $navKey): ?>
             <?php if (sindesg_can(sindesg_permission_for($navKey, 'index', 'GET') ?? 'dashboard.view') && sindesg_role_action_allowed($navKey, 'index', 'GET', (array) $authUser)): ?>
                 <a href="<?= e(sindesg_url('?module=' . $navKey)) ?>">
                     <span class="mini-icon"><?= e($modules[$navKey]['icon']) ?></span>
