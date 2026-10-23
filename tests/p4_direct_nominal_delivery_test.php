@@ -90,6 +90,7 @@ $p4=['role_codes'=>['P4']];
 $central=['role_codes'=>['CENTRAL']];
 $viewer=['role_codes'=>['VIEWER']];
 $dual=['role_codes'=>['CENTRAL','P4']];
+$admin=['role_codes'=>['ADMIN']];
 $check(sindesg_permission_for('deliveries','deliver-now','POST') === 'deliveries.manage',
     'La entrega directa debe conservar permiso RBAC deliveries.manage.');
 $check(sindesg_role_action_allowed('deliveries','deliver-now','POST',$p4),
@@ -99,6 +100,7 @@ foreach ([
     ['deliveries','deliver-now','POST',$central],
     ['deliveries','deliver-now','POST',$viewer],
     ['deliveries','deliver-now','POST',$dual],
+    ['deliveries','deliver-now','POST',$admin],
     ['deliveries','add-item','POST',$p4],
     ['deliveries','cancel','POST',$p4],
 ] as [$module,$action,$method,$user]) {
