@@ -213,6 +213,15 @@ function sindesg_permission_for(string $module, string $action = 'index', string
         return 'dashboard.view';
     }
 
+    // Institutional incident review remains separate from P4 presential intake.
+    if ($module === 'incidents') {
+        $roles = (array) (sindesg_user()['role_codes'] ?? []);
+        $institutional = in_array('CENTRAL', $roles, true) || in_array('ADMIN', $roles, true);
+        return strtoupper($method) === 'POST'
+            ? ($institutional ? 'adjustments.manage' : 'deliveries.manage')
+            : ($institutional ? 'adjustments.view' : 'deliveries.view');
+    }
+
     if ($module === 'admin') {
         return 'admin.manage';
     }
@@ -318,6 +327,25 @@ function sindesg_role_action_allowed(string $module, string $action, string $met
             && in_array('P4', $roles, true)
             && !in_array('ADMIN', $roles, true)
             && !in_array('CENTRAL', $roles, true);
+    }
+
+    // P4 may register only; Central reviews; ADMIN resolves after stock
+    // adjustments are independently authorized in the existing module.
+    if ($module === 'incidents') {
+        $p4Only = in_array('P4', $roles, true)
+            && !in_array('CENTRAL', $roles, true)
+            && !in_array('ADMIN', $roles, true);
+        $institutional = in_array('CENTRAL', $roles, true) || in_array('ADMIN', $roles, true);
+        if (strtoupper($method) === 'GET') {
+            return ($action === 'new' && $p4Only)
+                || (in_array($action, ['index', 'show'], true) && ($p4Only || $institutional));
+        }
+        return strtoupper($method) === 'POST' && (
+            ($action === 'save' && $p4Only)
+            || ($action === 'review' && $institutional)
+            || (in_array($action, ['resolve', 'reject'], true)
+                && in_array('ADMIN', $roles, true))
+        );
     }
 
     // La corrección de un rechazo es excepcional: exclusivamente ADMIN.

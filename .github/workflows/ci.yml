@@ -291,6 +291,9 @@ jobs:
       - name: Asset cache busting test
         run: php tests/asset_cache_busting_test.php
 
+      - name: P4 incident intake, permissions, and review
+        run: php tests/p4_incident_intake_test.php
+
       - name: Adjustments schema test
         run: php tests/adjustments_schema_test.php
 
@@ -494,6 +497,12 @@ jobs:
           php tests/linux_runtime_paths_test.php
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           php tests/deployment_logic_test.php
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: P4 presential incident intake on Windows
+        shell: pwsh
+        run: |
+          php tests/p4_incident_intake_test.php
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: P4 direct signed delivery on Windows

@@ -1,0 +1,1 @@
+<section class="incident-panel"><h1>Incidencias de P4 todavía no habilitadas</h1><p><?= e($incidentError ?? 'Se requiere habilitación administrativa.') ?></p><a href="<?= e(sindesg_url()) ?>">Volver al Dashboard</a></section>

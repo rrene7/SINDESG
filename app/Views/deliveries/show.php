@@ -283,10 +283,13 @@ $totalQuantity = array_sum(array_map(
                             </td>
                         <?php elseif ($delivery['status'] === 'confirmed'): ?>
                             <td>
-                                <a class="delivery-link"
-                                   href="<?= e(sindesg_url('?module=adjustments&action=new&source_delivery_item_id=' . (int) $item['id'])) ?>">
-                                    Devolver / cambiar
-                                </a>
+                                <?php if ($deliveryP4Only): ?>
+                                    <a class="delivery-link"
+                                       href="<?= e(sindesg_url('?module=incidents&action=new&delivery_item_id=' . (int) $item['id'])) ?>">Gestionar devolución / incidencia</a>
+                                <?php else: ?>
+                                    <a class="delivery-link"
+                                       href="<?= e(sindesg_url('?module=adjustments&action=new&source_delivery_item_id=' . (int) $item['id'])) ?>">Devolver / cambiar</a>
+                                <?php endif; ?>
                             </td>
                         <?php endif; ?>
                     </tr>

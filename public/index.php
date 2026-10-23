@@ -10,6 +10,7 @@ use App\Controllers\RequestsController;
 use App\Controllers\DistributionController;
 use App\Controllers\DeliveryController;
 use App\Controllers\AdjustmentController;
+use App\Controllers\P4IncidentController;
 use App\Controllers\ReportsController;
 use App\Controllers\AuthController;
 use App\Controllers\ProfileController;
@@ -64,6 +65,13 @@ $modules = [
         'icon' => 'DI',
         'phase' => 'Fase 9',
         'description' => 'Entrega final al funcionario y conservación del historial de dotación.',
+    ],
+    'incidents' => [
+        'label' => 'Incidencias de dotación',
+        'short' => 'Incidencias',
+        'icon' => 'ID',
+        'phase' => 'Fase 15 P4',
+        'description' => 'Recepción presencial y revisión de devoluciones, cambios o deterioros.',
     ],
     'adjustments' => [
         'label' => 'Ajustes y devoluciones',
@@ -468,6 +476,18 @@ if ($currentModule === 'dashboard'
             $_SERVER['REQUEST_METHOD'] ?? 'GET'
         );
 
+        $pageTitle = $result['title'];
+        $contentView = $result['view'];
+        extract($result['data'], EXTR_SKIP);
+    }
+} elseif ($currentModule === 'incidents') {
+    if (!$health['sindesg']['ok']) {
+        $pageTitle = 'Incidencias P4';
+        $incidentError = 'No existe conexión con la base SINDESG.';
+        $contentView = dirname(__DIR__) . '/app/Views/incidents/unavailable.php';
+    } else {
+        $controller = new P4IncidentController($database);
+        $result = $controller->handle($currentAction, $_GET, $_POST, $currentMethod);
         $pageTitle = $result['title'];
         $contentView = $result['view'];
         extract($result['data'], EXTR_SKIP);
