@@ -32,6 +32,9 @@ final class P4OperationalSummary
                          WHERE i.request_id=r.id) AS total_quantity,
                         (SELECT COUNT(*) FROM service_request_items i
                          WHERE i.request_id=r.id) AS item_count,
+                        (SELECT COUNT(DISTINCT v.product_id) FROM service_request_items i
+                         JOIN product_variants v ON v.id=i.product_variant_id
+                         WHERE i.request_id=r.id) AS product_count,
                         (SELECT p.name FROM service_request_items i
                          JOIN product_variants v ON v.id=i.product_variant_id
                          JOIN products p ON p.id=v.product_id
@@ -52,6 +55,9 @@ final class P4OperationalSummary
                          WHERE i.distribution_id=d.id) AS total_quantity,
                         (SELECT COUNT(*) FROM distribution_items i
                          WHERE i.distribution_id=d.id) AS item_count,
+                        (SELECT COUNT(DISTINCT v.product_id) FROM distribution_items i
+                         JOIN product_variants v ON v.id=i.product_variant_id
+                         WHERE i.distribution_id=d.id) AS product_count,
                         (SELECT p.name FROM distribution_items i
                          JOIN product_variants v ON v.id=i.product_variant_id
                          JOIN products p ON p.id=v.product_id

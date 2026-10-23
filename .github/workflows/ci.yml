@@ -115,6 +115,9 @@ jobs:
       - name: P4 Central minimal card and concise labels
         run: php tests/p4_central_card_minimal_ui_test.php
 
+      - name: P4 Central boots product aggregation and mixed documents
+        run: php tests/p4_central_card_product_aggregation_test.php
+
       - name: Main P4 warehouse scope foundation test
         run: php tests/p4_warehouse_scope_foundation_test.php
 
@@ -496,6 +499,12 @@ jobs:
           php-version: '8.2'
           extensions: pdo_sqlite, sqlite3, mbstring, iconv
           coverage: none
+
+      - name: P4 Central boots product names on Windows
+        shell: pwsh
+        run: |
+          php tests/p4_central_card_product_aggregation_test.php
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: P4 minimal Central card on Windows
         shell: pwsh

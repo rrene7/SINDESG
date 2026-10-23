@@ -19,7 +19,7 @@ foreach ($rows as $record):
         <?php else: ?><strong><?= e($code) ?></strong><?php endif; ?>
         <span class="p4-v2-central-entry-status"><?= e($status) ?></span>
     </div>
-    <div class="p4-v2-central-entry-line" title="<?= e((string)($record['title'] ?? '')) ?>"><?= e($summary) ?></div>
+    <div class="p4-v2-central-entry-line" title="<?= e('Detalle completo del documento '.$code) ?>"><?= e($summary) ?></div>
     <div class="p4-v2-central-entry-meta">
         <?php if ($timestamp !== false): ?>
             <time datetime="<?= e($datetime) ?>" title="<?= e(date('d/m/Y H:i', $timestamp)) ?>"><?= e(date('d/m/Y', $timestamp)) ?></time>
