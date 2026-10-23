@@ -143,7 +143,6 @@ $ready = !empty($p4ScopeReady) && !empty($p4OperationsReadable)
         <div>
             <span class="eyebrow">PANEL LOGÍSTICO · P4</span>
             <h1><?= e(count($warehouses) === 1 ? reset($warehouses) : 'Mis almacenes autorizados') ?></h1>
-            <p>Conoce qué falta por atender y qué hay físicamente en tu almacén.</p>
         </div>
         <nav class="p4-v2-actions" aria-label="Acciones P4">
             <?php if ($ready && sindesg_can('requests.manage')
@@ -167,9 +166,9 @@ $ready = !empty($p4ScopeReady) && !empty($p4OperationsReadable)
         </section>
     <?php else: ?>
         <section class="p4-v2-metrics" aria-label="Indicadores reales de mi almacén">
-            <article class="p4-v2-metric"><strong><?= e(sindesg_units((int)$totals['beneficiaries_pending'])) ?></strong><span>Funcionarios pendientes</span><small>Con prendas recibidas aún sin entregar</small></article>
-            <article class="p4-v2-metric"><strong><?= e(sindesg_units((int)$totals['deliveries_confirmed'])) ?></strong><span>Entregas confirmadas</span><small>Total histórico de mis almacenes</small></article>
-            <article class="p4-v2-metric"><strong><?= e(\App\Services\P4QuantityDisplay::units((float)$totals['physical_units'])) ?></strong><span>Unidades físicas</span><small>Unidades, no miles · Incluye dotación reservada</small></article>
+            <article class="p4-v2-metric" title="Funcionarios con dotación ya recibida, todavía pendiente de entregar"><strong><?= e(sindesg_units((int)$totals['beneficiaries_pending'])) ?></strong><span>Funcionarios pendientes</span></article>
+            <article class="p4-v2-metric" title="Total histórico de entregas confirmadas en los P4 asignados"><strong><?= e(sindesg_units((int)$totals['deliveries_confirmed'])) ?></strong><span>Entregas confirmadas</span></article>
+            <article class="p4-v2-metric" title="Saldo físico de inventario. Incluye unidades reservadas; no equivale a disponibilidad libre."><strong><?= e(\App\Services\P4QuantityDisplay::units((float)$totals['physical_units'])) ?></strong><span>Unidades físicas</span><small>Incluye reservas</small></article>
         </section>
         <section class="p4-v2-panel p4-v2-central-panel" aria-labelledby="p4-central-title">
             <div class="p4-v2-heading p4-v2-central-heading">
@@ -226,8 +225,8 @@ $ready = !empty($p4ScopeReady) && !empty($p4OperationsReadable)
         </section>
         <section class="p4-v2-panel">
             <div class="p4-v2-heading">
-                <div><span class="eyebrow">EXISTENCIAS FÍSICAS</span><h2>Inventario por artículo y talla</h2></div>
-                <small>Saldo de movimientos de inventario, no disponibilidad libre</small>
+                <div><h2>Inventario por artículo y talla</h2></div>
+                <small>Saldo físico · no disponible libre</small>
             </div>
             <div class="p4-v2-inventory">
             <?php foreach (($p4DashboardData ?? []) as $warehouseId => $data): ?>
