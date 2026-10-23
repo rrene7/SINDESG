@@ -5,6 +5,7 @@ namespace App\Controllers;
 
 use App\Repositories\DistributionRepository;
 use App\Services\DistributionService;
+use App\Services\DistributionPreparationGroups;
 use App\Services\RrhhEmployeeDirectory;
 use App\Support\Database;
 use InvalidArgumentException;
@@ -115,6 +116,7 @@ final class DistributionController
                 'data' => [
                     'distributionRequest' => $request,
                     'distributionRequestItems' => $items,
+                    'distributionGroups' => DistributionPreparationGroups::groups($items),
                     'employeeSearchUrl' => sindesg_url('public/api/employees.php'),
                 ],
             ];

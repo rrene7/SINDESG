@@ -234,6 +234,11 @@ jobs:
       - name: Distribution logic test
         run: php tests/distribution_logic_test.php
 
+      - name: Grouped nominal transfer preparation
+        run: |
+          php tests/distribution_grouped_preparation_test.php
+          node --check public/assets/js/distribution.js
+
       - name: Distribution accounting test
         run: php tests/distribution_accounting_test.php
 
@@ -499,6 +504,12 @@ jobs:
           php tests/central_grouped_approval_primary_test.php
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           php tests/central_decision_safety_test.php
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Grouped distribution preparation on Windows
+        shell: pwsh
+        run: |
+          php tests/distribution_grouped_preparation_test.php
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: P4 requests and Central role separation on Windows
