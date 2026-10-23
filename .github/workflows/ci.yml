@@ -76,6 +76,9 @@ jobs:
       - name: Dynamic dashboard test
         run: php tests/dashboard_dynamic_test.php
 
+      - name: Dashboard recent receipts show actual products
+        run: php tests/dashboard_recent_receipt_product_test.php
+
       - name: Admin-only Dashboard lower module tiles
         run: php tests/dashboard_admin_module_tiles_test.php
 
@@ -465,6 +468,12 @@ jobs:
           php-version: '8.2'
           extensions: pdo_sqlite, sqlite3, mbstring, iconv
           coverage: none
+
+      - name: Dashboard recent receipt products on Windows
+        shell: pwsh
+        run: |
+          php tests/dashboard_recent_receipt_product_test.php
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Receipt product identification on Windows
         shell: pwsh

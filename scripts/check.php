@@ -204,6 +204,7 @@ $required = [
     'tests/production_logic_test.php',
     'tests/rrhh_receiver_test.php',
     'tests/dashboard_dynamic_test.php',
+    'tests/dashboard_recent_receipt_product_test.php',
     'tests/dashboard_admin_module_tiles_test.php',
     'app/Services/DashboardModuleTiles.php',
     'tests/dashboard_recent_products_test.php',

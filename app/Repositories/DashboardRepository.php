@@ -520,10 +520,17 @@ final class DashboardRepository
                 r.status,
                 r.received_at,
                 l.lot_code,
-                COALESCE(SUM(ri.quantity), 0) AS total_quantity
+                COALESCE(SUM(ri.quantity), 0) AS total_quantity,
+                COUNT(DISTINCT p.id) AS product_count,
+                CASE
+                    WHEN COUNT(DISTINCT p.id) = 1 THEN MAX(p.name)
+                    ELSE NULL
+                END AS product_name
             FROM receipts r
             INNER JOIN lots l ON l.receipt_id = r.id
             LEFT JOIN receipt_items ri ON ri.receipt_id = r.id
+            LEFT JOIN product_variants pv ON pv.id = ri.product_variant_id
+            LEFT JOIN products p ON p.id = pv.product_id
             GROUP BY r.id, l.lot_code
             ORDER BY r.received_at DESC, r.id DESC
             LIMIT ' . $limit)->fetchAll();
