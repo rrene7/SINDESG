@@ -46,7 +46,7 @@ if (!str_contains($bootstrap, "'secure' => (bool) (\$app['session_secure'] ?? fa
 
 foreach ([
     "'environment' => 'production'",
-    "'base_url' => '/SINDESG'",
+    "'base_url' => 'auto'",
     "'session_secure' => true",
 ] as $fragment) {
     if (!str_contains($localExample, $fragment)) {
@@ -80,6 +80,7 @@ foreach ([
 foreach ([
     "'/config/local.php'",
     "'session_secure'",
+    "'nginx-sindesg.conf.example'",
     "environment === 'production'",
 ] as $fragment) {
     if (!str_contains($readiness, $fragment)) {

@@ -32,13 +32,22 @@ function Get-HttpStatus([string]$Url) {
     }
 }
 
-# Positive control prevents false success when all routes are blocked.
-$publicAsset = "$base/public/assets/css/app.css"
-$assetStatus = Get-HttpStatus -Url $publicAsset
-if ($assetStatus -ne 200) {
-    throw "Recurso público no disponible (HTTP $assetStatus): $publicAsset"
+# La raíz HTTP de Linux es .../public; en XAMPP es el directorio del proyecto.
+# Aceptar uno de esos formatos sin relajar ninguna comprobación de seguridad.
+$assetCandidates = @(
+    "$base/assets/css/app.css",
+    "$base/public/assets/css/app.css"
+)
+$validAssets = @()
+foreach ($candidate in $assetCandidates) {
+    if ((Get-HttpStatus -Url $candidate) -eq 200) {
+        $validAssets += $candidate
+    }
 }
-Write-Host "[OK] CSS público funciona sobre HTTPS (HTTP 200)." -ForegroundColor Green
+if ($validAssets.Count -ne 1) {
+    throw "Debe existir exactamente una ruta pública válida para CSS. Revisar DocumentRoot y exposición de /public: $($validAssets.Count)"
+}
+Write-Host "[OK] CSS público funciona sobre HTTPS: $($validAssets[0])" -ForegroundColor Green
 
 $privatePaths = @(
     'config/database.example.php',

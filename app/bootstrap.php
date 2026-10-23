@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 use App\Services\AuthService;
 use App\Support\Database;
+use App\Support\WebPaths;
 
 define('SINDESG_ROOT', dirname(__DIR__));
 
@@ -21,6 +22,15 @@ spl_autoload_register(static function (string $class): void {
 });
 
 $app = require SINDESG_ROOT . '/config/app.php';
+
+// El layout web se detecta desde el archivo PHP ejecutado, no por SO ni Host.
+// Windows: /SINDESG/index.php, recursos /SINDESG/public/assets/...
+// Linux: DocumentRoot .../public, /index.php, recursos /assets/...
+$webPaths = WebPaths::fromServer(
+    $_SERVER, SINDESG_ROOT, (string) ($app['base_url'] ?? 'auto')
+);
+$app['base_url'] = $webPaths->basePath;
+$app['public_document_root'] = $webPaths->publicDocumentRoot;
 
 /*
  | Las sesiones solo pertenecen al contexto web.
@@ -57,17 +67,16 @@ function sindesg_config(string $key, mixed $default = null): mixed
 
 function sindesg_url(string $path = ''): string
 {
-    $base = rtrim((string) sindesg_config('base_url', '/SINDESG'), '/');
-    $path = ltrim($path, '/');
-
-    return $path === '' ? $base . '/' : $base . '/' . $path;
+    global $webPaths;
+    return $webPaths->url($path);
 }
 
 function sindesg_asset(string $path): string
 {
-    $relative = 'public/assets/' . ltrim($path, '/');
-    $url = sindesg_url($relative);
-    $fullPath = SINDESG_ROOT . '/' . $relative;
+    global $webPaths;
+    $asset = ltrim($path, '/');
+    $url = $webPaths->asset($asset);
+    $fullPath = SINDESG_ROOT . '/public/assets/' . $asset;
 
     $version = is_file($fullPath)
         ? (string) filemtime($fullPath)
@@ -78,7 +87,8 @@ function sindesg_asset(string $path): string
 
 function sindesg_upload_url(string $path): string
 {
-    return sindesg_url('storage/uploads/' . ltrim($path, '/'));
+    global $webPaths;
+    return $webPaths->uploaded($path);
 }
 
 function e(mixed $value): string
