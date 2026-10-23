@@ -79,6 +79,11 @@ jobs:
       - name: Dynamic dashboard test
         run: php tests/dashboard_dynamic_test.php
 
+      - name: P4 nominal delivery direct signed workflow
+        run: |
+          php tests/p4_direct_nominal_delivery_test.php
+          node --check public/assets/js/deliveries.js
+
       - name: Paged institutional operational dashboard
         run: |
           php tests/dashboard_operational_feed_test.php
@@ -489,6 +494,12 @@ jobs:
           php tests/linux_runtime_paths_test.php
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           php tests/deployment_logic_test.php
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: P4 direct signed delivery on Windows
+        shell: pwsh
+        run: |
+          php tests/p4_direct_nominal_delivery_test.php
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Dashboard recent receipt products on Windows

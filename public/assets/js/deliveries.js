@@ -189,3 +189,74 @@
         });
     });
 })();
+
+
+// Entrega P4 simplificada: una sola pantalla, firma manuscrita y POST único.
+// Nunca confirmar con un lienzo vacío; no guardar la firma en almacenamiento local.
+(() => {
+    const form = document.querySelector('[data-p4-direct-signature]');
+    if (!form) return;
+    const canvas = form.querySelector('[data-p4-direct-canvas]');
+    const field = form.querySelector('[data-p4-direct-signature-value]');
+    const button = form.querySelector('[data-p4-direct-submit]');
+    const clear = form.querySelector('[data-p4-direct-clear]');
+    const ctx = canvas?.getContext('2d');
+    if (!canvas || !ctx || !field || !button || !clear) return;
+
+    let activePointer = null;
+    let drawn = false;
+    ctx.strokeStyle = '#142b47';
+    ctx.lineWidth = 2.7;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    const point = (event) => {
+        const rect = canvas.getBoundingClientRect();
+        return {
+            x: (event.clientX - rect.left) * canvas.width / rect.width,
+            y: (event.clientY - rect.top) * canvas.height / rect.height,
+        };
+    };
+    canvas.addEventListener('pointerdown', event => {
+        if (activePointer !== null) return;
+        activePointer = event.pointerId;
+        const p = point(event);
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y);
+        ctx.lineTo(p.x + 0.1, p.y + 0.1);
+        ctx.stroke();
+        drawn = true;
+        canvas.setPointerCapture(event.pointerId);
+    });
+    canvas.addEventListener('pointermove', event => {
+        if (event.pointerId !== activePointer) return;
+        const p = point(event);
+        ctx.lineTo(p.x, p.y);
+        ctx.stroke();
+    });
+    const end = event => {
+        if (event.pointerId === activePointer) activePointer = null;
+    };
+    canvas.addEventListener('pointerup', end);
+    canvas.addEventListener('pointercancel', end);
+    clear.addEventListener('click', () => {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawn = false;
+        field.value = '';
+    });
+    form.addEventListener('submit', event => {
+        if (!drawn) {
+            event.preventDefault();
+            window.alert('Capture la firma del funcionario receptor.');
+            return;
+        }
+        field.value = canvas.toDataURL('image/png');
+        if (field.value.length > 220000) {
+            event.preventDefault();
+            window.alert('La firma es demasiado grande. Límpiela e intente nuevamente.');
+            field.value = '';
+            return;
+        }
+        button.disabled = true; // Evita doble clic; servidor garantiza atomicidad.
+        button.textContent = 'Registrando entrega…';
+    });
+})();

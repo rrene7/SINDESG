@@ -49,6 +49,8 @@ $required = [
     'app/Controllers/RequestsController.php',
     'app/Controllers/DistributionController.php',
     'app/Controllers/DeliveryController.php',
+    'app/Views/deliveries/p4-quick.php',
+    'tests/p4_direct_nominal_delivery_test.php',
     'app/Controllers/AdjustmentController.php',
     'app/Controllers/ReportsController.php',
     'app/Controllers/AuthController.php',

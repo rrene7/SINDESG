@@ -390,12 +390,45 @@ SQL;
         return $row ?: null;
     }
 
+    /**
+     * A one-screen nominal P4 delivery is atomic: an invalid signature,
+     * stock shortage or race must not leave behind a draft.
+     * Reuses the existing row-locking draft and confirm logic.
+     *
+     * @param callable():int $createValidatedDraft
+     */
+    public function createAndConfirmNominal(callable $createValidatedDraft, array $evidence): int
+    {
+        if ($this->pdo->inTransaction()) {
+            throw new \RuntimeException('No se permite iniciar la entrega desde otra transacción.');
+        }
+        $this->pdo->beginTransaction();
+        try {
+            $deliveryId = $createValidatedDraft();
+            if ($deliveryId <= 0) {
+                throw new \RuntimeException('No fue posible crear la entrega nominal.');
+            }
+            $result = $this->confirm($deliveryId, $evidence);
+            if (!empty($result['already_confirmed'])) {
+                throw new \RuntimeException('Entrega inesperadamente confirmada con anterioridad.');
+            }
+            $this->pdo->commit();
+            return $deliveryId;
+        } catch (\Throwable $exception) {
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+            throw $exception;
+        }
+    }
+
     public function createDraft(
         array $data,
         ?array $linkedLine = null,
         ?float $linkedQuantity = null
     ): int {
-        $this->pdo->beginTransaction();
+        $ownsTransaction = !$this->pdo->inTransaction();
+        if ($ownsTransaction) $this->pdo->beginTransaction();
 
         try {
             // Lock the nominal parent line before any ordinary SELECT can create an
@@ -511,10 +544,10 @@ SQL;
                 ]);
             }
 
-            $this->pdo->commit();
+            if ($ownsTransaction) $this->pdo->commit();
             return $deliveryId;
         } catch (\Throwable $exception) {
-            if ($this->pdo->inTransaction()) {
+            if ($ownsTransaction && $this->pdo->inTransaction()) {
                 $this->pdo->rollBack();
             }
             throw $exception;
@@ -908,13 +941,14 @@ SQL;
 
     public function confirm(int $deliveryId, ?array $signatureEvidence = null): array
     {
-        $this->pdo->beginTransaction();
+        $ownsTransaction = !$this->pdo->inTransaction();
+        if ($ownsTransaction) $this->pdo->beginTransaction();
 
         try {
             $delivery = $this->lockDelivery($deliveryId);
 
             if ($delivery['status'] === 'confirmed') {
-                $this->pdo->commit();
+                if ($ownsTransaction) $this->pdo->commit();
                 return ['already_confirmed' => true];
             }
 
@@ -1119,10 +1153,10 @@ SQL;
                  WHERE id = :id'
             )->execute(['id' => $deliveryId]);
 
-            $this->pdo->commit();
+            if ($ownsTransaction) $this->pdo->commit();
             return ['already_confirmed' => false];
         } catch (\Throwable $exception) {
-            if ($this->pdo->inTransaction()) {
+            if ($ownsTransaction && $this->pdo->inTransaction()) {
                 $this->pdo->rollBack();
             }
             throw $exception;
