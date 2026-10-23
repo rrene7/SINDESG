@@ -76,6 +76,11 @@ jobs:
       - name: Dynamic dashboard test
         run: php tests/dashboard_dynamic_test.php
 
+      - name: Paged institutional operational dashboard
+        run: |
+          php tests/dashboard_operational_feed_test.php
+          node --check public/assets/js/app.js
+
       - name: Dashboard recent receipts show actual products
         run: php tests/dashboard_recent_receipt_product_test.php
 
@@ -468,6 +473,12 @@ jobs:
           php-version: '8.2'
           extensions: pdo_sqlite, sqlite3, mbstring, iconv
           coverage: none
+
+      - name: Institutional operational dashboard on Windows
+        shell: pwsh
+        run: |
+          php tests/dashboard_operational_feed_test.php
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Dashboard recent receipt products on Windows
         shell: pwsh

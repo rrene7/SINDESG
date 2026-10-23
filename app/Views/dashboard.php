@@ -268,46 +268,73 @@ foreach (($dashboardProductFocus ?? []) as $productId => $entry) {
             <a href="<?= e(sindesg_url('?module=requests')) ?>">Ver solicitudes →</a>
         </div>
 
-        <div class="dashboard-ops-summary">
-            <span><strong><?= e($dashboardOperationalSummary['requests_pending_review']) ?></strong><small>por revisar</small></span>
-            <span><strong><?= e($dashboardOperationalSummary['requests_ready_distribution']) ?></strong><small>listas para distribuir</small></span>
-            <span><strong><?= e($dashboardOperationalSummary['distributions_in_transit']) ?></strong><small>en tránsito</small></span>
-            <span><strong><?= e($dashboardOperationalSummary['active_p4']) ?></strong><small>P4 activos</small></span>
-        </div>
-
-        <?php if ($recentDashboardRequests === []): ?>
-            <div class="empty-state compact-empty">
-                <strong>No hay solicitudes operativas registradas</strong>
-                <span>Las solicitudes enviadas, revisadas y aprobadas aparecerán aquí automáticamente.</span>
-            </div>
-        <?php else: ?>
-            <div class="dashboard-mini-list">
-                <?php foreach ($recentDashboardRequests as $row): ?>
-                    <?php
-                    $approvedPending = max(
-                        0.0,
-                        (float) ($row['quantity_approved'] ?? 0) - (float) ($row['quantity_dispatched'] ?? 0)
-                    );
-                    ?>
-                    <a href="<?= e(sindesg_url('?module=requests&action=show&id=' . (int) $row['id'])) ?>">
-                        <span>
-                            <strong>Solicitud de dotación</strong>
-                            <small><?= e($row['p4_name']) ?></small>
+        <?php
+        $operationsUser = (array) sindesg_user();
+        $operationsRoles = (array) ($operationsUser['role_codes'] ?? []);
+        $canUseInstitutionalFeed = in_array('ADMIN', $operationsRoles, true)
+            || in_array('CENTRAL', $operationsRoles, true);
+        $operationalIndicators = [
+            ['kind' => 'review', 'label' => 'Por revisar', 'count' => $dashboardOperationalSummary['requests_pending_review'], 'permission' => 'requests.view'],
+            ['kind' => 'ready', 'label' => 'Listas para distribuir', 'count' => $dashboardOperationalSummary['requests_ready_distribution'], 'permission' => 'requests.view'],
+            ['kind' => 'transit', 'label' => 'En tránsito', 'count' => $dashboardOperationalSummary['distributions_in_transit'], 'permission' => 'distribution.view'],
+            ['kind' => 'p4', 'label' => 'P4 activos', 'count' => $dashboardOperationalSummary['active_p4'], 'permission' => 'warehouses.view'],
+        ];
+        ?>
+        <div class="dashboard-operations-browser"
+             data-operations-browser
+             data-ops-url="<?= e(sindesg_url('?module=dashboard&action=operational-feed')) ?>"
+             data-requests-base="<?= e(sindesg_url('?module=requests&action=show&id=')) ?>"
+             data-distribution-base="<?= e(sindesg_url('?module=distribution&action=show&id=')) ?>"
+             data-warehouses-base="<?= e(sindesg_url('?module=warehouses&action=show&id=')) ?>">
+            <div class="dashboard-ops-summary" role="group" aria-label="Filtros de gestión operativa">
+                <?php foreach ($operationalIndicators as $indicator): ?>
+                    <?php $canOpen = $canUseInstitutionalFeed && sindesg_can($indicator['permission']); ?>
+                    <?php if ($canOpen): ?>
+                        <button type="button" data-ops-kind="<?= e($indicator['kind']) ?>"
+                                aria-pressed="false"
+                                aria-controls="dashboard-operations-results"
+                                title="Ver <?= e($indicator['label']) ?>">
+                            <strong><?= e($indicator['count']) ?></strong>
+                            <small><?= e($indicator['label']) ?></small>
+                        </button>
+                    <?php else: ?>
+                        <span aria-label="<?= e($indicator['label']) ?>: <?= e($indicator['count']) ?>">
+                            <strong><?= e($indicator['count']) ?></strong>
+                            <small><?= e($indicator['label']) ?></small>
                         </span>
-                        <span>
-                            <strong><?= e($requestStatusLabels[$row['status']] ?? $row['status']) ?></strong>
-                            <small>
-                                <?= e((int) ($row['item_count'] ?? 0)) ?> renglones
-                                · <?= e(sindesg_units((float) ($row['quantity_requested'] ?? 0))) ?> solicitadas
-                                <?php if ($approvedPending > 0): ?>
-                                    · <?= e(sindesg_units($approvedPending)) ?> por distribuir
-                                <?php endif; ?>
-                            </small>
-                        </span>
-                    </a>
+                    <?php endif; ?>
                 <?php endforeach; ?>
             </div>
-        <?php endif; ?>
+            <div id="dashboard-operations-results" class="dashboard-ops-results"
+                 data-ops-results aria-label="Detalle de gestión operativa">
+                <p class="dashboard-ops-intro" data-ops-intro>
+                    Seleccione un indicador para consultar las zonas, direcciones o transferencias correspondientes.
+                    Las listas se consultan por páginas, sin aumentar la altura del Dashboard.
+                </p>
+                <div data-ops-content hidden>
+                    <div class="dashboard-ops-filter-head">
+                        <h3 data-ops-title>Detalle operativo</h3>
+                        <button type="button" class="dashboard-ops-close" data-ops-close
+                                aria-label="Cerrar detalle operativo">Cerrar ×</button>
+                    </div>
+                    <form class="dashboard-ops-search" data-ops-search-form role="search">
+                        <label class="sr-only" for="dashboard-ops-search">Buscar zona, dirección o código</label>
+                        <input id="dashboard-ops-search" type="search" name="q" maxlength="100"
+                               data-ops-search placeholder="Buscar zona, dirección o código..." autocomplete="off">
+                        <button type="submit">Buscar</button>
+                    </form>
+                    <div class="dashboard-ops-result-note" data-ops-note role="status" aria-live="polite"></div>
+                    <div class="dashboard-ops-scroll">
+                        <div class="dashboard-mini-list dashboard-ops-items" data-ops-list></div>
+                    </div>
+                    <div class="dashboard-ops-pagination">
+                        <button type="button" data-ops-prev>← Anterior</button>
+                        <span data-ops-page aria-live="polite"></span>
+                        <button type="button" data-ops-next>Siguiente →</button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </article>
 </section>
 
