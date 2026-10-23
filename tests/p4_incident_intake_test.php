@@ -124,6 +124,7 @@ foreach([
  [$central,'?module=incidents'],
  [$schema,'CREATE TABLE IF NOT EXISTS p4_incident_cases'],
  [$schema,'CREATE TABLE IF NOT EXISTS p4_incident_events'],
+ [$schema,'UNIQUE KEY uq_p4_incident_single_adjustment'],
  [$repository,'security_user_p4_scopes'],
  [$repository,'this->pdo->beginTransaction()'],
 ] as [$haystack,$fragment]) {
