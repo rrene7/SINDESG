@@ -671,58 +671,23 @@ foreach ($nominalProducts ?? [] as $product) {
 <?php endif; ?>
 <?php endif; ?>
 
-<?php if ($serviceRequest['status'] === 'in_review' && $requestItems !== [] && sindesg_role_action_allowed('requests', 'central-review', 'GET', (array) sindesg_user())): ?>
-<section class="request-panel review-panel">
-    <p class="request-cell-sub">
-        Para solicitudes grandes, recomendamos la
-        <a href="<?= e(sindesg_url('?module=requests&action=central-review&id=' . (int) $serviceRequest['id'])) ?>">revisión agrupada por tallas</a>
-        en lugar de aprobar a cada funcionario por separado.
-    </p>
+<?php if ($serviceRequest['status'] === 'in_review'
+    && sindesg_role_action_allowed('requests', 'central-review', 'GET', (array) sindesg_user())): ?>
+<section class="request-panel review-panel request-central-review-entry">
     <div class="request-section-head">
         <div>
-            <span class="eyebrow">DECISIÓN</span>
-            <h2>Registrar aprobación</h2>
-            <p>Puede aprobar cero, parte o todo. El sistema valida el stock comprometible por variante.</p>
+            <span class="eyebrow">DECISIÓN · ALMACÉN CENTRAL</span>
+            <h2>Revisión consolidada por artículo y talla</h2>
+            <p>La aprobación se realiza una sola vez desde el resumen agrupado.
+               Puede abrir el detalle nominal de cada talla para verificar destinatarios,
+               sin recorrer un campo por funcionario en esta pantalla.</p>
         </div>
+        <a class="primary-button" href="<?= e(sindesg_url('?module=requests&action=central-review&id=' . (int) $serviceRequest['id'])) ?>">
+            Revisar y aprobar por talla →
+        </a>
     </div>
-
-    <form method="post" action="<?= e(sindesg_url('?module=requests&action=decide')) ?>" class="request-review-form">
-        <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
-        <input type="hidden" name="request_id" value="<?= e($serviceRequest['id']) ?>">
-
-        <div class="request-review-lines">
-            <?php foreach ($requestItems as $item): ?>
-                <label>
-                    <span><?= e($item['product_name'] . (!empty($item['size_name']) ? ' · Talla ' . $item['size_name'] : '')) ?></span>
-                    <small>Solicitado <?= e(sindesg_units((float) $item['quantity_requested'])) ?> · Comprometible <?= e(sindesg_units((float) $item['available_to_approve'])) ?></small>
-                    <input type="number"
-                           name="approved_quantity[<?= e($item['id']) ?>]"
-                           min="0"
-                           max="<?= e($item['quantity_requested']) ?>"
-                           step="0.001"
-                           value="<?= e($item['quantity_requested']) ?>"
-                           required>
-                </label>
-            <?php endforeach; ?>
-        </div>
-
-        <div class="request-employee-picker" data-reviewer-picker data-search-url="<?= e($employeeSearchUrl) ?>">
-            <label>
-                <span>Funcionario revisor *</span>
-                <input type="search" data-reviewer-search autocomplete="off" placeholder="Nombre, cédula o posición..." required>
-                <input type="hidden" name="reviewed_by_employee_id" data-reviewer-id>
-            </label>
-            <div class="request-picker-results" data-reviewer-results hidden></div>
-            <div class="request-picker-selection" data-reviewer-selection hidden></div>
-        </div>
-
-        <label class="request-notes-field">
-            <span>Observación de revisión</span>
-            <textarea name="review_notes" rows="3" placeholder="Motivo de ajuste, rechazo o aprobación parcial."></textarea>
-        </label>
-
-        <button class="primary-button request-full-button" type="submit">Registrar decisión</button>
-    </form>
+    <p class="request-cell-sub">El Almacén Central decide con disponibilidad real y trazabilidad individual.
+       Aprobar compromete stock, pero no registra entrega física ni altera RRHH2029.</p>
 </section>
 <?php endif; ?>
 
