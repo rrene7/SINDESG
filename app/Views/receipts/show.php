@@ -1,10 +1,10 @@
 <?php
 declare(strict_types=1);
 
-$totalQuantity = 0.0;
-foreach ($receiptItems as $item) {
-    $totalQuantity += (float) $item['quantity'];
-}
+$receiptContent = \App\Services\ReceiptContentSummary::fromItems($receiptItems);
+$totalQuantity = $receiptContent['total_quantity'];
+$productCount = $receiptContent['product_count'];
+$primaryProduct = $receiptContent['primary_name'];
 
 $statusLabel = $receipt['status'] === 'confirmed' ? 'Confirmada' : ucfirst((string) $receipt['status']);
 ?>
@@ -13,11 +13,29 @@ $statusLabel = $receipt['status'] === 'confirmed' ? 'Confirmada' : ucfirst((stri
         <span class="eyebrow">RECEPCIÓN <?= e($receipt['receipt_code']) ?></span>
         <h1><?= e($receipt['lot_code']) ?></h1>
         <p><?= e($sourceTypes[$receipt['source_type']] ?? $receipt['source_type']) ?> · <?= e($receipt['supplier_or_origin']) ?></p>
+        <div class="receipt-product-identity" aria-label="Artículos contenidos en este lote">
+            <span class="eyebrow">ARTÍCULO RECIBIDO<?= $productCount === 1 ? '' : ' / CONTENIDO DEL LOTE' ?></span>
+            <?php if ($primaryProduct !== null): ?>
+                <h2><?= e($primaryProduct) ?></h2>
+                <p><?= (int) $receiptContent['products'][0]['variant_count'] ?> tallas o variantes registradas</p>
+            <?php elseif ($productCount > 1): ?>
+                <h2><?= (int) $productCount ?> artículos diferentes</h2>
+                <ul class="receipt-product-breakdown">
+                    <?php foreach ($receiptContent['products'] as $product): ?>
+                        <li><strong><?= e($product['name']) ?></strong>
+                            <span><?= e(sindesg_units((float) $product['quantity'])) ?> unidades · <?= (int) $product['variant_count'] ?> tallas o variantes</span>
+                        </li>
+                    <?php endforeach; ?>
+                </ul>
+            <?php else: ?>
+                <h2>Sin artículos registrados</h2>
+            <?php endif; ?>
+        </div>
     </div>
     <div class="receipt-detail-status">
         <span class="receipt-status <?= e($receipt['status']) ?>"><?= e($statusLabel) ?></span>
         <strong><?= e(sindesg_units($totalQuantity)) ?></strong>
-        <small>cantidad total del lote</small>
+        <small><?= $primaryProduct !== null ? 'Unidades recibidas · ' . e($primaryProduct) : 'Unidades totales del lote' ?></small>
     </div>
 </section>
 

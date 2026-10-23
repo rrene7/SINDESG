@@ -52,6 +52,9 @@ jobs:
       - name: Receipts logic test
         run: php tests/receipts_logic_test.php
 
+      - name: Receipt product identification in lot detail
+        run: php tests/receipt_content_identity_test.php
+
       - name: Receipt inventory flow test
         run: php tests/receipt_inventory_flow_test.php
 
@@ -462,6 +465,12 @@ jobs:
           php-version: '8.2'
           extensions: pdo_sqlite, sqlite3, mbstring, iconv
           coverage: none
+
+      - name: Receipt product identification on Windows
+        shell: pwsh
+        run: |
+          php tests/receipt_content_identity_test.php
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Category administration and Spanish accents on Windows
         shell: pwsh
