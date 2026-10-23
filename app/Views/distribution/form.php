@@ -23,7 +23,7 @@ $pendingTotal = array_sum(array_map(static fn(array $g): float => (float) $g['pe
             <div>
                 <span class="eyebrow">CONSOLIDADO PARA EL CENTRAL</span>
                 <h2>Seleccionar cantidades a transferir por talla</h2>
-                <p>Escriba cuánto desea enviar por talla y pulse «Aplicar al grupo». Puede modificar los funcionarios seleccionados desde «Ver destinatarios». Ninguna cantidad está preseleccionada.</p>
+                <p>Use «Seleccionar todos los pendientes» para distribuir las cantidades autorizadas de todas las tallas en un solo clic, sin sobrepasar el stock mostrado. También puede ajustar una talla o un funcionario. Ninguna cantidad viene preseleccionada.</p>
             </div>
             <div class="distribution-auto-code"><strong>Código automático</strong><span>TRF-######</span></div>
         </div>
@@ -32,6 +32,11 @@ $pendingTotal = array_sum(array_map(static fn(array $g): float => (float) $g['pe
             <span><strong><?= count($distributionGroups) ?></strong><small>Artículos / tallas</small></span>
             <span><strong><?= e(sindesg_units($pendingTotal)) ?></strong><small>Unidades pendientes</small></span>
             <span><strong data-transfer-global-selected>0</strong><small>Seleccionadas ahora</small></span>
+        </div>
+        <div class="distribution-bulk-toolbar" role="group" aria-label="Selección rápida de la transferencia">
+            <button type="button" class="primary-button" data-transfer-select-all>Seleccionar todos los pendientes</button>
+            <button type="button" class="secondary-button" data-transfer-clear-all>Limpiar selección</button>
+            <p>Selecciona automáticamente los funcionarios de cada talla hasta cubrir el saldo aprobado o el stock disponible, lo que sea menor. <strong>No guarda ni prepara la transferencia.</strong></p>
         </div>
         <p class="distribution-stock-caption">El stock mostrado procede del kardex Central. Se vuelve a verificar al despachar; preparar una transferencia no mueve existencias.</p>
         <div class="responsive-table distribution-group-table-wrap">
@@ -71,7 +76,8 @@ $pendingTotal = array_sum(array_map(static fn(array $g): float => (float) $g['pe
                                            max="<?= e(number_format($groupMax, 3, '.', '')) ?>"
                                            aria-label="Enviar ahora, talla <?= e($group['size_name'] ?: '—') ?>">
                                 </label>
-                                <button type="button" class="secondary-button" data-transfer-apply>Aplicar al grupo</button>
+                                <button type="button" class="secondary-button" data-transfer-apply>Aplicar cantidad</button>
+                                <button type="button" class="secondary-button" data-transfer-max-group>Completar talla</button>
                                 <small data-transfer-selected>0 de <?= e(sindesg_units($groupPending)) ?> unidades · 0 destinatarios</small>
                             </div>
                         </td>
@@ -132,7 +138,7 @@ $pendingTotal = array_sum(array_map(static fn(array $g): float => (float) $g['pe
         <h2>Confirmación de preparación</h2>
         <p>La validación solo comprueba cantidades y destinatarios en esta pantalla, sin guardar.
             «Preparar transferencia» crea el documento nominal; la autorización y el despacho se realizan después.</p>
-        <p role="status" aria-live="polite" data-transfer-message>Sin selección. Introduzca cantidades por talla y aplíquelas a los destinatarios.</p>
+        <p role="status" aria-live="polite" data-transfer-message>Sin selección. Puede seleccionar todos los pendientes con un clic, ajustar y validar sin guardar.</p>
         <div class="distribution-form-actions">
             <a href="<?= e(sindesg_url('?module=distribution')) ?>">Cancelar</a>
             <button class="secondary-button" type="button" data-transfer-validate>1. Validar sin guardar</button>

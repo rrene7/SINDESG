@@ -238,6 +238,7 @@ jobs:
         run: |
           php tests/distribution_grouped_preparation_test.php
           node --check public/assets/js/distribution.js
+          node tests/distribution_bulk_selection_behavior_test.js
 
       - name: Distribution accounting test
         run: php tests/distribution_accounting_test.php
@@ -510,6 +511,8 @@ jobs:
         shell: pwsh
         run: |
           php tests/distribution_grouped_preparation_test.php
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          node tests/distribution_bulk_selection_behavior_test.js
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: P4 requests and Central role separation on Windows

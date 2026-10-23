@@ -224,6 +224,7 @@ $required = [
     'tests/distribution_schema_test.php',
     'tests/distribution_logic_test.php',
     'tests/distribution_grouped_preparation_test.php',
+    'tests/distribution_bulk_selection_behavior_test.js',
     'tests/distribution_accounting_test.php',
     'tests/request_distribution_verification_test.php',
     'tests/post_phase8_display_test.php',
