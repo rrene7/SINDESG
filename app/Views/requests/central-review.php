@@ -3,7 +3,9 @@ declare(strict_types=1);
 /** @var array<string,mixed> $serviceRequest */
 /** @var list<array<string,mixed>> $variantGroups */
 $status = (string) $serviceRequest['status'];
-$mayReview = $status === 'in_review';
+$mayReview = $status === 'in_review'
+    && sindesg_role_action_allowed('requests', 'decide', 'POST', (array) sindesg_user())
+    && sindesg_can('requests.manage');
 $totalVariants = count($variantGroups);
 $totalNominees = array_sum(array_map(
     static fn (array $g): int => count($g['items']), $variantGroups
@@ -27,8 +29,8 @@ $totalAvailable = array_sum(array_map(
 <section class="request-panel central-overview" aria-label="Resumen de la solicitud">
     <div class="request-section-head">
         <div><span class="eyebrow">CONSOLIDADO DEL CENTRAL</span>
-            <h2>Dotación agrupada, sin abrir 722 expedientes</h2>
-            <p>Una fila por talla y artículo. Los funcionarios se consultan desplegando el grupo cuando sea necesario.</p>
+            <h2>Dotación agrupada de <?= (int) $totalNominees ?> renglones nominales</h2>
+            <p>Una fila por artículo y talla. Pulse «Ver destinatarios» para revisar y ajustar cada asignación cuando sea necesario, sin abrir todos los expedientes.</p>
         </div>
     </div>
     <div class="request-verification-summary">

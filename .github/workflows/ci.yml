@@ -216,6 +216,9 @@ jobs:
       - name: Central P4 review and tracking test
         run: php tests/central_p4_review_tracking_test.php
 
+      - name: One grouped Central approval interface
+        run: php tests/central_grouped_approval_primary_test.php
+
       - name: P4 origin and Central review segregation
         run: php tests/requests_central_origin_separation_test.php
 
@@ -485,6 +488,12 @@ jobs:
         shell: pwsh
         run: |
           php tests/p4_nominal_template_access_test.php
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Grouped Central approval on Windows
+        shell: pwsh
+        run: |
+          php tests/central_grouped_approval_primary_test.php
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: P4 requests and Central role separation on Windows
