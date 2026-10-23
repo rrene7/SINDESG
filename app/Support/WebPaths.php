@@ -51,7 +51,7 @@ final class WebPaths
         }
         $base = rtrim($base, '/');
         if ($base !== '' && (!str_starts_with($base, '/')
-            || !preg_match('~^/(?:[A-Za-z0-9_.~-]+)(?:/[A-Za-z0-9_.~-]+)*$~D', $base)
+            || !preg_match('~^/(?:[A-Za-z0-9_.-]+)(?:/[A-Za-z0-9_.-]+)*$~D', $base)
             || str_contains($base, '/..') || str_contains($base, '/./'))) {
             throw new InvalidArgumentException('base_url debe ser auto, / o una ruta absoluta sin dominio.');
         }
