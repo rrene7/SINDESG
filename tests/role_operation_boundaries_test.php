@@ -67,7 +67,7 @@ $cases = [
     ['deliveries','deliver-now','GET',$central,false],
     ['deliveries','deliver-now','POST',$viewer,false],
     ['deliveries','deliver-now','POST',$both,false],
-    ['deliveries','deliver-now','POST',$admin,true],
+    ['deliveries','deliver-now','POST',$admin,false],
     ['deliveries','save','POST',$p4,true],
     ['deliveries','confirm','POST',$p4,true],
     ['deliveries','index','GET',$p4,true],
