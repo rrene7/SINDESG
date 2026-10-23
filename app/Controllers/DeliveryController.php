@@ -41,11 +41,11 @@ final class DeliveryController
                 $guard = new \App\Services\P4DeliveryGuard($this->database->connection('sindesg'));
                 $userId = (int) ($user['id'] ?? 0);
                 $isPost = strtoupper($method) === 'POST';
-                $allowed = $isPost ? ['save', 'confirm'] : ['index', 'new', 'show', 'nominal-report'];
+                $allowed = $isPost ? ['save', 'confirm', 'deliver-now'] : ['index', 'new', 'show', 'nominal-report'];
                 if (!in_array($action, $allowed, true)) {
                     throw new InvalidArgumentException('Operación no habilitada para este P4.');
                 }
-                if ($isPost && $action === 'save') {
+                if ($isPost && in_array($action, ['save', 'deliver-now'], true)) {
                     $itemId = (int) ($post['request_item_id'] ?? 0);
                     $line = $guard->assertNominal($userId, $itemId);
                     $post['p4_warehouse_id'] = (int) $line['p4_warehouse_id'];
@@ -161,8 +161,10 @@ final class DeliveryController
             }
 
             return [
-                'view' => SINDESG_ROOT . '/app/Views/deliveries/form.php',
-                'title' => 'Nuevo despacho individual',
+                'view' => $this->isP4Only() && $pendingLine !== null
+                    ? SINDESG_ROOT . '/app/Views/deliveries/p4-quick.php'
+                    : SINDESG_ROOT . '/app/Views/deliveries/form.php',
+                'title' => $this->isP4Only() ? 'Entrega directa al funcionario' : 'Nuevo despacho individual',
                 'data' => [
                     'activeP4s' => $this->isP4Only() ? [] : $this->repository->activeP4s(),
                     'pendingLine' => $pendingLine,
@@ -177,6 +179,11 @@ final class DeliveryController
                     'employeeSearchUrl' => sindesg_url('public/api/employees.php'),
                     'historyApiUrl' => sindesg_url('public/api/delivery-history.php'),
                     'defaultDeliveredAt' => date('Y-m-d\TH:i'),
+                    'issuerSignatureReady' => $this->isP4Only()
+                        ? (bool) (new \App\Services\P4IssuerSignature(
+                            $this->database->connection('sindesg')
+                        ))->current((int) (sindesg_user()['id'] ?? 0))
+                        : false,
                 ],
             ];
         }
@@ -277,6 +284,20 @@ final class DeliveryController
 
     private function handlePost(string $action, array $post): array
     {
+        if ($action === 'deliver-now') {
+            if (!$this->isP4Only() || (int) ($post['request_item_id'] ?? 0) <= 0) {
+                throw new InvalidArgumentException('Entrega directa disponible solo para nominal autorizado del P4.');
+            }
+            $evidence = $this->p4SignatureEvidence($post, true);
+            // The server controls the accountable date and issuer's identity.
+            $post['delivered_at'] = date('Y-m-d\TH:i');
+            $post['document_number'] = '';
+            $post['notes'] = '';
+            $deliveryId = $this->service->deliverNominalNow($post, $evidence);
+            flash('success', 'Entrega registrada. Firma y constancia archivadas; inventario P4 actualizado.');
+            $this->redirect('?module=deliveries&action=show&id=' . $deliveryId);
+        }
+
         if ($action === 'save') {
             $deliveryId = $this->service->createDraft($post);
             flash(
@@ -305,39 +326,7 @@ final class DeliveryController
 
         if ($action === 'confirm') {
             $deliveryId = (int) ($post['delivery_id'] ?? 0);
-            $evidence = null;
-            if ($this->isP4Only()) {
-                if (($post['issuer_ack'] ?? '') !== '1') {
-                    throw new InvalidArgumentException('Debe autorizar expresamente el uso de su firma para esta entrega.');
-                }
-                $currentIssuer = (new \App\Services\P4IssuerSignature(
-                    $this->database->connection('sindesg')
-                ))->current((int)(sindesg_user()['id'] ?? 0));
-                if (!$currentIssuer) {
-                    throw new InvalidArgumentException('Registre primero su firma en Mi firma institucional.');
-                }
-                $raw = (string) ($post['recipient_signature_png'] ?? '');
-                if (!str_starts_with($raw, 'data:image/png;base64,') || strlen($raw) > 220000) {
-                    throw new InvalidArgumentException('La firma de recibido es obligatoria y debe ser una imagen PNG válida.');
-                }
-                $png = base64_decode(substr($raw, strlen('data:image/png;base64,')), true);
-                if ($png === false || strlen($png) < 100 || strlen($png) > 160000
-                    || !str_starts_with($png, "\x89PNG\r\n\x1a\n")) {
-                    throw new InvalidArgumentException('Firma inválida. Capture nuevamente el recibido.');
-                }
-                // Validate the recipient image with the same structural PNG checks used for P4 signatures.
-                $png = \App\Services\P4IssuerSignature::validatePng($png);
-                $actorId = (int) (sindesg_user()['id'] ?? 0);
-                if ($actorId <= 0) throw new InvalidArgumentException('Sesión inválida.');
-                $employeeId = (int) (sindesg_user()['employee_id'] ?? 0);
-                if ($employeeId <= 0) throw new InvalidArgumentException('Funcionario responsable sin identidad válida.');
-                $evidence = [
-                    'png' => $png,
-                    'actor' => $actorId,
-                    'issuer_user_id' => $actorId,
-                    'issuer_employee_id' => $employeeId,
-                ];
-            }
+            $evidence = $this->isP4Only() ? $this->p4SignatureEvidence($post) : null;
             $result = $this->service->confirm($deliveryId, $evidence);
             flash(
                 'success',
@@ -356,6 +345,47 @@ final class DeliveryController
         }
 
         throw new InvalidArgumentException('La operación solicitada no es válida.');
+    }
+
+    /**
+     * Both the existing draft confirmation and the direct P4 flow require
+     * the same signed evidence. Never trust a browser-submitted issuer ID.
+     */
+    private function p4SignatureEvidence(array $post, bool $requireRecipientAck = false): array
+    {
+        if (($post['issuer_ack'] ?? '') !== '1') {
+            throw new InvalidArgumentException('Autorice expresamente el uso de su firma para esta entrega.');
+        }
+        if ($requireRecipientAck && ($post['recipient_ack'] ?? '') !== '1') {
+            throw new InvalidArgumentException('Confirme que el receptor identificado firmó al recibir.');
+        }
+        $actorId = (int) (sindesg_user()['id'] ?? 0);
+        $employeeId = (int) (sindesg_user()['employee_id'] ?? 0);
+        if ($actorId <= 0 || $employeeId <= 0) {
+            throw new InvalidArgumentException('Sesión del responsable P4 sin identidad válida.');
+        }
+        $issuer = (new \App\Services\P4IssuerSignature(
+            $this->database->connection('sindesg')
+        ))->current($actorId);
+        if (!$issuer) {
+            throw new InvalidArgumentException('Registre primero su firma en Mi firma institucional.');
+        }
+        $raw = (string) ($post['recipient_signature_png'] ?? '');
+        if (!str_starts_with($raw, 'data:image/png;base64,') || strlen($raw) > 220000) {
+            throw new InvalidArgumentException('La firma de recibido es obligatoria y debe ser una imagen PNG válida.');
+        }
+        $png = base64_decode(substr($raw, strlen('data:image/png;base64,')), true);
+        if ($png === false || strlen($png) < 100 || strlen($png) > 160000
+            || !str_starts_with($png, "\x89PNG\r\n\x1a\n")) {
+            throw new InvalidArgumentException('Firma inválida. Capture nuevamente el recibido.');
+        }
+        $png = \App\Services\P4IssuerSignature::validatePng($png);
+        return [
+            'png' => $png,
+            'actor' => $actorId,
+            'issuer_user_id' => $actorId,
+            'issuer_employee_id' => $employeeId,
+        ];
     }
 
     private function isP4Only(): bool

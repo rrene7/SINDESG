@@ -34,3 +34,25 @@
 .delivery-verification-badge,.delivery-verification-status{display:inline-flex;align-items:center;justify-content:center;padding:6px 10px;border-radius:999px;font-size:.72rem;font-weight:800}
 .delivery-verification-badge.ok,.delivery-verification-status.ok{border:1px solid rgba(61,211,142,.32);background:rgba(61,211,142,.1);color:#9bf1c7}
 .delivery-verification-badge.warn,.delivery-verification-status.warn{border:1px solid rgba(255,190,92,.35);background:rgba(255,190,92,.1);color:#ffd491}
+
+
+/* P4 nominal: una entrega completa sin paso intermedio de borrador. */
+.p4-direct-hero{padding:19px 24px;margin-bottom:12px}
+.p4-direct-hero h1{font-size:clamp(1.45rem,2.3vw,2.1rem)}
+.p4-direct-form .delivery-panel{padding:18px 20px;margin-top:12px}
+.p4-direct-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.p4-direct-grid article{min-width:0}
+.p4-direct-grid strong,.p4-direct-grid small{overflow-wrap:anywhere}
+.p4-direct-sign-panel>p{color:#a9cbe2;font-size:.86rem;line-height:1.5}
+.p4-direct-canvas-wrap{display:grid;gap:8px;margin:12px 0}
+.p4-direct-canvas-wrap canvas{width:100%;height:160px;background:white;border:1px solid #8db2ca;border-radius:10px;touch-action:none;cursor:crosshair}
+.p4-direct-canvas-wrap button{justify-self:start}
+.p4-direct-sign-panel .p4-signature-ack{display:flex;align-items:flex-start;gap:10px;margin:10px 0;color:#e7f6ff;font-size:.89rem}
+.p4-direct-sign-panel .p4-signature-ack input{width:20px;min-width:20px;min-height:20px;margin-top:1px;accent-color:#3ca9f2}
+.p4-direct-sign-panel .delivery-warning{margin-top:12px}
+.p4-direct-sign-panel .delivery-warning a{text-decoration:underline}
+.p4-direct-explain{margin-bottom:0;color:#a9cbe2;font-size:.8rem}
+.p4-direct-actions{display:flex;justify-content:flex-end;align-items:center;gap:14px}
+.p4-direct-actions button{min-height:46px;white-space:normal}
+.p4-direct-actions button:disabled{opacity:.5;cursor:not-allowed}
+@media(max-width:760px){.p4-direct-grid{grid-template-columns:1fr}.p4-direct-hero{align-items:flex-start;flex-wrap:wrap}.p4-direct-canvas-wrap canvas{height:170px}.p4-direct-actions{flex-wrap:wrap}.p4-direct-actions button{flex:1 1 100%}}

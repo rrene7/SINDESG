@@ -133,6 +133,22 @@ final class DeliveryService
         ], $linkedLine, $linkedQuantity);
     }
 
+    /**
+     * Single-screen delivery for an already received nominal item.
+     * The database still creates the auditable draft internally, then confirms
+     * it in one transaction together with stock and both signatures.
+     */
+    public function deliverNominalNow(array $input, array $evidence): int
+    {
+        if ((int) ($input['request_item_id'] ?? 0) <= 0) {
+            throw new InvalidArgumentException('Se requiere un renglón nominal recibido.');
+        }
+        return $this->repository->createAndConfirmNominal(
+            fn (): int => $this->createDraft($input),
+            $evidence
+        );
+    }
+
     public function addItem(int $deliveryId, array $input): void
     {
         if ($deliveryId <= 0) {
