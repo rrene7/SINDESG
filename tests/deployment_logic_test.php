@@ -80,7 +80,7 @@ foreach ([
 foreach ([
     "'/config/local.php'",
     "'session_secure'",
-    "'nginx-sindesg.conf.example'",
+    'nginx-sindesg.conf.example',
     "environment === 'production'",
 ] as $fragment) {
     if (!str_contains($readiness, $fragment)) {
