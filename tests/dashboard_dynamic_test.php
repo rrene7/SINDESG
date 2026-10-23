@@ -39,6 +39,8 @@ foreach ([
     'featuredProduct',
     'featuredSizes',
     'recentDashboardReceipts',
+    'dashboard-receipt-product',
+    'receiptProductName',
     'recentDashboardRequests',
     'dashboardOperationalSummary',
     'dashboardProductFocus',

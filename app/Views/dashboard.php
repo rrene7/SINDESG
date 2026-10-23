@@ -235,9 +235,21 @@ foreach (($dashboardProductFocus ?? []) as $productId => $entry) {
         <?php else: ?>
             <div class="dashboard-mini-list">
                 <?php foreach ($recentDashboardReceipts as $row): ?>
+                    <?php
+                    $receiptProductCount = (int) ($row['product_count'] ?? 0);
+                    $receiptProductName = $receiptProductCount === 1
+                        ? ((string) ($row['product_name'] ?? '') ?: 'Artículo sin identificar')
+                        : ($receiptProductCount > 1
+                            ? $receiptProductCount . ' artículos diferentes'
+                            : 'Sin artículos registrados');
+                    ?>
                     <a href="<?= e(sindesg_url('?module=receipts&action=show&id=' . (int) $row['id'])) ?>">
-                        <span><strong><?= e($row['receipt_code']) ?></strong><small><?= e($row['lot_code']) ?> · <?= e($row['supplier_or_origin']) ?></small></span>
-                        <span><strong><?= e(sindesg_units((float) $row['total_quantity'])) ?></strong><small><?= e($row['status'] === 'confirmed' ? 'Confirmada' : 'Borrador') ?></small></span>
+                        <span class="dashboard-receipt-identity">
+                            <strong><?= e($row['receipt_code']) ?></strong>
+                            <span class="dashboard-receipt-product"><?= e($receiptProductName) ?></span>
+                            <small><?= e($row['lot_code']) ?> · <?= e($row['supplier_or_origin']) ?></small>
+                        </span>
+                        <span class="dashboard-receipt-quantity"><strong><?= e(sindesg_units((float) $row['total_quantity'])) ?></strong><small><?= e($row['status'] === 'confirmed' ? 'Confirmada' : 'Borrador') ?></small></span>
                     </a>
                 <?php endforeach; ?>
             </div>

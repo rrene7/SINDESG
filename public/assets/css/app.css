@@ -599,3 +599,25 @@ button { color: inherit; }
 .dashboard-ops-summary small{margin-top:3px;color:var(--muted);font-size:.67rem;line-height:1.25}
 .compact-empty{min-height:105px}
 @media (max-width:760px){.dashboard-ops-summary{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+
+/* Dashboard · Lotes recientes: mostrar artículo real, sin adivinar el contenido del lote. */
+.dashboard-mini-list .dashboard-receipt-identity {min-width:0;flex:1 1 auto}
+.dashboard-mini-list .dashboard-receipt-product {
+    display:block;
+    margin-top:4px;
+    color:#e6f7ff;
+    font-size:.98rem;
+    font-weight:800;
+    line-height:1.35;
+    overflow-wrap:anywhere;
+}
+.dashboard-mini-list .dashboard-receipt-quantity {
+    flex:0 0 auto;
+    min-width:95px;
+    text-align:right;
+}
+@media(max-width:480px) {
+    .dashboard-mini-list .dashboard-receipt-quantity {min-width:70px}
+    .dashboard-mini-list .dashboard-receipt-product {font-size:.91rem}
+}
