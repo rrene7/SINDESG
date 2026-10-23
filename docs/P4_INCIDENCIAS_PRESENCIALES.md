@@ -11,4 +11,12 @@ Se conserva historial aditivo en `p4_incident_events`. Solo ADMIN puede cerrar `
 ## Activación de datos
 La aplicación requiere ejecutar la migración **`database/schema/023_p4_incident_intake.sql`** con credenciales DBA **únicamente sobre SINDESG**, después de respaldo y restauración de prueba y con autorización de infraestructura. No se debe ejecutar automáticamente desde una petición web ni sobre RRHH2029. La migración crea dos tablas nuevas y un registro en `schema_migrations`; no modifica kardex ni entregas históricas.
 
-Verificación: `php tests/p4_incident_intake_test.php`, pruebas de roles y CI Linux/Windows, y después prueba controlada con usuarios P4, Central y ADMIN. El proyecto admite Windows y Linux mediante el resolvedor de rutas existente.
+Instalador CLI seguro (compatible con saltos LF y CRLF del archivo SQL):
+```powershell
+& "C:\xampp\php\php.exe" scripts/install_p4_incidents.php --check
+& "C:\xampp\php\php.exe" scripts/install_p4_incidents.php --apply --confirm=APLICAR-023 "--backup=E:\SINDESG\storage\backups\<carpeta_del_respaldo_verificado>"
+```
+
+El instalador exige credenciales locales privadas, conexión exclusivamente a `sindesg`, dependencias y claves compatibles, respaldo íntegro SHA-256, esquema no iniciado y confirmación explícita. Rechaza estados parcialmente aplicados y no ejecuta borrados ni cambios en entregas, stock o RRHH2029. DDL no se revierte automáticamente; si hay errores se revisa manualmente.
+
+Verificación: `php tests/p4_incident_intake_test.php`, `php tests/p4_incident_migration_installer_test.php`, pruebas de roles y CI Linux/Windows, y después prueba controlada con usuarios P4, Central y ADMIN. El proyecto admite Windows y Linux mediante el resolvedor de rutas existente.

@@ -294,6 +294,9 @@ jobs:
       - name: P4 incident intake, permissions, and review
         run: php tests/p4_incident_intake_test.php
 
+      - name: P4 incident migration SQL normalizer LF and CRLF
+        run: php tests/p4_incident_migration_installer_test.php
+
       - name: Adjustments schema test
         run: php tests/adjustments_schema_test.php
 
@@ -497,6 +500,12 @@ jobs:
           php tests/linux_runtime_paths_test.php
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           php tests/deployment_logic_test.php
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: P4 incident migration SQL normalizer on Windows
+        shell: pwsh
+        run: |
+          php tests/p4_incident_migration_installer_test.php
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: P4 presential incident intake on Windows
