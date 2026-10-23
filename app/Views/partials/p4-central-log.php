@@ -1,30 +1,32 @@
 <?php
 declare(strict_types=1);
-// Rendering fragment used only with a role-authorized P4 dashboard.
-// Records are scoped by P4OperationalSummary before entering this view.
+// All records were restricted to the authenticated P4 before rendering.
 foreach ($rows as $record):
-    $canOpen = sindesg_role_action_allowed(
-        (string)$record['module'], 'show', 'GET', (array)sindesg_user()
-    ) && sindesg_can(sindesg_permission_for((string)$record['module'], 'show', 'GET') ?? 'dashboard.view');
-    $document = trim((string)($record['code']??''));
-    $label = trim((string)($record['title']??''));
-    $status = $statusLabels[(string)($record['status']??'')] ?? (string)($record['status']??'');
+    $module = (string)$record['module'];
+    $canOpen = sindesg_role_action_allowed($module, 'show', 'GET', (array)sindesg_user())
+        && sindesg_can(sindesg_permission_for($module, 'show', 'GET') ?? 'dashboard.view');
+    $code = trim((string)($record['code'] ?? ''));
+    $code = $code !== '' ? $code : ($module === 'requests' ? 'Solicitud' : 'Transferencia');
+    $summary = \App\Services\P4CentralCardSummary::item($record);
+    $status = \App\Services\P4CentralCardSummary::status((string)($record['status'] ?? ''));
+    $datetime = (string)($record['event_at'] ?? '');
+    $timestamp = $datetime !== '' ? strtotime($datetime) : false;
 ?>
 <div class="p4-v2-central-entry">
     <div class="p4-v2-central-entry-head">
         <?php if ($canOpen): ?>
-            <a href="<?= e(sindesg_url('?module='.$record['module'].'&action=show&id='.(int)$record['id'])) ?>">
-                <?= e($document !== '' ? $document : ($record['module'] === 'requests' ? 'Solicitud' : 'Transferencia')) ?> ↗
-            </a>
-        <?php else: ?>
-            <strong><?= e($document !== '' ? $document : ($record['module'] === 'requests' ? 'Solicitud' : 'Transferencia')) ?></strong>
-        <?php endif; ?>
-        <span><?= e($status) ?></span>
+            <a href="<?= e(sindesg_url('?module='.$module.'&action=show&id='.(int)$record['id'])) ?>"><?= e($code) ?> ↗</a>
+        <?php else: ?><strong><?= e($code) ?></strong><?php endif; ?>
+        <span class="p4-v2-central-entry-status"><?= e($status) ?></span>
     </div>
-    <div class="p4-v2-central-entry-title" title="<?= e($label) ?>"><?= e($label) ?></div>
-    <small>
-        <?= e($record['warehouse_name'] ?? 'Almacén P4') ?> ·
-        <?= !empty($record['event_at']) ? e(date('d/m/Y H:i',strtotime((string)$record['event_at']))) : '—' ?>
-    </small>
+    <div class="p4-v2-central-entry-line" title="<?= e((string)($record['title'] ?? '')) ?>"><?= e($summary) ?></div>
+    <div class="p4-v2-central-entry-meta">
+        <?php if ($timestamp !== false): ?>
+            <time datetime="<?= e($datetime) ?>" title="<?= e(date('d/m/Y H:i', $timestamp)) ?>"><?= e(date('d/m/Y', $timestamp)) ?></time>
+        <?php endif; ?>
+        <?php if (count($warehouses) > 1): ?>
+            <span><?= e($record['warehouse_name'] ?? 'Almacén P4') ?></span>
+        <?php endif; ?>
+    </div>
 </div>
 <?php endforeach; ?>

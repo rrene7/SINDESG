@@ -53,6 +53,8 @@ $required = [
     'tests/p4_direct_nominal_delivery_test.php',
     'app/Services/P4ActivityList.php',
     'app/Services/P4DashboardActivitySections.php',
+    'app/Services/P4CentralCardSummary.php',
+    'tests/p4_central_card_minimal_ui_test.php',
     'app/Views/partials/p4-central-log.php',
     'tests/p4_central_relationship_card_test.php',
     'tests/p4_recent_activity_compact_test.php',

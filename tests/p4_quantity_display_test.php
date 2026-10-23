@@ -25,7 +25,9 @@ if (!str_contains($bootstrap, 'function sindesg_units(')) {
 }
 $view = (string)file_get_contents(dirname(__DIR__) . '/app/Views/dashboard-p4.php');
 if (substr_count($view, 'P4QuantityDisplay::units(') !== 2
-    || !str_contains($view, 'Unidades, no miles')) {
-    throw new RuntimeException('P4 dashboard does not use readable unit formatting for metrics and stock rows.');
+    || !str_contains($view, 'Incluye reservas')
+    || !str_contains($view, 'no equivale a disponibilidad libre')
+    || !str_contains($view, 'Saldo físico · no disponible libre')) {
+    throw new RuntimeException('P4 dashboard must show real quantities and explain physical versus available units.');
 }
 echo "[OK] P4 quantity display shows units without misleading decimal zeros.\n";
