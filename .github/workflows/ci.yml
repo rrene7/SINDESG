@@ -217,7 +217,9 @@ jobs:
         run: php tests/central_p4_review_tracking_test.php
 
       - name: One grouped Central approval interface
-        run: php tests/central_grouped_approval_primary_test.php
+        run: |
+          php tests/central_grouped_approval_primary_test.php
+          node tests/central_bulk_selection_behavior_test.js
 
       - name: Central decision intent and reopening safety
         run: php tests/central_decision_safety_test.php
@@ -503,6 +505,8 @@ jobs:
         shell: pwsh
         run: |
           php tests/central_grouped_approval_primary_test.php
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          node tests/central_bulk_selection_behavior_test.js
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           php tests/central_decision_safety_test.php
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

@@ -99,6 +99,15 @@ $totalAvailable = array_sum(array_map(
             <p>El stock central es real y proviene del kardex. «Comprometible» descuenta reservas de otras solicitudes.</p>
         </div>
     </div>
+    <?php if ($mayReview): ?>
+    <div class="central-bulk-toolbar" role="group" aria-label="Completar revisión por tallas">
+        <button type="button" class="primary-button" data-central-complete-all>Completar todas las tallas</button>
+        <button type="button" class="secondary-button" data-central-clear-all>Limpiar selección</button>
+        <p>Selecciona por artículo y talla hasta la cantidad solicitada o el stock comprometible, lo que sea menor.
+           <strong>Esta acción no aprueba, rechaza ni guarda.</strong> Revise los destinatarios y valide antes de registrar una decisión.</p>
+        <p class="central-bulk-feedback" data-central-bulk-feedback role="status" aria-live="polite">Sin selección automática aplicada.</p>
+    </div>
+    <?php endif; ?>
     <div class="responsive-table">
         <table class="central-size-table">
             <thead>
@@ -137,7 +146,8 @@ $totalAvailable = array_sum(array_map(
                                            name="group_quantity[<?= (int) $group['variant_id'] ?>]"
                                            aria-label="Cantidad a aprobar de talla <?= e($group['size_name']) ?>">
                                 </label>
-                                <button type="button" class="secondary-button" data-central-apply>Aplicar a grupo</button>
+                                <button type="button" class="secondary-button" data-central-apply>Aplicar cantidad</button>
+                                <button type="button" class="secondary-button" data-central-complete-group>Completar talla</button>
                                 <small class="central-group-help">Al cambiar esta cantidad se distribuye entre los primeros destinatarios. Puede ajustar el detalle nominal antes de aprobar.</small>
                                 <small data-central-selected>0 asignadas</small>
                             </div>

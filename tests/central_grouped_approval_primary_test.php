@@ -134,4 +134,10 @@ $check(str_contains($js, 'lastValidated') && str_contains($js, "result.approved 
     && str_contains($js, 'VALIDACIÓN CORRECTA, SIN GUARDAR')
     && str_contains($js, 'quantity.addEventListener(\'change\''),
     'La validación no debe rechazar, y las cantidades por talla deben aplicarse antes del envío.');
-echo "[OK] Central: agrupación única, validación sin escritura, decisiones explícitas, reapertura controlada.\n";
+$check(str_contains($grouped, 'data-central-complete-all')
+    && str_contains($grouped, 'data-central-clear-all')
+    && str_contains($grouped, 'data-central-complete-group')
+    && str_contains($grouped, 'Esta acción no aprueba, rechaza ni guarda.')
+    && str_contains($js, 'SELECCIÓN MASIVA SIN GUARDAR'),
+    'Central necesita completar todas o una sola talla sin registrar ninguna decisión.');
+echo "[OK] Central: agrupación única, completar todas las tallas en un clic, validación sin escritura y seguridad nominal.\n";
