@@ -10,7 +10,15 @@ $one=['product_name'=>'Botas Tácticas','size_name'=>'9','total_quantity'=>1.000
 $multi=['product_name'=>'Botas Tácticas','size_name'=>'9','total_quantity'=>516.000,'item_count'=>516];
 $assert(Summary::item($one)==='Botas Tácticas · Talla 9 · 1 unid.', 'La fila individual omite datos esenciales.');
 $assert(Summary::item($multi)==='516 renglones · 516 unid.', 'Un listado con muchos artículos no debe anunciar solo el primer producto.');
-$assert(!str_contains(Summary::item($multi),'Botas Tácticas'), 'No se debe atribuir todo un documento al primer artículo.');
+$assert(!str_contains(Summary::item($multi),'Botas Tácticas'), 'Sin comprobación de homogeneidad no se puede atribuir el total al primer artículo.');
+$homogeneous = array_merge($multi, ['product_count'=>1]);
+$assert(Summary::item($homogeneous)==='Botas Tácticas · 516 unidades',
+    'El documento con 516 renglones del mismo artículo debe identificar Botas Tácticas.');
+$mixed = array_merge($multi, ['product_count'=>2]);
+$assert(Summary::item($mixed)==='2 artículos · 516 unidades',
+    'Un documento mixto no debe aparecer incorrectamente como Botas Tácticas.');
+$assert(Summary::item(array_merge($multi,['product_count'=>1,'product_name'=>'']))==='516 renglones · 516 unid.',
+    'Sin nombre de artículo verificado se requiere un resumen neutro.');
 $assert(Summary::item(['item_count'=>0,'total_quantity'=>0])==='Consultar detalle', 'El resumen nunca debe inventar artículos.');
 $assert(Summary::status('in_review')==='En revisión'
     && Summary::status('dispatched')==='En camino'
@@ -57,7 +65,7 @@ $assert(str_contains($partial,'P4CentralCardSummary::item($record)')
     && str_contains($partial,'sindesg_can(')
     && str_contains($partial,"\$record['code']")
     && str_contains($partial,'if (count($warehouses) > 1)')
-    && str_contains($partial,'title="<?= e((string)($record[\'title\'] ?? \'\')) ?>"'),
+    && str_contains($partial,"Detalle completo del documento "),
     'Código, detalle completo, RBAC o ámbito multi-P4 faltante.');
 $assert(!str_contains($partial,'$record[\'person_label\']')
     && !str_contains($partial,'$record[\'title\'] ?></'),
