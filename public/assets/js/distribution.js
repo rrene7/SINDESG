@@ -121,6 +121,8 @@
         const summary = form.querySelector('[data-transfer-message]');
         const selectedGlobal = form.querySelector('[data-transfer-global-selected]');
         const validateButton = form.querySelector('[data-transfer-validate]');
+        const selectAllButton = form.querySelector('[data-transfer-select-all]');
+        const clearAllButton = form.querySelector('[data-transfer-clear-all]');
         let validated = false;
         const amount = (raw) => {
             if (String(raw).trim() === '') return NaN;
@@ -181,17 +183,74 @@
         groups.forEach(group => {
             const field = group.querySelector('[data-transfer-group-quantity]');
             const applyButton = group.querySelector('[data-transfer-apply]');
+            const maxButton = group.querySelector('[data-transfer-max-group]');
             if (field) {
                 field.addEventListener('change', () => apply(group));
                 field.addEventListener('input', invalidate);
             }
             if (applyButton) applyButton.addEventListener('click', () => apply(group));
+            if (maxButton) maxButton.addEventListener('click', () => {
+                const pending = amount(group.dataset.pending);
+                const stock = amount(group.dataset.stock);
+                const limit = Math.min(pending, stock);
+                if (!Number.isFinite(limit)) return;
+                field.value = limit.toFixed(3);
+                apply(group);
+                if (limit + 0.000001 < pending && summary) {
+                    summary.textContent = 'Talla incompleta por stock: se seleccionaron '
+                        + display(limit) + ' de ' + display(pending)
+                        + ' unidades pendientes. Revise los destinatarios.';
+                }
+            });
             forGroup(group).forEach(row => row.addEventListener('input', () => {
                 const groupTotal = sum(forGroup(group));
                 if (field) field.value = groupTotal.toFixed(3);
                 invalidate();
                 update();
             }));
+        });
+        // Un solo clic distribuye todo lo comprometible de cada talla.
+        // Ninguno de estos controles envía POST, crea transferencias o toca el kardex.
+        if (selectAllButton) selectAllButton.addEventListener('click', () => {
+            let stockLimitedGroups = 0;
+            let pendingShortfall = 0;
+            groups.forEach(group => {
+                const pending = amount(group.dataset.pending);
+                const stock = amount(group.dataset.stock);
+                if (!Number.isFinite(pending) || !Number.isFinite(stock)) return;
+                const limit = Math.min(pending, stock);
+                const field = group.querySelector('[data-transfer-group-quantity]');
+                if (field) {
+                    field.value = limit.toFixed(3);
+                    apply(group);
+                }
+                if (limit + 0.000001 < pending) {
+                    stockLimitedGroups++;
+                    pendingShortfall += pending - limit;
+                }
+            });
+            const selected = update();
+            if (summary) {
+                summary.textContent = 'SELECCIÓN MASIVA SIN GUARDAR: ' + display(selected)
+                    + ' unidades asignadas automáticamente a los funcionarios. '
+                    + (stockLimitedGroups
+                        ? stockLimitedGroups + ' tallas limitadas por stock; '
+                            + display(pendingShortfall) + ' unidades permanecen sin seleccionar. '
+                            + 'Revise esas tallas antes de continuar.'
+                        : 'Todas las unidades pendientes disponibles están seleccionadas. ')
+                    + 'Pulse «Validar sin guardar» antes de preparar.';
+            }
+        });
+        if (clearAllButton) clearAllButton.addEventListener('click', () => {
+            groups.forEach(group => {
+                const field = group.querySelector('[data-transfer-group-quantity]');
+                if (field) field.value = '0';
+                forGroup(group).forEach(row => { row.value = '0.000'; });
+            });
+            invalidate();
+            update();
+            if (summary) summary.textContent =
+                'SELECCIÓN LIMPIADA SIN GUARDAR: 0 unidades. No se preparó ninguna transferencia.';
         });
         const validate = () => {
             let approved = 0;

@@ -70,8 +70,14 @@ $check(substr_count($html, 'data-transfer-item') === 516
 $check(substr_count($html, '<details class="distribution-group-detail">') === 16,
     'Cada talla debe ofrecer detalle nominal desplegable.');
 $check(substr_count($html, 'data-transfer-group-quantity') === 16
-    && substr_count($html, 'data-transfer-apply') === 16,
-    'Debe existir una decisión por talla, con aplicación a funcionarios.');
+    && substr_count($html, 'data-transfer-apply') === 16
+    && substr_count($html, 'data-transfer-max-group') === 16,
+    'Cada talla requiere ajuste individual y opción de completar con un clic.');
+$check(substr_count($html, 'data-transfer-select-all') === 1
+    && substr_count($html, 'data-transfer-clear-all') === 1
+    && str_contains($html, 'Seleccionar todos los pendientes')
+    && str_contains($html, 'No guarda ni prepara la transferencia.'),
+    'Debe permitir seleccionar masivamente sin enviar ni preparar.');
 $check(str_contains($html, 'data-transfer-validate')
     && str_contains($html, 'Validar sin guardar')
     && str_contains($html, 'data-transfer-submit')
