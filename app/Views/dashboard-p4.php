@@ -21,7 +21,7 @@ if (!empty($p4DashboardDataReady)) {
         }
     }
 }
-$activity = [];
+$dashboardEntries = [];
 $statusLabels = [
  'draft'=>'Borrador', 'submitted'=>'Enviada a Central',
  'in_review'=>'Central está revisando', 'approved'=>'Aprobada',
@@ -38,18 +38,21 @@ foreach (($p4OperationalSummary ?? []) as $warehouseId => $operations) {
         'deliveries' => ['title'=>'Entrega individual de dotación','module'=>'deliveries'],
     ] as $type => $info) {
         foreach ($operations[$type] ?? [] as $record) {
-            $activity[] = array_merge($record, $info, [
+            $dashboardEntries[] = array_merge($record, $info, [
+                'type' => $type,
                 'title' => \App\Services\P4ActivityLabel::title($type, $record),
                 'warehouse_name' => $warehouses[(int)$warehouseId] ?? 'Almacén P4',
             ]);
         }
     }
 }
-usort($activity, static fn(array $a,array $b):int =>
-    strcmp((string)($b['event_at']??''),(string)($a['event_at']??'')));
-// Fixed-size visual digest: 3 rows on the dashboard, 5 more on demand.
-// The original records remain in SINDESG; this only limits the homepage.
+// Requests and Central distributions are a separate P4 <-> Central circuit.
+// Confirmed employee handovers stay in local follow-up only.
+$flowSections = \App\Services\P4DashboardActivitySections::group($dashboardEntries);
+$activity = $flowSections['deliveries'];
 [$activityPreview, $activityExtra] = \App\Services\P4ActivityList::split($activity);
+[$centralRequestPreview, $centralRequestExtra] = \App\Services\P4ActivityList::split($flowSections['requests']);
+[$centralTransferPreview, $centralTransferExtra] = \App\Services\P4ActivityList::split($flowSections['transfers']);
 $ready = !empty($p4ScopeReady) && !empty($p4OperationsReadable)
     && !empty($p4DashboardDataReady) && $warehouses !== [];
 ?>
@@ -61,7 +64,7 @@ $ready = !empty($p4ScopeReady) && !empty($p4OperationsReadable)
 .p4-dashboard-v2 .p4-v2-actions{display:flex;flex-wrap:wrap;gap:9px;align-items:center}
 .p4-dashboard-v2 .p4-v2-actions a{padding:11px 14px;border:1px solid #399ad6;border-radius:8px;font-size:.83rem;color:#ecf9ff;text-decoration:none;font-weight:650}
 .p4-dashboard-v2 .p4-v2-actions a:first-child{background:#167dc1;border-color:#167dc1}
-.p4-dashboard-v2 .p4-v2-metrics{display:grid;grid-template-columns:repeat(5,minmax(145px,1fr));gap:10px}
+.p4-dashboard-v2 .p4-v2-metrics{display:grid;grid-template-columns:repeat(3,minmax(145px,1fr));gap:10px}
 .p4-dashboard-v2 .p4-v2-metric{border:1px solid #1b5479;border-radius:12px;background:#071f37;padding:16px}
 .p4-dashboard-v2 .p4-v2-metric strong{display:block;font-size:1.85rem;line-height:1.15;font-variant-numeric:tabular-nums;margin-bottom:5px}
 .p4-dashboard-v2 .p4-v2-metric span{display:block;color:#e0f1fb;font-size:.83rem;font-weight:650}
@@ -98,6 +101,37 @@ $ready = !empty($p4ScopeReady) && !empty($p4OperationsReadable)
 .p4-dashboard-v2 .p4-v2-steps{display:flex;flex-wrap:wrap;gap:8px}
 .p4-dashboard-v2 .p4-v2-steps span{padding:9px 11px;border:1px solid #285776;border-radius:8px;color:#c5e1f0;font-size:.78rem}
 .p4-dashboard-v2 .p4-v2-signature-note{margin-top:10px;color:#9ac1d6;font-size:.75rem}
+.p4-dashboard-v2 .p4-v2-central-panel{border-color:#26729d;background:linear-gradient(120deg,#06213b,#052b45)}
+.p4-dashboard-v2 .p4-v2-central-heading{margin-bottom:14px}
+.p4-dashboard-v2 .p4-v2-central-heading h2{font-size:1.18rem}
+.p4-dashboard-v2 .p4-v2-central-action{display:inline-flex;align-items:center;padding:10px 13px;border-radius:9px;border:1px solid #5cbbec;background:#126a9e;color:#fff;text-decoration:none;font-size:.82rem;font-weight:750}
+.p4-dashboard-v2 .p4-v2-central-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:12px}
+.p4-dashboard-v2 .p4-v2-central-stat{border:1px solid #276186;border-radius:10px;padding:12px 14px;background:#041a31;min-width:0}
+.p4-dashboard-v2 .p4-v2-central-stat strong{display:block;font-size:1.4rem;font-variant-numeric:tabular-nums}
+.p4-dashboard-v2 .p4-v2-central-stat span{font-size:.8rem;color:#d8eeff}
+.p4-dashboard-v2 .p4-v2-central-columns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.p4-dashboard-v2 .p4-v2-central-column{border:1px solid #225a7f;border-radius:12px;background:#061d34;padding:13px;min-width:0}
+.p4-dashboard-v2 .p4-v2-central-column h3{font-size:.95rem;margin:0 0 6px}
+.p4-dashboard-v2 .p4-v2-central-column>p{font-size:.76rem;color:#a6c9e2;line-height:1.4;margin:0 0 10px}
+.p4-dashboard-v2 .p4-v2-central-list{display:grid;gap:6px}
+.p4-dashboard-v2 .p4-v2-central-entry{padding:10px 11px;border:1px solid #225471;border-radius:8px;min-width:0}
+.p4-dashboard-v2 .p4-v2-central-entry-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-start;gap:7px;margin-bottom:5px}
+.p4-dashboard-v2 .p4-v2-central-entry-head a,.p4-dashboard-v2 .p4-v2-central-entry-head strong{color:#b6e9ff;text-decoration:none;font-size:.83rem}
+.p4-dashboard-v2 .p4-v2-central-entry-head span{color:#e5f6ff;font-size:.73rem;font-weight:700}
+.p4-dashboard-v2 .p4-v2-central-entry-title{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;font-size:.77rem;line-height:1.42;overflow-wrap:anywhere;margin-bottom:4px;color:#e6f2fb}
+.p4-dashboard-v2 .p4-v2-central-entry>small{display:block;font-size:.72rem;color:#a4c7df}
+.p4-dashboard-v2 .p4-v2-central-more{margin-top:8px;border:1px solid #275875;border-radius:8px}
+.p4-dashboard-v2 .p4-v2-central-more summary{cursor:pointer;color:#9fddfb;min-height:42px;padding:10px;font-weight:700;font-size:.78rem}
+.p4-dashboard-v2 .p4-v2-central-more summary:focus-visible{outline:2px solid #86dbff;outline-offset:2px}
+.p4-dashboard-v2 .p4-v2-central-more .p4-v2-open-label{display:none}
+.p4-dashboard-v2 .p4-v2-central-more[open] .p4-v2-open-label{display:inline}
+.p4-dashboard-v2 .p4-v2-central-more[open] .p4-v2-closed-label{display:none}
+.p4-dashboard-v2 .p4-v2-central-overflow{max-height:260px;overflow:auto;display:grid;gap:6px;padding:7px}
+.p4-dashboard-v2 .p4-v2-central-stages{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px}
+.p4-dashboard-v2 .p4-v2-central-stages span{border:1px solid #326583;border-radius:999px;padding:7px 10px;color:#beddf0;font-size:.74rem}
+.p4-dashboard-v2 .p4-v2-central-caption{margin:9px 0 0;color:#9ac3db;font-size:.72rem;line-height:1.5}
+@media(max-width:760px){.p4-dashboard-v2 .p4-v2-central-columns{grid-template-columns:1fr}.p4-dashboard-v2 .p4-v2-central-stats{grid-template-columns:1fr 1fr}}
+
 @media(max-width:1050px){.p4-dashboard-v2 .p4-v2-metrics{grid-template-columns:repeat(3,minmax(140px,1fr))}}
 @media(max-width:690px){.p4-dashboard-v2 .p4-v2-metrics{grid-template-columns:repeat(2,minmax(130px,1fr))}.p4-dashboard-v2 .p4-v2-activity-row{grid-template-columns:1fr;gap:4px}}
 @media(max-width:420px){.p4-dashboard-v2 .p4-v2-metrics{grid-template-columns:1fr}}
@@ -112,7 +146,7 @@ $ready = !empty($p4ScopeReady) && !empty($p4OperationsReadable)
         <nav class="p4-v2-actions" aria-label="Acciones P4">
             <?php if ($ready && sindesg_can('requests.manage')
                 && sindesg_role_action_allowed('requests','new','GET',(array)sindesg_user())): ?>
-                <a href="<?= e(sindesg_url('?module=requests&action=new')) ?>">+ Nueva solicitud</a>
+                <!-- Solicitudes a Central ahora pertenecen a la tarjeta del circuito P4 / Central. -->
             <?php endif; ?>
             <?php if ($ready && sindesg_can('deliveries.view')
                 && sindesg_role_action_allowed('deliveries','index','GET',(array)sindesg_user())): ?>
@@ -131,11 +165,62 @@ $ready = !empty($p4ScopeReady) && !empty($p4OperationsReadable)
         </section>
     <?php else: ?>
         <section class="p4-v2-metrics" aria-label="Indicadores reales de mi almacén">
-            <article class="p4-v2-metric"><strong><?= e(sindesg_units((int)$totals['requests_waiting_central'])) ?></strong><span>Solicitudes en Central</span><small>Enviadas o en revisión</small></article>
-            <article class="p4-v2-metric"><strong><?= e(sindesg_units((int)$totals['transfers_to_receive'])) ?></strong><span>Transferencias por recibir</span><small>Despachadas, aún sin recepción confirmada</small></article>
             <article class="p4-v2-metric"><strong><?= e(sindesg_units((int)$totals['beneficiaries_pending'])) ?></strong><span>Funcionarios pendientes</span><small>Con prendas recibidas aún sin entregar</small></article>
             <article class="p4-v2-metric"><strong><?= e(sindesg_units((int)$totals['deliveries_confirmed'])) ?></strong><span>Entregas confirmadas</span><small>Total histórico de mis almacenes</small></article>
             <article class="p4-v2-metric"><strong><?= e(\App\Services\P4QuantityDisplay::units((float)$totals['physical_units'])) ?></strong><span>Unidades físicas</span><small>Unidades, no miles · Incluye dotación reservada</small></article>
+        </section>
+        <section class="p4-v2-panel p4-v2-central-panel" aria-labelledby="p4-central-title">
+            <div class="p4-v2-heading p4-v2-central-heading">
+                <div><span class="eyebrow">RELACIÓN LOGÍSTICA · P4 ↔ ALMACÉN CENTRAL</span>
+                    <h2 id="p4-central-title">Solicitudes al Almacén Central</h2></div>
+                <?php if (sindesg_can('requests.manage') &&
+                    sindesg_role_action_allowed('requests','new','GET',(array)sindesg_user())): ?>
+                    <a class="p4-v2-central-action" href="<?= e(sindesg_url('?module=requests&action=new')) ?>">+ Nueva solicitud a Central</a>
+                <?php endif; ?>
+            </div>
+            <div class="p4-v2-central-stats">
+                <div class="p4-v2-central-stat"><strong><?= e(sindesg_units((int)$totals['requests_waiting_central'])) ?></strong><span>Solicitudes enviadas o en revisión por Central</span></div>
+                <div class="p4-v2-central-stat"><strong><?= e(sindesg_units((int)$totals['transfers_to_receive'])) ?></strong><span>Transferencias despachadas pendientes de recibir en P4</span></div>
+            </div>
+            <div class="p4-v2-central-columns">
+                <div class="p4-v2-central-column">
+                    <h3>Solicitudes del P4 a Central</h3>
+                    <p>Documentos que el P4 envió para revisión, aprobación y atención.</p>
+                    <div class="p4-v2-central-list">
+                        <?php $rows = $centralRequestPreview; require __DIR__.'/partials/p4-central-log.php'; ?>
+                        <?php if (!$centralRequestPreview): ?><p class="p4-v2-note">No hay solicitudes registradas en tus almacenes.</p><?php endif; ?>
+                    </div>
+                    <?php if ($centralRequestExtra): ?>
+                        <details class="p4-v2-central-more"><summary>
+                            <span class="p4-v2-closed-label">Ver <?= e(count($centralRequestExtra)) ?> solicitudes más ↓</span>
+                            <span class="p4-v2-open-label">Ocultar solicitudes adicionales ↑</span>
+                        </summary><div class="p4-v2-central-overflow">
+                            <?php $rows = $centralRequestExtra; require __DIR__.'/partials/p4-central-log.php'; ?>
+                        </div></details>
+                    <?php endif; ?>
+                </div>
+                <div class="p4-v2-central-column">
+                    <h3>Despachos de Central hacia el P4</h3>
+                    <p>Preparación, despacho, traslado y recepción de mercancía.</p>
+                    <div class="p4-v2-central-list">
+                        <?php $rows = $centralTransferPreview; require __DIR__.'/partials/p4-central-log.php'; ?>
+                        <?php if (!$centralTransferPreview): ?><p class="p4-v2-note">No hay transferencias registradas para tus almacenes.</p><?php endif; ?>
+                    </div>
+                    <?php if ($centralTransferExtra): ?>
+                        <details class="p4-v2-central-more"><summary>
+                            <span class="p4-v2-closed-label">Ver <?= e(count($centralTransferExtra)) ?> transferencias más ↓</span>
+                            <span class="p4-v2-open-label">Ocultar transferencias adicionales ↑</span>
+                        </summary><div class="p4-v2-central-overflow">
+                            <?php $rows = $centralTransferExtra; require __DIR__.'/partials/p4-central-log.php'; ?>
+                        </div></details>
+                    <?php endif; ?>
+                </div>
+            </div>
+            <div class="p4-v2-central-stages" aria-label="Etapas generales de relación P4 y Central">
+                <span>1 · Solicitud del P4</span><span>2 · Revisión y aprobación Central</span>
+                <span>3 · Despacho hacia P4</span><span>4 · Recepción en P4</span>
+            </div>
+            <p class="p4-v2-central-caption">Solicitudes y transferencias se muestran por separado y con sus códigos originales; una transferencia no implica asociación automática con una solicitud determinada.</p>
         </section>
         <section class="p4-v2-panel">
             <div class="p4-v2-heading">
@@ -167,8 +252,8 @@ $ready = !empty($p4ScopeReady) && !empty($p4OperationsReadable)
         </section>
         <section class="p4-v2-panel">
             <div class="p4-v2-heading">
-                <div><span class="eyebrow">SEGUIMIENTO</span><h2>Últimos movimientos y trámites</h2></div>
-                <small>3 movimientos recientes · hasta 8 al desplegar</small>
+                <div><span class="eyebrow">SEGUIMIENTO DEL P4</span><h2>Últimos movimientos y trámites</h2></div>
+                <small>Entregas al funcionario · 3 visibles y hasta 8 al desplegar</small>
             </div>
             <div class="p4-v2-activity">
             <?php foreach ($activityPreview as $record): ?>
@@ -205,18 +290,17 @@ $ready = !empty($p4ScopeReady) && !empty($p4OperationsReadable)
                     </div>
                 </details>
             <?php endif; ?>
-            <?php if (!$activityPreview): ?><p class="p4-v2-note">Aún no hay trámites registrados para tus almacenes.</p><?php endif; ?>
+            <?php if (!$activityPreview): ?><p class="p4-v2-note">Aún no hay entregas individuales registradas para tus almacenes.</p><?php endif; ?>
             </div>
         </section>
         <section class="p4-v2-panel">
             <div class="p4-v2-heading">
-                <div><span class="eyebrow">PROCESO DE DOTACIÓN</span><h2>De la solicitud a la entrega</h2></div>
+                <div><span class="eyebrow">ENTREGA NOMINAL</span><h2>Del P4 al funcionario</h2></div>
             </div>
             <div class="p4-v2-steps">
-                <span>1 · Solicitar a Central</span>
-                <span>2 · Esperar aprobación</span>
-                <span>3 · Recibir en P4</span>
-                <span>4 · Entregar y firmar</span>
+                <span>1 · Verificar funcionario y dotación</span>
+                <span>2 · Firma de recepción y entrega</span>
+                <span>3 · Generar constancia individual</span>
             </div>
             <p class="p4-v2-signature-note">
                 <a href="<?= e(sindesg_url('?module=profile&action=signature')) ?>">Mi firma institucional →</a>
