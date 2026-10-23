@@ -34,8 +34,9 @@ foreach ([
 ] as $part) {
     $assert(str_contains($view,$part),'P4 perdió control de vista, estado o permisos: '.$part);
 }
-$assert(str_contains($view,'usort($activity,') && str_contains($view,'P4ActivityLabel::title('),
-    'Las entradas deben conservar orden cronológico y descripción real.');
+$assert(str_contains($view,'P4DashboardActivitySections::group($dashboardEntries)')
+    && str_contains($view,'P4ActivityLabel::title('),
+    'Las entradas deben conservar separación, orden cronológico y descripción real.');
 $assert(!str_contains($view,'array_slice($activity, 0, 8)'),
     'No se debe duplicar el límite ya centralizado en P4ActivityList.');
 $assert(str_contains($view,'max-height:320px')
