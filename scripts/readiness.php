@@ -83,10 +83,14 @@ if ($environment === 'production') {
     }
 
     $baseUrl = trim((string) ($app['base_url'] ?? ''));
-    if ($baseUrl !== '' && str_starts_with($baseUrl, '/')) {
-        $ok('Base URL', $baseUrl);
+    if ($baseUrl === 'auto') {
+        $ok('Base URL', 'auto: ruta detectada por la petición HTTP (validar desde el navegador)');
+    } elseif ($baseUrl === '/' || $baseUrl === ''
+        || (str_starts_with($baseUrl, '/')
+            && preg_match('~^/(?:[A-Za-z0-9_.-]+)(?:/[A-Za-z0-9_.-]+)*$~D', rtrim($baseUrl, '/')))) {
+        $ok('Base URL', $baseUrl === '' ? '/' : $baseUrl);
     } else {
-        $error('Base URL', 'Debe definirse como ruta absoluta del sitio, por ejemplo /SINDESG');
+        $error('Base URL', 'Use auto, / o una ruta absoluta sin dominio.');
     }
 
     if (($app['session_secure'] ?? false) === true) {
@@ -162,15 +166,22 @@ if (is_file($databaseConfigPath)) {
 if ($environment === 'production') {
     $apacheRulesPath = $root . '/.htaccess';
     $apacheRules = is_file($apacheRulesPath) ? file_get_contents($apacheRulesPath) : false;
-    if (!is_string($apacheRules)
-        || !str_contains($apacheRules, 'RewriteEngine On')
-        || !str_contains($apacheRules, 'app|config|database|docs|scripts|tests')
-        || !str_contains($apacheRules, 'storage/(?:backups|cache|logs|deployments)')
-        || !str_contains($apacheRules, 'storage/uploads/')
-    ) {
-        $error('Protección HTTP', '.htaccess de SINDESG ausente o incompleto; no publicar archivos internos.');
+    $nginxTemplate = $root . '/deploy/linux/nginx-sindesg.conf.example';
+    $nginxConfig = is_file($nginxTemplate) ? file_get_contents($nginxTemplate) : false;
+    $apacheProtected = is_string($apacheRules)
+        && str_contains($apacheRules, 'RewriteEngine On')
+        && str_contains($apacheRules, 'app|config|database|docs|scripts|tests')
+        && str_contains($apacheRules, 'storage/(?:backups|cache|logs|deployments)')
+        && str_contains($apacheRules, 'storage/uploads/');
+    $nginxProtected = is_string($nginxConfig)
+        && str_contains($nginxConfig, 'root /srv/sindesg/public')
+        && str_contains($nginxConfig, 'fastcgi_pass')
+        && str_contains($nginxConfig, 'location ~');
+    if (!$apacheProtected || !$nginxProtected) {
+        $error('Protección HTTP', 'Falta la protección de Apache o la plantilla Linux de Nginx.');
     } else {
-        $ok('Protección HTTP', 'Reglas locales presentes. Pendiente comprobar 403 por HTTPS desde otra estación.');
+        $ok('Protección HTTP',
+            'Apache y plantilla Nginx presentes; comprobar raíz web y bloqueos por HTTPS en el servidor real.');
     }
 
     if (!is_file($databaseConfigPath)) {

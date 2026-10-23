@@ -106,3 +106,10 @@ Antes de cada bloque de desarrollo:
 4. subir el cambio a GitHub;
 5. confirmar el commit publicado;
 6. solo entonces actualizar la copia local en XAMPP.
+
+
+### Linux institucional (sin XAMPP)
+
+La nueva publicación se prepara para Nginx + PHP-FPM con `root /srv/sindesg/public`. La ruta web, los recursos y las API se resuelven automáticamente para Windows/XAMPP y Linux, también si la aplicación vive bajo un prefijo. No depende de letras de unidad de Windows.
+
+Guía: [Despliegue Linux](docs/DESPLIEGUE_LINUX.md). Antes de exponer datos, validar HTTPS, rutas públicas, archivos privados, PHP-FPM, permisos y cuentas de MariaDB. RRHH2029 siempre con cuenta de solo lectura.

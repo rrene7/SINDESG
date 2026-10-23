@@ -2,7 +2,7 @@
 
 ## 1. Estado
 
-Fase 14D prepara el despliegue institucional de SINDESG sobre Windows/XAMPP.
+Fase 14D conserva el despliegue histórico Windows/XAMPP para desarrollo. Para publicación institucional se utilizará Linux con Nginx y PHP-FPM, sirviendo únicamente el directorio `public/` (véase `docs/DESPLIEGUE_LINUX.md`).
 
 La versión `0.14.0-d-rc1` es **release candidate**. No debe marcarse como versión final de producción hasta validar el sistema en el servidor institucional real.
 
@@ -59,7 +59,7 @@ declare(strict_types=1);
 
 return [
     'environment' => 'production',
-    'base_url' => '/SINDESG',
+    'base_url' => 'auto',
     'session_secure' => true,
 ];
 ```
@@ -277,3 +277,10 @@ Fase 14D queda cerrada únicamente cuando:
 - las pruebas funcionales críticas fueron aceptadas.
 
 Hasta ese momento la versión mantiene la etiqueta **release candidate**.
+
+
+## Servidor Linux de producción
+
+Para un servidor adicional Linux, **no copie** el directorio completo del proyecto al webroot. Publique solamente `/srv/sindesg/public` con Nginx/PHP-FPM.
+
+Consulte [el procedimiento de despliegue Linux](DESPLIEGUE_LINUX.md) y la plantilla `deploy/linux/nginx-sindesg.conf.example` antes de exponer el sitio. Esta preparación de código no despliega ni cambia las bases actuales.

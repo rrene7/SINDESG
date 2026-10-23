@@ -1,0 +1,46 @@
+# SINDESG | EJEMPLO Nginx para Linux + PHP-FPM
+# Sustituir nombre DNS, certificado, raíz real y socket FPM antes de activar.
+# Nunca use root /srv/sindesg (expone config/, backups, scripts y SQL).
+server {
+    listen 80;
+    server_name sindesg.example.invalid;
+    return 308 https://$host$request_uri;
+}
+server {
+    listen 443 ssl;
+    server_name sindesg.example.invalid;
+    root /srv/sindesg/public;
+    index index.php;
+    autoindex off;
+    server_tokens off;
+    client_max_body_size 15m;
+
+    ssl_certificate /etc/ssl/sindesg/fullchain.pem;
+    ssl_certificate_key /etc/ssl/sindesg/privkey.pem;
+    add_header X-Content-Type-Options nosniff always;
+    add_header Referrer-Policy strict-origin-when-cross-origin always;
+
+    # El frontend legacy recibe rutas ?module=...; se preserva el querystring.
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    # Solo imágenes públicas simples; ni planillas nominales ni scripts subidos.
+    # No habilitar alias general del directorio de uploads.
+    location ~* ^/storage/uploads/(?<image_path>(?:[A-Za-z0-9_-]+/)*[A-Za-z0-9_-]+\.(?:jpe?g|png|webp|gif))$ {
+        alias /srv/sindesg/storage/uploads/$image_path;
+        add_header X-Content-Type-Options nosniff always;
+        add_header Cache-Control "private, no-store" always;
+    }
+    location /storage/uploads/ { return 404; }
+
+    # Solo PHP de entrada y endpoints API existentes, nunca archivos internos.
+    location ~ ^/(?:index\.php|api/(?:employees|units|delivery-history|last-nominal-delivery)\.php)$ {
+        include fastcgi_params;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        fastcgi_param HTTP_PROXY "";
+        fastcgi_pass unix:/run/php/php8.2-fpm.sock;
+    }
+    location ~ \.php(?:/|$) { return 404; }
+    location ~ /\. { return 404; }
+}

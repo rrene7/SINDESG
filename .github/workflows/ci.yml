@@ -31,6 +31,9 @@ jobs:
       - name: Project structure
         run: php scripts/check.php
 
+      - name: Windows and Linux deployment route resolution
+        run: php tests/linux_runtime_paths_test.php
+
       - name: Administrator category governance and audit
         run: php tests/admin_category_governance_test.php
 
@@ -478,6 +481,14 @@ jobs:
         shell: pwsh
         run: |
           php tests/dashboard_operational_feed_test.php
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Windows XAMPP and Linux public-root URL compatibility
+        shell: pwsh
+        run: |
+          php tests/linux_runtime_paths_test.php
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          php tests/deployment_logic_test.php
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Dashboard recent receipt products on Windows
