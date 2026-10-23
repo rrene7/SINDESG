@@ -37,3 +37,16 @@
 }
 .receipt-kardex-link{color:#69d3ff;font-weight:750;font-size:.78rem}
 .receipt-kardex-link:hover{text-decoration:underline;color:#d4f5ff}
+
+
+/* Identificación del artículo desde el catálogo en la recepción: evita lotes anónimos. */
+.receipt-detail-hero>div:first-child{min-width:0;flex:1 1 auto}
+.receipt-product-identity{margin-top:17px;padding:14px 17px;border:1px solid rgba(76,182,239,.34);border-radius:14px;background:rgba(1,20,40,.4)}
+.receipt-product-identity h2{margin:6px 0 5px;font-size:clamp(1.15rem,2vw,1.65rem);font-weight:800;overflow-wrap:anywhere}
+.receipt-product-identity p{margin:4px 0;color:#b4d8ed;font-size:.83rem;line-height:1.55}
+.receipt-product-breakdown{margin:9px 0 0;padding:0;list-style:none;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px}
+.receipt-product-breakdown li{padding:9px 11px;border:1px solid rgba(76,182,239,.2);border-radius:10px;min-width:0}
+.receipt-product-breakdown strong,.receipt-product-breakdown span{display:block;overflow-wrap:anywhere}
+.receipt-product-breakdown span{color:#bad8ea;font-size:.79rem;margin-top:4px}
+.receipt-detail-status small{max-width:240px;overflow-wrap:anywhere}
+@media(max-width:760px){.receipt-detail-hero{flex-wrap:wrap;align-items:stretch}.receipt-detail-status{text-align:left;min-width:0}.receipt-detail-status small{max-width:none}.receipt-product-breakdown{grid-template-columns:minmax(0,1fr)}}
