@@ -46,7 +46,7 @@ $assert(!str_contains($show, 'class="request-review-lines"')
     && !str_contains($show, 'class="request-review-form"'),
     'Detalle conserva el formulario individual duplicado.');
 $assert(str_contains($show, 'tracking.php')
-    && str_contains($show, 'request-item-table')
+    && str_contains($show, 'beneficiary_label_snapshot')
     && str_contains($show, 'request-send-panel'),
     'No se debe perder seguimiento ni edición de borrador P4.');
 
