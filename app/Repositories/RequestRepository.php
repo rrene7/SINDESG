@@ -5,6 +5,7 @@ namespace App\Repositories;
 
 use PDO;
 use RuntimeException;
+use App\Services\CentralDecisionGuard;
 
 final class RequestRepository
 {
@@ -685,7 +686,10 @@ final class RequestRepository
         int $requestId,
         array $approvedByItemId,
         array $reviewer,
-        ?string $reviewNotes
+        ?string $reviewNotes,
+        string $decisionAction,
+        array $groupTotals,
+        bool $partialConfirmed
     ): string {
         $this->pdo->beginTransaction();
 
@@ -706,9 +710,9 @@ final class RequestRepository
             $itemsStatement->execute(['request_id' => $requestId]);
             $items = $itemsStatement->fetchAll();
 
-            if ($items === []) {
-                throw new RuntimeException('La solicitud no contiene renglones.');
-            }
+            CentralDecisionGuard::validate(
+                $items, $approvedByItemId, $groupTotals, $decisionAction, $partialConfirmed
+            );
 
             $remainingByVariant = [];
             $updates = [];
@@ -797,6 +801,85 @@ final class RequestRepository
 
             $this->pdo->commit();
             return $status;
+        } catch (\Throwable $exception) {
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+            throw $exception;
+        }
+    }
+
+
+    /**
+     * Reabre un rechazo erróneo sin eliminar la decisión anterior: la
+     * evidencia previa se preserva en audit_logs dentro de la misma
+     * transacción y los campos históricos de revisión no se vacían.
+     */
+    public function reopenRejected(int $requestId, array $actor, string $reason): void
+    {
+        $this->pdo->beginTransaction();
+        try {
+            $previous = $this->lockRequest($requestId);
+            if ((string) $previous['status'] !== 'rejected') {
+                throw new RuntimeException('Solo puede reabrirse una solicitud rechazada.');
+            }
+            $check = $this->pdo->prepare(<<<'SQL'
+                SELECT
+                    COUNT(*) AS item_count,
+                    COALESCE(SUM(i.quantity_approved),0) AS approved,
+                    COALESCE(SUM(i.quantity_dispatched),0) AS dispatched,
+                    COALESCE(SUM(i.quantity_received),0) AS received
+                FROM service_request_items i
+                WHERE i.request_id = :request_id
+                FOR UPDATE
+            SQL);
+            $check->execute(['request_id' => $requestId]);
+            $totals = $check->fetch() ?: [];
+            if ((int) ($totals['item_count'] ?? 0) < 1
+                || (float) ($totals['approved'] ?? 0) !== 0.0
+                || (float) ($totals['dispatched'] ?? 0) !== 0.0
+                || (float) ($totals['received'] ?? 0) !== 0.0) {
+                throw new RuntimeException('La solicitud tiene cantidades incompatibles con una reapertura segura.');
+            }
+            $related = $this->pdo->prepare(<<<'SQL'
+                SELECT
+                    (SELECT COUNT(*) FROM distributions WHERE request_id = :rid1) AS transfers,
+                    (SELECT COUNT(*) FROM inventory_movements
+                        WHERE reference_type = 'request' AND reference_id = :rid2) AS movements
+            SQL);
+            $related->execute(['rid1' => $requestId, 'rid2' => $requestId]);
+            $evidence = $related->fetch() ?: [];
+            if ((int) ($evidence['transfers'] ?? 0) > 0
+                || (int) ($evidence['movements'] ?? 0) > 0) {
+                throw new RuntimeException('Hay movimientos o distribuciones vinculadas. Se requiere revisión administrativa.');
+            }
+            (new AuditRepository($this->pdo))->log([
+                'user_id' => (int) ($actor['id'] ?? 0),
+                'user_label_snapshot' => (string) ($actor['display_name_snapshot'] ?? $actor['username'] ?? ''),
+                'module_code' => 'requests',
+                'action_code' => 'reopen_rejected_request',
+                'record_type' => 'service_request',
+                'record_id' => (string) $requestId,
+                'details' => ['reason' => $reason, 'without_stock_movements' => true],
+                'before' => [
+                    'status' => $previous['status'],
+                    'reviewed_by_employee_id' => $previous['reviewed_by_employee_id'],
+                    'reviewed_by_label_snapshot' => $previous['reviewed_by_label_snapshot'],
+                    'reviewed_at' => $previous['reviewed_at'],
+                    'review_notes' => $previous['review_notes'],
+                    'item_count' => $totals['item_count'],
+                    'approved' => $totals['approved'],
+                ],
+                'after' => ['status' => 'in_review'],
+            ]);
+            $update = $this->pdo->prepare(
+                "UPDATE service_requests SET status = 'in_review' WHERE id = :id AND status = 'rejected'"
+            );
+            $update->execute(['id' => $requestId]);
+            if ($update->rowCount() !== 1) {
+                throw new RuntimeException('La solicitud cambió durante la reapertura.');
+            }
+            $this->pdo->commit();
         } catch (\Throwable $exception) {
             if ($this->pdo->inTransaction()) {
                 $this->pdo->rollBack();

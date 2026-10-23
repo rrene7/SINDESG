@@ -28,7 +28,8 @@ $policy = [
     ['download-nominal-template','GET',false],
     ['index','GET',true],['show','GET',true],
     ['central-review','GET',true],
-    ['start-review','POST',true],['decide','POST',true]
+    ['start-review','POST',true],['decide','POST',true],
+    ['reopen-rejected','POST',false]
 ];
 foreach ([$central,$both] as $user) {
     foreach ($policy as [$action,$method,$allowed]) {

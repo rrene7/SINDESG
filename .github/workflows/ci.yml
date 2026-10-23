@@ -219,6 +219,9 @@ jobs:
       - name: One grouped Central approval interface
         run: php tests/central_grouped_approval_primary_test.php
 
+      - name: Central decision intent and reopening safety
+        run: php tests/central_decision_safety_test.php
+
       - name: P4 origin and Central review segregation
         run: php tests/requests_central_origin_separation_test.php
 
@@ -494,6 +497,8 @@ jobs:
         shell: pwsh
         run: |
           php tests/central_grouped_approval_primary_test.php
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          php tests/central_decision_safety_test.php
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: P4 requests and Central role separation on Windows

@@ -299,6 +299,10 @@ function sindesg_role_action_allowed(string $module, string $action, string $met
                 || (in_array('P4', $roles, true)
                     && !in_array('CENTRAL', $roles, true)));
     }
+    // La corrección de un rechazo es excepcional: exclusivamente ADMIN.
+    if ($module === 'requests' && $action === 'reopen-rejected') {
+        return strtoupper($method) === 'POST' && in_array('ADMIN', $roles, true);
+    }
     if (in_array('ADMIN', $roles, true)) {
         return true;
     }

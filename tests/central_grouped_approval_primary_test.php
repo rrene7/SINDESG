@@ -124,4 +124,14 @@ $check(str_contains($css, '@media (max-width: 760px)')
     && str_contains($grouped, 'approved_quantity[')
     && substr_count($grouped, 'action=decide') === 1,
     'La interfaz movil debe reutilizar el unico POST seguro, sin duplicar campos.');
-echo "[OK] Central: aprobacion agrupada unica, confirmacion parcial nominal y tarjetas moviles, sin tocar inventario.\n";
+$check(str_contains($grouped, 'data-central-validate')
+    && str_contains($grouped, 'name="group_quantity[')
+    && str_contains($grouped, 'name="decision_action" value="approve"')
+    && str_contains($grouped, 'name="decision_action" value="reject"')
+    && str_contains($grouped, 'action=reopen-rejected'),
+    'Validar no debe enviar POST; aprobar, rechazar y corregir son operaciones separadas.');
+$check(str_contains($js, 'lastValidated') && str_contains($js, "result.approved <= 0")
+    && str_contains($js, 'VALIDACIÓN CORRECTA, SIN GUARDAR')
+    && str_contains($js, 'quantity.addEventListener(\'change\''),
+    'La validación no debe rechazar, y las cantidades por talla deben aplicarse antes del envío.');
+echo "[OK] Central: agrupación única, validación sin escritura, decisiones explícitas, reapertura controlada.\n";
