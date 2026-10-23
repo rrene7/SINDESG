@@ -81,6 +81,35 @@ $view=(string)file_get_contents($root.'/app/Views/deliveries/p4-quick.php');
 $js=(string)file_get_contents($root.'/public/assets/js/deliveries.js');
 $css=(string)file_get_contents($root.'/public/assets/css/deliveries.css');
 $show=(string)file_get_contents($root.'/app/Views/deliveries/show.php');
+$router=(string)file_get_contents($root.'/public/index.php');
+$roleGate=(string)file_get_contents($root.'/app/bootstrap.php');
+require $root.'/app/bootstrap.php';
+
+// Reproduce precisely the P4 403 on POST /?module=deliveries&action=deliver-now.
+$p4=['role_codes'=>['P4']];
+$central=['role_codes'=>['CENTRAL']];
+$viewer=['role_codes'=>['VIEWER']];
+$dual=['role_codes'=>['CENTRAL','P4']];
+$check(sindesg_permission_for('deliveries','deliver-now','POST') === 'deliveries.manage',
+    'La entrega directa debe conservar permiso RBAC deliveries.manage.');
+$check(sindesg_role_action_allowed('deliveries','deliver-now','POST',$p4),
+    'El router debe permitir POST deliver-now al P4 autenticado.');
+foreach ([
+    ['deliveries','deliver-now','GET',$p4],
+    ['deliveries','deliver-now','POST',$central],
+    ['deliveries','deliver-now','POST',$viewer],
+    ['deliveries','deliver-now','POST',$dual],
+    ['deliveries','add-item','POST',$p4],
+    ['deliveries','cancel','POST',$p4],
+] as [$module,$action,$method,$user]) {
+    $check(!sindesg_role_action_allowed($module,$action,$method,$user),
+        'El router no debe ampliar otros permisos: '.$action.'/'.$method);
+}
+$check(str_contains($router,'sindesg_role_action_allowed(')
+    && str_contains($router,'$authService->can($requiredPermission)'),
+    'La ruta debe conservar controles RBAC y de rol antes del controlador.');
+$check(str_contains($roleGate,"'save', 'confirm', 'deliver-now'"),
+    'La lista P4 debe contener la acción directa sin habilitar operaciones de Central.');
 foreach ([
  [$controller,"'deliver-now'"],[$controller,'$guard->assertNominal('],
  [$controller,'csrf_valid('],[$controller,'$this->isP4Only()'],
