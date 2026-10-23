@@ -216,6 +216,9 @@ jobs:
       - name: Central P4 review and tracking test
         run: php tests/central_p4_review_tracking_test.php
 
+      - name: Primary grouped review for Almacen Central
+        run: php tests/central_grouped_review_primary_ui_test.php
+
       - name: P4 origin and Central review segregation
         run: php tests/requests_central_origin_separation_test.php
 
@@ -459,6 +462,12 @@ jobs:
           php tests/admin_duplicate_products_test.php
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           php tests/category_auto_code_test.php
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Primary Central grouped review UI on Windows
+        shell: pwsh
+        run: |
+          php tests/central_grouped_review_primary_ui_test.php
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Central administrative access boundaries on Windows
