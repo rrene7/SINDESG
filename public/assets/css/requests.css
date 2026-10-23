@@ -278,3 +278,24 @@ form[action*='import-nominal-file'] label:has(input[type='checkbox']){display:fl
     .request-hero,.request-detail-hero { padding: 20px 16px; }
     .request-panel { padding: 18px 14px; }
 }
+
+/* La revisión agrupada es el único punto de decisión del Almacén Central.
+   El detalle nominal sigue siendo consultable desde su propia ficha. */
+.request-primary-review-link {
+    display: inline-block;
+    font-weight: 750;
+    line-height: 1.4;
+    padding: 7px 10px;
+    border-radius: 9px;
+    border: 1px solid rgba(83,190,249,.4);
+    background: rgba(17,103,166,.18);
+}
+.request-primary-review-link:focus-visible,
+.request-hero-review-action:focus-visible {
+    outline: 2px solid #a2e8ff;
+    outline-offset: 3px;
+}
+.request-hero-review-action { display: inline-flex; justify-content: center; text-align: center; }
+@media (max-width: 900px) {
+    .request-hero-review-action { width: 100%; }
+}
