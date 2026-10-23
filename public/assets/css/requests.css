@@ -299,3 +299,58 @@ form[action*='import-nominal-file'] label:has(input[type='checkbox']){display:fl
 @media (max-width: 900px) {
     .request-hero-review-action { width: 100%; }
 }
+
+
+/* Central: la misma revisión nominal, presentada como tarjetas en móviles.
+   No se duplica ningún input de aprobación ni se modifica el formulario. */
+@media (max-width: 760px) {
+    .central-review-panel .responsive-table { overflow: visible; }
+    .central-size-table,
+    .central-size-table tbody { display: block; min-width: 0; width: 100%; }
+    .central-size-table thead { display: none; }
+    .central-size-table tr:not(.central-detail-row) {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 9px;
+        margin-top: 14px;
+        padding: 12px;
+        border: 1px solid rgba(66,149,222,.35);
+        border-radius: 12px 12px 0 0;
+        background: rgba(2,22,43,.56);
+    }
+    .central-size-table tr:not(.central-detail-row) > td {
+        display: block;
+        min-width: 0;
+        padding: 3px;
+        overflow-wrap: anywhere;
+    }
+    .central-size-table tr:not(.central-detail-row) > td::before {
+        content: attr(data-label);
+        display: block;
+        margin-bottom: 5px;
+        color: #a7cee7;
+        font-size: .7rem;
+        font-weight: 700;
+    }
+    .central-size-table tr:not(.central-detail-row) > td:first-child,
+    .central-size-table tr:not(.central-detail-row) > td:last-child {
+        grid-column: 1 / -1;
+    }
+    .central-size-table tr.central-detail-row,
+    .central-size-table tr.central-detail-row > td {
+        display: block;
+        width: 100%;
+    }
+    .central-size-table tr.central-detail-row > td {
+        padding: 0 12px 14px;
+        border: 1px solid rgba(66,149,222,.35);
+        border-top: 0;
+        border-radius: 0 0 12px 12px;
+    }
+    .central-group-detail summary { min-height: 44px; padding: 13px 2px; }
+    .central-nominees { max-height: min(52vh, 400px); }
+    .central-nominee input,
+    .central-decision input,
+    .central-decision button { min-height: 44px; }
+    .central-decision small { line-height: 1.5; }
+}

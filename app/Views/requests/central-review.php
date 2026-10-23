@@ -93,19 +93,20 @@ $totalAvailable = array_sum(array_map(
                 $limit = min($requested, $available);
                 ?>
                 <tr>
-                    <td><strong><?= e($group['product_name']) ?></strong>
+                    <td data-label="Artículo"><strong><?= e($group['product_name']) ?></strong>
                         <small class="request-cell-sub"><?= e(($group['size_name'] ?? '') ? 'Talla ' . $group['size_name'] : 'Presentación estándar') ?></small></td>
-                    <td><strong><?= e($group['size_name'] ?: '—') ?></strong></td>
-                    <td><?= count($group['items']) ?></td>
-                    <td><?= e(sindesg_units($requested)) ?></td>
-                    <td><?= e(sindesg_units((float) $group['central_stock'])) ?></td>
-                    <td class="<?= $limit <= 0 ? 'central-zero-stock' : '' ?>"><?= e(sindesg_units($available)) ?></td>
-                    <td><?= e(sindesg_units((float) $group['approved'])) ?></td>
+                    <td data-label="Talla"><strong><?= e($group['size_name'] ?: '—') ?></strong></td>
+                    <td data-label="Funcionarios"><?= count($group['items']) ?></td>
+                    <td data-label="Solicitado"><?= e(sindesg_units($requested)) ?></td>
+                    <td data-label="Stock Central"><?= e(sindesg_units((float) $group['central_stock'])) ?></td>
+                    <td data-label="Comprometible" class="<?= $limit <= 0 ? 'central-zero-stock' : '' ?>"><?= e(sindesg_units($available)) ?></td>
+                    <td data-label="Aprobado"><?= e(sindesg_units((float) $group['approved'])) ?></td>
                     <?php if ($mayReview): ?>
-                        <td>
+                        <td data-label="Decisión por talla">
                             <div class="central-decision" data-central-variant
                                  data-variant-id="<?= (int) $group['variant_id'] ?>"
-                                 data-variant-available="<?= e(number_format($available, 3, '.', '')) ?>">
+                                 data-variant-available="<?= e(number_format($available, 3, '.', '')) ?>"
+                                 data-central-requested="<?= e(number_format($requested, 3, '.', '')) ?>">
                                 <label>
                                     <span class="sr-only">Cantidad para talla <?= e($group['size_name']) ?></span>
                                     <input type="number" step="0.001" min="0"
@@ -128,6 +129,7 @@ $totalAvailable = array_sum(array_map(
                                         <span><?= e($item['beneficiary_label_snapshot'] ?: 'Solicitud consolidada') ?></span>
                                         <small><?= e($item['beneficiary_position_snapshot'] ?: 'Sin posición') ?></small>
                                         <?php if ($mayReview): ?>
+                                            <small>Solicitado: <?= e(sindesg_units((float) $item['quantity_requested'])) ?></small>
                                             <label>
                                                 <span class="sr-only">Cantidad aprobada de <?= e($item['beneficiary_label_snapshot'] ?: 'renglón') ?></span>
                                                 <input type="number" step="0.001" min="0"
@@ -157,8 +159,8 @@ $totalAvailable = array_sum(array_map(
 <?php if ($mayReview): ?>
 <section class="request-panel central-review-submit">
     <h2>Confirmación de revisión del Central</h2>
-    <p>«Aplicar a grupo» reparte la cantidad autorizada a los primeros renglones visibles del grupo.
-        Puede ajustar beneficiarios dentro de cada grupo antes de registrar la decisión. El servidor siempre verifica el stock comprometible.</p>
+    <p>«Aplicar a grupo» reparte la cantidad autorizada a los primeros renglones del grupo.
+        Para aprobaciones parciales, despliegue «Ver destinatarios» y confirme a qué funcionarios se asignó cada unidad antes de registrar la decisión. El servidor verifica el stock comprometible.</p>
     <div class="request-employee-picker" data-reviewer-picker data-search-url="<?= e($employeeSearchUrl) ?>">
         <label><span>Funcionario revisor *</span>
             <input type="search" data-reviewer-search autocomplete="off" placeholder="Buscar en RRHH por nombre, cédula o posición" required>

@@ -488,9 +488,12 @@
                 const inputs = Array.from(form.querySelectorAll('[data-central-item]'))
                     .filter(x => x.dataset.variantId === variantId);
                 const value = inputs.reduce((sum, input) => sum + parse(input.value), 0);
+                const selectedPeople = inputs.filter(input => parse(input.value) > 0).length;
                 assigned += value;
                 const groupCounter = group.querySelector('[data-central-selected]');
-                if (groupCounter) groupCounter.textContent = display(value) + ' asignadas';
+                if (groupCounter) groupCounter.textContent = display(value) + ' de '
+                    + display(parse(group.dataset.centralRequested)) + ' unidades · '
+                    + selectedPeople + ' de ' + inputs.length + ' destinatarios';
             });
             if (summary) summary.textContent = display(assigned)
                 + ' unidades seleccionadas para aprobación. No se descontará inventario hasta un despacho.';
@@ -507,7 +510,8 @@
                 button.title = 'Sin stock comprometible en Almacén Central';
             }
             if (button && quantity) button.addEventListener('click', () => {
-                let remaining = Math.min(parse(quantity.value), available);
+                const desired = parse(quantity.value);
+                let remaining = Math.min(desired, available);
                 inputs.forEach(input => {
                     const allowed = parse(input.dataset.requested);
                     const selected = Math.min(allowed, Math.max(0, remaining));
@@ -515,14 +519,21 @@
                     remaining = Math.max(0, remaining - selected);
                 });
                 refresh();
+                if (desired > available && summary) {
+                    summary.textContent = 'La disponibilidad no alcanza la cantidad indicada para esta talla. '
+                        + 'Se asignaron como máximo ' + display(available)
+                        + ' unidades; compruebe los funcionarios antes de continuar.';
+                }
             });
             inputs.forEach(input => input.addEventListener('input', refresh));
         });
         form.addEventListener('submit', event => {
             let total = 0;
+            let requestedTotal = 0;
             let invalid = false;
             groups.forEach(group => {
                 const available = parse(group.dataset.variantAvailable);
+                requestedTotal += parse(group.dataset.centralRequested);
                 const inputs = Array.from(form.querySelectorAll('[data-central-item]'))
                     .filter(x => x.dataset.variantId === group.dataset.variantId);
                 const totalForGroup = inputs.reduce((sum, el) => sum + parse(el.value), 0);
@@ -537,7 +548,14 @@
             }
             if (total === 0 && !window.confirm(
                 'Está a punto de rechazar la solicitud porque ninguna unidad será aprobada. ¿Continuar?'
-            )) event.preventDefault();
+            )) {
+                event.preventDefault();
+            } else if (total > 0 && total < requestedTotal - 0.000001 && !window.confirm(
+                'Aprobación parcial: ' + display(total) + ' de ' + display(requestedTotal)
+                + ' unidades. Verifique los funcionarios incluidos en cada talla antes de confirmar. ¿Registrar esta asignación nominal?'
+            )) {
+                event.preventDefault();
+            }
         });
         refresh();
     };
