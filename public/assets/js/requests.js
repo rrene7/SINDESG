@@ -475,6 +475,9 @@
         const summary = form.querySelector('[data-central-message]');
         const groups = Array.from(form.querySelectorAll('[data-central-variant]'));
         const validateButton = form.querySelector('[data-central-validate]');
+        const completeAllButton = form.querySelector('[data-central-complete-all]');
+        const clearAllButton = form.querySelector('[data-central-clear-all]');
+        const bulkFeedback = form.querySelector('[data-central-bulk-feedback]');
         const partialCheck = form.querySelector('[data-central-partial-check]');
         const parse = value => {
             if (String(value).trim() === '') return NaN;
@@ -528,6 +531,7 @@
         groups.forEach(group => {
             const quantity = group.querySelector('[data-central-quantity]');
             const button = group.querySelector('[data-central-apply]');
+            const completeButton = group.querySelector('[data-central-complete-group]');
             const inputs = inputsFor(group);
             const available = parse(group.dataset.variantAvailable);
             if (available <= 0 && button) {
@@ -536,12 +540,67 @@
             }
             if (quantity) quantity.addEventListener('change', () => apply(group));
             if (button) button.addEventListener('click', () => apply(group));
+            if (completeButton) completeButton.addEventListener('click', () => {
+                const requested = parse(group.dataset.centralRequested);
+                const limit = Math.min(requested, available);
+                if (!Number.isFinite(limit)) return;
+                quantity.value = limit.toFixed(3);
+                apply(group);
+                if (bulkFeedback) bulkFeedback.textContent = limit + 0.000001 < requested
+                    ? 'Talla limitada por stock: ' + num(limit) + ' de ' + num(requested)
+                        + ' unidades asignadas. Confirme qué funcionarios recibirán dotación.'
+                    : 'Talla completada: ' + num(limit)
+                        + ' unidades distribuidas provisionalmente. Sin guardar.';
+            });
             inputs.forEach(input => input.addEventListener('input', () => {
                 const newTotal = sum(inputs);
                 if (quantity) quantity.value = newTotal.toFixed(3);
                 markChanged();
                 refresh();
             }));
+        });
+        // Operaciones masivas locales: preservan exactamente los mismos inputs
+        // approved_quantity[request_item_id] usados por la validación del servidor.
+        // No ejecutan POST ni registran una decisión.
+        if (completeAllButton) completeAllButton.addEventListener('click', () => {
+            let shortage = 0;
+            let limitedGroups = 0;
+            groups.forEach(group => {
+                const requested = parse(group.dataset.centralRequested);
+                const available = parse(group.dataset.variantAvailable);
+                if (!Number.isFinite(requested) || !Number.isFinite(available)) return;
+                const limit = Math.min(requested, available);
+                const field = group.querySelector('[data-central-quantity]');
+                if (field) {
+                    field.value = limit.toFixed(3);
+                    apply(group);
+                }
+                if (limit + 0.000001 < requested) {
+                    limitedGroups++;
+                    shortage += requested - limit;
+                }
+            });
+            const chosen = refresh();
+            if (bulkFeedback) bulkFeedback.textContent = 'SELECCIÓN MASIVA SIN GUARDAR: '
+                + num(chosen) + ' unidades asignadas provisionalmente. '
+                + (limitedGroups
+                    ? limitedGroups + ' talla(s) limitadas por stock; faltan '
+                        + num(shortage) + ' unidad(es). Revise los funcionarios excluidos.'
+                    : 'Todas las unidades solicitadas están seleccionadas.')
+                + ' Valide antes de aprobar.';
+            if (summary) summary.textContent = 'Selección automática realizada sin guardar: '
+                + num(chosen) + ' unidades. Revise el reparto nominal y pulse Validar cantidades.';
+        });
+        if (clearAllButton) clearAllButton.addEventListener('click', () => {
+            groups.forEach(group => {
+                const field = group.querySelector('[data-central-quantity]');
+                if (field) field.value = '0';
+                inputsFor(group).forEach(input => { input.value = '0.000'; });
+            });
+            markChanged();
+            refresh();
+            if (bulkFeedback) bulkFeedback.textContent =
+                'Selección limpiada sin guardar. Todas las cantidades volvieron a cero.';
         });
         const validate = () => {
             let requested = 0;

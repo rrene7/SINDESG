@@ -218,6 +218,7 @@ $required = [
     'tests/requests_logic_test.php',
     'tests/central_p4_review_tracking_test.php',
     'tests/central_grouped_approval_primary_test.php',
+    'tests/central_bulk_selection_behavior_test.js',
     'tests/central_decision_safety_test.php',
     'tests/requests_central_origin_separation_test.php',
     'tests/requests_stock_test.php',

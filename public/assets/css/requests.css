@@ -370,3 +370,13 @@ form[action*='import-nominal-file'] label:has(input[type='checkbox']){display:fl
 .central-reopen-panel textarea{width:100%;min-height:96px}
 .central-group-help{display:block;width:100%;line-height:1.45;color:#b3d7ef}
 @media(max-width:620px){.central-final-actions>.primary-button,.central-approval-toolbar>button{width:100%}}
+
+
+/* Central: completar el stock comprometible de cada talla sin cargar 722 campos. */
+.central-bulk-toolbar{display:flex;flex-wrap:wrap;gap:11px;align-items:center;margin:16px 0;padding:15px;border:1px solid rgba(62,173,238,.38);border-radius:14px;background:rgba(7,49,78,.6)}
+.central-bulk-toolbar button{min-height:44px;white-space:normal}
+.central-bulk-toolbar p{width:100%;margin:0;color:#c0e1f5;font-size:.83rem;line-height:1.55}
+.central-bulk-toolbar p strong{color:#ebfaff}
+.central-bulk-feedback{font-weight:750;color:#afe7e2!important}
+.central-decision [data-central-complete-group]{border-color:rgba(97,213,178,.45)}
+@media (max-width:760px){.central-bulk-toolbar{display:grid;grid-template-columns:minmax(0,1fr)}.central-bulk-toolbar button{width:100%}}
