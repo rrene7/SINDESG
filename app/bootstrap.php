@@ -309,6 +309,17 @@ function sindesg_role_action_allowed(string $module, string $action, string $met
                 || (in_array('P4', $roles, true)
                     && !in_array('CENTRAL', $roles, true)));
     }
+    // Direct signed delivery is *only* a P4 POST: check before generic ADMIN
+    // and final fallback, which otherwise permit any role that holds RBAC.
+    // DeliveryController independently checks this same boundary, CSRF,
+    // assigned active P4, recipient identity and both signatures.
+    if ($module === 'deliveries' && $action === 'deliver-now') {
+        return strtoupper($method) === 'POST'
+            && in_array('P4', $roles, true)
+            && !in_array('ADMIN', $roles, true)
+            && !in_array('CENTRAL', $roles, true);
+    }
+
     // La corrección de un rechazo es excepcional: exclusivamente ADMIN.
     if ($module === 'requests' && $action === 'reopen-rejected') {
         return strtoupper($method) === 'POST' && in_array('ADMIN', $roles, true);
