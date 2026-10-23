@@ -89,7 +89,18 @@ foreach ($serviceRequests as $candidate) {
                 <tbody>
                 <?php foreach ($serviceRequests as $row): ?>
                     <tr>
-                        <td><a class="request-link" href="<?= e(sindesg_url('?module=requests&action=show&id=' . (int) $row['id'])) ?>">Ver solicitud</a></td>
+                        <td>
+                            <?php if (in_array($row['status'], ['submitted', 'in_review'], true)
+                                && sindesg_role_action_allowed('requests', 'central-review', 'GET', (array) sindesg_user())): ?>
+                                <a class="request-link request-primary-review-link"
+                                   href="<?= e(sindesg_url('?module=requests&action=central-review&id=' . (int) $row['id'])) ?>">
+                                    <?= $row['status'] === 'submitted' ? 'Iniciar revisión por tallas' : 'Revisar por tallas' ?> →
+                                </a>
+                                <small class="request-cell-sub"><a href="<?= e(sindesg_url('?module=requests&action=show&id=' . (int) $row['id'])) ?>">Ver ficha nominal</a></small>
+                            <?php else: ?>
+                                <a class="request-link" href="<?= e(sindesg_url('?module=requests&action=show&id=' . (int) $row['id'])) ?>">Ver solicitud</a>
+                            <?php endif; ?>
+                        </td>
                         <td><?= e($row['p4_name'] ?: 'Unidad P4') ?></td>
                         <td><?= e($row['requested_by_label_snapshot']) ?></td>
                         <td><?= e(date('d/m/Y H:i', strtotime((string) $row['requested_at']))) ?></td>
@@ -99,9 +110,7 @@ foreach ($serviceRequests as $candidate) {
                         <td><span class="request-status <?= e($row['status']) ?>"><?= e($statusLabels[$row['status']] ?? $row['status']) ?></span></td>
                         <td>
                             <a class="request-link" href="<?= e(sindesg_url('?module=requests&action=show&id=' . (int) $row['id'] . '#seguimiento-p4')) ?>">Ver estado →</a>
-                            <?php if (in_array($row['status'], ['submitted', 'in_review'], true) && sindesg_role_action_allowed('requests', 'central-review', 'GET', (array) sindesg_user())): ?>
-                                <small class="request-cell-sub"><a href="<?= e(sindesg_url('?module=requests&action=central-review&id=' . (int) $row['id'])) ?>">Revisión Central</a></small>
-                            <?php endif; ?>
+
                         </td>
                     </tr>
                 <?php endforeach; ?>
