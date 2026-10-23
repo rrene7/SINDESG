@@ -466,94 +466,155 @@
 })();
 
 
-/* Central: decidir por talla sin abrir cientos de expedientes. Las
- * validaciones de stock y beneficiarios siguen en el servidor. */
+/* Central: validación local SIN POST, decisiones explícitas, y
+ * distribución nominal que el servidor revalida antes de persistir. */
 (() => {
     const init = () => {
         const form = document.querySelector('[data-central-review]');
         if (!form) return;
         const summary = form.querySelector('[data-central-message]');
         const groups = Array.from(form.querySelectorAll('[data-central-variant]'));
-        const parse = (value) => {
-            const n = Number(value);
-            return Number.isFinite(n) && n >= 0 ? n : 0;
+        const validateButton = form.querySelector('[data-central-validate]');
+        const partialCheck = form.querySelector('[data-central-partial-check]');
+        const parse = value => {
+            if (String(value).trim() === '') return NaN;
+            const number = Number(value);
+            return Number.isFinite(number) && number >= 0 ? number : NaN;
         };
-        const display = (value) => Number(value.toFixed(3)).toLocaleString('es-PA', {
-            maximumFractionDigits: 3
-        });
+        const num = value => Number(value.toFixed(3)).toLocaleString('es-PA', {maximumFractionDigits: 3});
+        const inputsFor = group => Array.from(form.querySelectorAll('[data-central-item]'))
+            .filter(x => x.dataset.variantId === group.dataset.variantId);
+        const sum = inputs => inputs.reduce((count, input) => count + (parse(input.value) || 0), 0);
+        let lastValidated = false;
+        const markChanged = () => {
+            lastValidated = false;
+            if (summary) summary.dataset.checked = 'no';
+        };
         const refresh = () => {
-            let assigned = 0;
+            let total = 0;
             groups.forEach(group => {
-                const variantId = group.dataset.variantId;
-                const inputs = Array.from(form.querySelectorAll('[data-central-item]'))
-                    .filter(x => x.dataset.variantId === variantId);
-                const value = inputs.reduce((sum, input) => sum + parse(input.value), 0);
-                const selectedPeople = inputs.filter(input => parse(input.value) > 0).length;
-                assigned += value;
-                const groupCounter = group.querySelector('[data-central-selected]');
-                if (groupCounter) groupCounter.textContent = display(value) + ' de '
-                    + display(parse(group.dataset.centralRequested)) + ' unidades · '
-                    + selectedPeople + ' de ' + inputs.length + ' destinatarios';
+                const inputs = inputsFor(group);
+                const chosen = sum(inputs);
+                total += chosen;
+                const count = inputs.filter(input => parse(input.value) > 0).length;
+                const field = group.querySelector('[data-central-selected]');
+                if (field) field.textContent = num(chosen) + ' de '
+                    + num(parse(group.dataset.centralRequested)) + ' unidades · '
+                    + count + ' de ' + inputs.length + ' destinatarios';
             });
-            if (summary) summary.textContent = display(assigned)
-                + ' unidades seleccionadas para aprobación. No se descontará inventario hasta un despacho.';
+            if (summary) summary.textContent = num(total)
+                + ' unidades distribuidas provisionalmente. Validar no registra la decisión.';
+            return total;
+        };
+        const apply = group => {
+            const field = group.querySelector('[data-central-quantity]');
+            const value = parse(field.value);
+            if (!Number.isFinite(value)) return;
+            const available = parse(group.dataset.variantAvailable);
+            let remaining = Math.min(value, available);
+            inputsFor(group).forEach(input => {
+                const allowed = parse(input.dataset.requested);
+                const selected = Math.min(allowed, Math.max(0, remaining));
+                input.value = selected.toFixed(3);
+                remaining = Math.max(0, remaining - selected);
+            });
+            markChanged();
+            refresh();
+            if (value > available && summary) {
+                summary.textContent = 'La talla supera el stock comprometible; solo se distribuyeron '
+                    + num(available) + ' unidades. Ajuste la cantidad indicada antes de validar.';
+            }
         };
         groups.forEach(group => {
-            const variantId = group.dataset.variantId;
             const quantity = group.querySelector('[data-central-quantity]');
             const button = group.querySelector('[data-central-apply]');
-            const inputs = Array.from(form.querySelectorAll('[data-central-item]'))
-                .filter(input => input.dataset.variantId === variantId);
+            const inputs = inputsFor(group);
             const available = parse(group.dataset.variantAvailable);
             if (available <= 0 && button) {
                 button.disabled = true;
                 button.title = 'Sin stock comprometible en Almacén Central';
             }
-            if (button && quantity) button.addEventListener('click', () => {
-                const desired = parse(quantity.value);
-                let remaining = Math.min(desired, available);
-                inputs.forEach(input => {
-                    const allowed = parse(input.dataset.requested);
-                    const selected = Math.min(allowed, Math.max(0, remaining));
-                    input.value = selected.toFixed(3);
-                    remaining = Math.max(0, remaining - selected);
-                });
+            if (quantity) quantity.addEventListener('change', () => apply(group));
+            if (button) button.addEventListener('click', () => apply(group));
+            inputs.forEach(input => input.addEventListener('input', () => {
+                const newTotal = sum(inputs);
+                if (quantity) quantity.value = newTotal.toFixed(3);
+                markChanged();
                 refresh();
-                if (desired > available && summary) {
-                    summary.textContent = 'La disponibilidad no alcanza la cantidad indicada para esta talla. '
-                        + 'Se asignaron como máximo ' + display(available)
-                        + ' unidades; compruebe los funcionarios antes de continuar.';
-                }
-            });
-            inputs.forEach(input => input.addEventListener('input', refresh));
+            }));
         });
-        form.addEventListener('submit', event => {
-            let total = 0;
-            let requestedTotal = 0;
+        const validate = () => {
+            let requested = 0;
+            let approved = 0;
             let invalid = false;
             groups.forEach(group => {
+                const given = parse(group.querySelector('[data-central-quantity]').value);
                 const available = parse(group.dataset.variantAvailable);
-                requestedTotal += parse(group.dataset.centralRequested);
-                const inputs = Array.from(form.querySelectorAll('[data-central-item]'))
-                    .filter(x => x.dataset.variantId === group.dataset.variantId);
-                const totalForGroup = inputs.reduce((sum, el) => sum + parse(el.value), 0);
-                if (totalForGroup > available + 0.000001) invalid = true;
-                total += totalForGroup;
+                const expected = parse(group.dataset.centralRequested);
+                const rows = inputsFor(group);
+                const chosen = sum(rows);
+                requested += expected;
+                approved += chosen;
+                if (!Number.isFinite(given) || given > Math.min(expected, available) + 0.000001
+                    || Math.abs(given - chosen) > 0.000001 || rows.some(item => {
+                        const q = parse(item.value), max = parse(item.dataset.requested);
+                        return !Number.isFinite(q) || q > max + 0.000001;
+                    })) invalid = true;
             });
             if (invalid) {
+                if (summary) summary.textContent = 'Validación detenida: una talla no coincide con sus asignaciones nominales, sobrepasa una cantidad permitida o no tiene stock. Corrija y vuelva a validar.';
+                lastValidated = false;
+                return null;
+            }
+            lastValidated = true;
+            if (summary) {
+                summary.dataset.checked = 'yes';
+                summary.textContent = 'VALIDACIÓN CORRECTA, SIN GUARDAR: ' + num(approved)
+                    + ' de ' + num(requested) + ' unidades. '
+                    + (approved === 0 ? 'No hay aprobaciones: para rechazar debe usar la opción separada.'
+                        : 'Para registrar aprobación use el botón de decisión definitiva.');
+            }
+            return {approved, requested};
+        };
+        if (validateButton) validateButton.addEventListener('click', () => validate());
+        form.addEventListener('submit', event => {
+            const action = event.submitter && event.submitter.value;
+            if (!lastValidated) {
                 event.preventDefault();
-                if (summary) summary.textContent =
-                    'La selección supera el stock comprometible de al menos una talla. Corrija antes de continuar.';
+                if (summary) summary.textContent = 'Primero pulse «Validar cantidades · sin guardar». Esto no registra ninguna decisión.';
                 return;
             }
-            if (total === 0 && !window.confirm(
-                'Está a punto de rechazar la solicitud porque ninguna unidad será aprobada. ¿Continuar?'
-            )) {
+            const result = validate();
+            if (!result) {
                 event.preventDefault();
-            } else if (total > 0 && total < requestedTotal - 0.000001 && !window.confirm(
-                'Aprobación parcial: ' + display(total) + ' de ' + display(requestedTotal)
-                + ' unidades. Verifique los funcionarios incluidos en cada talla antes de confirmar. ¿Registrar esta asignación nominal?'
-            )) {
+                return;
+            }
+            if (action === 'approve') {
+                if (result.approved <= 0) {
+                    event.preventDefault();
+                    if (summary) summary.textContent = 'No se puede aprobar cero unidades. La solicitud permanece en revisión.';
+                    return;
+                }
+                if (result.approved < result.requested - 0.000001
+                    && (!partialCheck || !partialCheck.checked)) {
+                    event.preventDefault();
+                    if (summary) summary.textContent = 'Aprobación parcial: marque la casilla de confirmación de funcionarios y vuelva a validar.';
+                    return;
+                }
+                if (!window.confirm('Registrar aprobación DEFINITIVA de ' + num(result.approved)
+                    + ' unidades nominales. Esta acción sí guardará la decisión. ¿Continuar?')) {
+                    event.preventDefault();
+                }
+            } else if (action === 'reject') {
+                const ack = form.querySelector('[data-central-reject-check]');
+                const notes = form.querySelector('[name="review_notes"]');
+                if (result.approved > 0 || !ack || !ack.checked
+                    || !notes || notes.value.trim().length < 12
+                    || !window.confirm('RECHAZO DEFINITIVO: se rechazarán todas las unidades. ¿Confirma expresamente?')) {
+                    event.preventDefault();
+                    if (summary) summary.textContent = 'Rechazo detenido. Requiere cero aprobaciones, motivo y confirmación explícita.';
+                }
+            } else {
                 event.preventDefault();
             }
         });

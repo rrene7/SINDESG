@@ -63,6 +63,28 @@ $totalAvailable = array_sum(array_map(
     <?php endif; ?>
 </section>
 
+<?php if ($status === 'rejected'
+    && in_array('ADMIN', (array) (sindesg_user()['role_codes'] ?? []), true)
+    && sindesg_can('admin.manage') && sindesg_can('requests.manage')): ?>
+<section class="request-panel central-reopen-panel">
+    <h2>Corrección administrativa de un rechazo</h2>
+    <p>Esta operación excepcional reabre la solicitud para revisión sin borrar la decisión anterior.
+       Se registra el motivo y los datos de la decisión rechazada en auditoría. No modifica inventario ni cantidades nominales.
+       Solo procede cuando no hay aprobaciones, distribuciones o movimientos asociados.</p>
+    <form method="post" action="<?= e(sindesg_url('?module=requests&action=reopen-rejected')) ?>">
+        <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
+        <input type="hidden" name="request_id" value="<?= (int) $serviceRequest['id'] ?>">
+        <label>Motivo de corrección administrativa (obligatorio)
+            <textarea name="reopen_reason" required minlength="15" rows="3"
+                placeholder="Describa el error y la autorización para revisar nuevamente"></textarea>
+        </label>
+        <label><input type="checkbox" name="reopen_ack" value="yes" required>
+            Confirmo que solicito reabrir para corregir el rechazo y conservar la evidencia anterior.</label>
+        <button type="submit" class="secondary-button">Reabrir solicitud para nueva revisión</button>
+    </form>
+</section>
+<?php endif; ?>
+
 <?php if ($mayReview): ?>
 <form method="post"
       action="<?= e(sindesg_url('?module=requests&action=decide')) ?>"
@@ -111,9 +133,12 @@ $totalAvailable = array_sum(array_map(
                                     <span class="sr-only">Cantidad para talla <?= e($group['size_name']) ?></span>
                                     <input type="number" step="0.001" min="0"
                                            max="<?= e(number_format($limit, 3, '.', '')) ?>"
-                                           value="0" data-central-quantity aria-label="Cantidad a aprobar de talla <?= e($group['size_name']) ?>">
+                                           value="0" data-central-quantity
+                                           name="group_quantity[<?= (int) $group['variant_id'] ?>]"
+                                           aria-label="Cantidad a aprobar de talla <?= e($group['size_name']) ?>">
                                 </label>
                                 <button type="button" class="secondary-button" data-central-apply>Aplicar a grupo</button>
+                                <small class="central-group-help">Al cambiar esta cantidad se distribuye entre los primeros destinatarios. Puede ajustar el detalle nominal antes de aprobar.</small>
                                 <small data-central-selected>0 asignadas</small>
                             </div>
                         </td>
@@ -158,9 +183,9 @@ $totalAvailable = array_sum(array_map(
 
 <?php if ($mayReview): ?>
 <section class="request-panel central-review-submit">
-    <h2>Confirmación de revisión del Central</h2>
-    <p>«Aplicar a grupo» reparte la cantidad autorizada a los primeros renglones del grupo.
-        Para aprobaciones parciales, despliegue «Ver destinatarios» y confirme a qué funcionarios se asignó cada unidad antes de registrar la decisión. El servidor verifica el stock comprometible.</p>
+    <h2>Validar cantidades antes de decidir</h2>
+    <p>Introduzca las cantidades por talla; se asignarán provisionalmente a los primeros destinatarios. Puede cambiar individualmente las asignaciones desplegando la talla.
+       <strong>Validar cantidades no guarda, no aprueba y no rechaza.</strong> El inventario no se modifica hasta el despacho correspondiente.</p>
     <div class="request-employee-picker" data-reviewer-picker data-search-url="<?= e($employeeSearchUrl) ?>">
         <label><span>Funcionario revisor *</span>
             <input type="search" data-reviewer-search autocomplete="off" placeholder="Buscar en RRHH por nombre, cédula o posición" required>
@@ -172,8 +197,26 @@ $totalAvailable = array_sum(array_map(
     <label class="request-notes-field"><span>Observación de revisión</span>
         <textarea name="review_notes" rows="3" placeholder="Motivo de aprobación parcial o cantidades no autorizadas..."></textarea>
     </label>
-    <p class="central-review-message" data-central-message role="status">Aún no se han aplicado cantidades para aprobar.</p>
-    <button type="submit" class="primary-button">Registrar decisión del Almacén Central</button>
+    <div class="central-approval-toolbar">
+        <button type="button" class="secondary-button" data-central-validate>1. Validar cantidades · sin guardar</button>
+        <p class="central-review-message" data-central-message role="status" aria-live="polite">Primero introduzca las cantidades por talla y valide. Ninguna decisión ha sido registrada.</p>
+    </div>
+    <label class="central-partial-confirmation">
+        <input type="checkbox" name="partial_nominal_confirmed" value="yes" data-central-partial-check>
+        Confirmé los funcionarios incluidos y excluidos en caso de aprobación parcial.
+    </label>
+    <div class="central-final-actions">
+        <button type="submit" name="decision_action" value="approve"
+                class="primary-button" data-central-approve>2. Registrar aprobación definitiva</button>
+        <details class="central-rejection-option">
+            <summary>Rechazar toda la solicitud · acción irreversible sin autorización administrativa</summary>
+            <p>Solo utilice esta operación si corresponde rechazar expresamente todas las unidades.</p>
+            <label><input type="checkbox" name="reject_ack" value="yes" data-central-reject-check>
+                Confirmo que deseo rechazar la solicitud completa y que todas las cantidades aprobadas son cero.</label>
+            <button type="submit" name="decision_action" value="reject"
+                    class="secondary-button" data-central-reject>Registrar rechazo definitivo</button>
+        </details>
+    </div>
 </section>
 </form>
 <?php endif; ?>

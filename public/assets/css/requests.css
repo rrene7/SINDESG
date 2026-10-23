@@ -354,3 +354,19 @@ form[action*='import-nominal-file'] label:has(input[type='checkbox']){display:fl
     .central-decision button { min-height: 44px; }
     .central-decision small { line-height: 1.5; }
 }
+
+/* Central: separar visualmente la simulación de las decisiones definitivas. */
+.central-approval-toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:12px}
+.central-approval-toolbar p{flex:1 1 260px}
+.central-partial-confirmation,.central-rejection-option label,.central-reopen-panel label{display:flex;gap:10px;align-items:flex-start;line-height:1.55}
+.central-partial-confirmation input,.central-rejection-option input[type=checkbox],.central-reopen-panel input[type=checkbox]{width:19px;height:19px;flex:0 0 auto}
+.central-final-actions{display:grid;gap:18px;justify-items:start;border-top:1px solid rgba(82,149,204,.32);padding-top:18px}
+.central-rejection-option{max-width:760px;padding:14px;border:1px solid rgba(250,175,90,.34);border-radius:12px}
+.central-rejection-option summary{color:#ffd59a;cursor:pointer;line-height:1.55}
+.central-rejection-option button{margin-top:12px}
+.central-reopen-panel{border-color:rgba(250,175,90,.34)}
+.central-reopen-panel form{display:grid;gap:14px;max-width:740px}
+.central-reopen-panel label:has(textarea){display:grid}
+.central-reopen-panel textarea{width:100%;min-height:96px}
+.central-group-help{display:block;width:100%;line-height:1.45;color:#b3d7ef}
+@media(max-width:620px){.central-final-actions>.primary-button,.central-approval-toolbar>button{width:100%}}

@@ -123,6 +123,28 @@ final class RequestService
             throw new InvalidArgumentException('Seleccione un funcionario revisor válido en RRHH2029.');
         }
 
+        $decisionAction = (string) ($input['decision_action'] ?? '');
+        if (!in_array($decisionAction, ['approve', 'reject'], true)) {
+            throw new InvalidArgumentException('Elija una acción definitiva de aprobación o rechazo.');
+        }
+        $notes = $this->nullableText($input['review_notes'] ?? null);
+        if ($decisionAction === 'reject' && ($notes === null || mb_strlen($notes) < 12
+            || ($input['reject_ack'] ?? '') !== 'yes')) {
+            throw new InvalidArgumentException('El rechazo requiere motivo detallado y confirmación expresa.');
+        }
+        $groupInput = $input['group_quantity'] ?? null;
+        if (!is_array($groupInput)) {
+            throw new InvalidArgumentException('Faltan cantidades de las tallas. Actualice la página.');
+        }
+        $groupTotals = [];
+        foreach ($groupInput as $variant => $quantity) {
+            if (!ctype_digit((string) $variant) || (int) $variant <= 0
+                || !is_scalar($quantity) || !is_numeric((string) $quantity)
+                || !is_finite((float) $quantity) || (float) $quantity < 0) {
+                throw new InvalidArgumentException('Cantidad total por talla no válida.');
+            }
+            $groupTotals[(int) $variant] = (float) $quantity;
+        }
         $raw = $input['approved_quantity'] ?? [];
         if (!is_array($raw)) {
             throw new InvalidArgumentException('Las cantidades aprobadas no tienen un formato válido.');
@@ -130,10 +152,14 @@ final class RequestService
 
         $approved = [];
         foreach ($raw as $itemId => $quantity) {
+            if (!ctype_digit((string) $itemId) || !is_scalar($quantity)) {
+                throw new InvalidArgumentException('Identificador nominal inválido.');
+            }
             $itemId = (int) $itemId;
             $quantity = trim((string) $quantity);
 
-            if ($itemId <= 0 || $quantity === '' || !is_numeric($quantity)) {
+            if ($itemId <= 0 || $quantity === '' || !is_numeric($quantity)
+                || !is_finite((float) $quantity)) {
                 throw new InvalidArgumentException('Revise las cantidades aprobadas.');
             }
 
@@ -144,7 +170,10 @@ final class RequestService
             $requestId,
             $approved,
             $reviewer,
-            $this->nullableText($input['review_notes'] ?? null)
+            $notes,
+            $decisionAction,
+            $groupTotals,
+            ($input['partial_nominal_confirmed'] ?? '') === 'yes'
         );
     }
 

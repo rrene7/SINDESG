@@ -111,17 +111,27 @@ $check(substr_count($grouped, 'data-label=') >= 8
     && str_contains($grouped, 'data-central-requested=')
     && str_contains($grouped, 'Solicitado: <?= e(sindesg_units((float) $item[\'quantity_requested\'])) ?>'),
     'Cada tarjeta movil debe identificar los totales por talla y la necesidad nominal individual.');
-$check(str_contains($js, 'selectedPeople')
-    && str_contains($js, 'requestedTotal')
-    && str_contains($js, 'Aprobación parcial:')
-    && str_contains($js, 'Verifique los funcionarios incluidos')
-    && str_contains($js, 'desired > available')
-    && str_contains($js, 'totalForGroup > available'),
-    'La selección parcial debe mostrar cuantos funcionarios cubre, advertir limites y confirmar la decision nominal.');
+$check(str_contains($js, 'data-central-selected')
+    && str_contains($js, 'lastValidated')
+    && str_contains($js, 'markChanged')
+    && str_contains($js, 'given > Math.min(expected, available)')
+    && str_contains($js, "action === 'reject'")
+    && str_contains($js, "action === 'approve'"),
+    'La selección parcial debe informar cantidades, validar y separar aprobación de rechazo.');
 $check(str_contains($css, '@media (max-width: 760px)')
     && str_contains($css, '.central-size-table tr:not(.central-detail-row)')
     && str_contains($css, 'content: attr(data-label)')
     && str_contains($grouped, 'approved_quantity[')
     && substr_count($grouped, 'action=decide') === 1,
     'La interfaz movil debe reutilizar el unico POST seguro, sin duplicar campos.');
-echo "[OK] Central: aprobacion agrupada unica, confirmacion parcial nominal y tarjetas moviles, sin tocar inventario.\n";
+$check(str_contains($grouped, 'data-central-validate')
+    && str_contains($grouped, 'name="group_quantity[')
+    && str_contains($grouped, 'name="decision_action" value="approve"')
+    && str_contains($grouped, 'name="decision_action" value="reject"')
+    && str_contains($grouped, 'action=reopen-rejected'),
+    'Validar no debe enviar POST; aprobar, rechazar y corregir son operaciones separadas.');
+$check(str_contains($js, 'lastValidated') && str_contains($js, "result.approved <= 0")
+    && str_contains($js, 'VALIDACIÓN CORRECTA, SIN GUARDAR')
+    && str_contains($js, 'quantity.addEventListener(\'change\''),
+    'La validación no debe rechazar, y las cantidades por talla deben aplicarse antes del envío.');
+echo "[OK] Central: agrupación única, validación sin escritura, decisiones explícitas, reapertura controlada.\n";

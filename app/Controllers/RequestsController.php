@@ -570,6 +570,24 @@ final class RequestsController
             $this->redirect('?module=requests&action=show&id=' . $requestId);
         }
 
+        if ($action === 'reopen-rejected') {
+            $user = (array) sindesg_user();
+            if (!in_array('ADMIN', (array) ($user['role_codes'] ?? []), true)
+                || !sindesg_can('admin.manage') || !sindesg_can('requests.manage')
+                || !sindesg_role_action_allowed('requests', 'reopen-rejected', 'POST', $user)) {
+                throw new InvalidArgumentException('Solo un administrador autorizado puede reabrir un rechazo.');
+            }
+            $requestId = (int) ($post['request_id'] ?? 0);
+            $reason = trim((string) ($post['reopen_reason'] ?? ''));
+            if ($requestId <= 0 || mb_strlen($reason) < 15
+                || ($post['reopen_ack'] ?? '') !== 'yes') {
+                throw new InvalidArgumentException('Reapertura requiere motivo de al menos 15 caracteres y confirmación.');
+            }
+            $this->repository->reopenRejected($requestId, $user, $reason);
+            flash('success', 'Rechazo anterior conservado en auditoría; solicitud reabierta para revisión.');
+            $this->redirect('?module=requests&action=central-review&id=' . $requestId);
+        }
+
         if ($action === 'decide') {
             $requestId = (int) ($post['request_id'] ?? 0);
             $status = $this->service->decide($requestId, $post);
