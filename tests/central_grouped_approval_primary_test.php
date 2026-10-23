@@ -107,4 +107,21 @@ foreach ($groups as $group) {
 }
 $check(count($seen)===520 && count(array_unique($counts))===4,
     'El consolidado no puede borrar o mezclar identidades nominales.');
-echo "[OK] Central: un solo punto de aprobación agrupada, 520 beneficiarios intactos, roles/stock/CSRF y seguimiento P4.\n";
+$check(substr_count($grouped, 'data-label=') >= 8
+    && str_contains($grouped, 'data-central-requested=')
+    && str_contains($grouped, 'Solicitado: <?= e(sindesg_units((float) $item[\'quantity_requested\'])) ?>'),
+    'Cada tarjeta movil debe identificar los totales por talla y la necesidad nominal individual.');
+$check(str_contains($js, 'selectedPeople')
+    && str_contains($js, 'requestedTotal')
+    && str_contains($js, 'Aprobación parcial:')
+    && str_contains($js, 'Verifique los funcionarios incluidos')
+    && str_contains($js, 'desired > available')
+    && str_contains($js, 'totalForGroup > available'),
+    'La selección parcial debe mostrar cuantos funcionarios cubre, advertir limites y confirmar la decision nominal.');
+$check(str_contains($css, '@media (max-width: 760px)')
+    && str_contains($css, '.central-size-table tr:not(.central-detail-row)')
+    && str_contains($css, 'content: attr(data-label)')
+    && str_contains($grouped, 'approved_quantity[')
+    && substr_count($grouped, 'action=decide') === 1,
+    'La interfaz movil debe reutilizar el unico POST seguro, sin duplicar campos.');
+echo "[OK] Central: aprobacion agrupada unica, confirmacion parcial nominal y tarjetas moviles, sin tocar inventario.\n";
