@@ -306,3 +306,146 @@
         if (event.key === 'Escape') hideSearch();
     });
 })();
+
+
+/* Gestión operativa: carga bajo demanda, filtros y paginación en servidor.
+ * No carga cientos de zonas al iniciar ni hace operaciones de escritura. */
+(() => {
+    const panel = document.querySelector('[data-operations-browser]');
+    if (!panel) return;
+
+    const buttons = Array.from(panel.querySelectorAll('[data-ops-kind]'));
+    const content = panel.querySelector('[data-ops-content]');
+    const intro = panel.querySelector('[data-ops-intro]');
+    const list = panel.querySelector('[data-ops-list]');
+    const note = panel.querySelector('[data-ops-note]');
+    const title = panel.querySelector('[data-ops-title]');
+    const searchForm = panel.querySelector('[data-ops-search-form]');
+    const searchInput = panel.querySelector('[data-ops-search]');
+    const pageText = panel.querySelector('[data-ops-page]');
+    const previous = panel.querySelector('[data-ops-prev]');
+    const next = panel.querySelector('[data-ops-next]');
+    const close = panel.querySelector('[data-ops-close]');
+    const labels = {
+        review: 'Solicitudes por revisar',
+        ready: 'Solicitudes listas para distribuir',
+        transit: 'Transferencias en tránsito',
+        p4: 'Almacenes P4 activos'
+    };
+
+    let activeKind = null;
+    let page = 1;
+    let pages = 1;
+    let serial = 0;
+    const formatted = value => new Intl.NumberFormat('es-PA', {
+        maximumFractionDigits: 3
+    }).format(Number(value) || 0);
+    const addText = (tag, value, parent) => {
+        const node = document.createElement(tag);
+        node.textContent = value;
+        parent.appendChild(node);
+        return node;
+    };
+
+    const renderItem = (item) => {
+        const urlBase = activeKind === 'p4' ? panel.dataset.warehousesBase
+            : activeKind === 'transit' ? panel.dataset.distributionBase
+                : panel.dataset.requestsBase;
+        const id = Number(item.id);
+        if (!Number.isSafeInteger(id) || id <= 0) return;
+
+        const anchor = document.createElement('a');
+        anchor.href = urlBase + encodeURIComponent(String(id));
+        const left = document.createElement('span');
+        addText('strong', String(item.location_name || item.code || 'Registro operativo'), left);
+        addText('small', String(item.code || ''), left);
+
+        const right = document.createElement('span');
+        addText('strong', String(item.status_label || ''), right);
+        const detail = activeKind === 'p4' ? 'Almacén activo'
+            : activeKind === 'transit'
+                ? formatted(item.quantity) + ' unidades en tránsito'
+                : formatted(item.item_count) + ' renglones · '
+                    + formatted(activeKind === 'ready' ? item.pending_quantity : item.quantity)
+                    + (activeKind === 'ready' ? ' por distribuir' : ' solicitadas');
+        addText('small', detail, right);
+        anchor.append(left, right);
+        list.appendChild(anchor);
+    };
+
+    const load = async () => {
+        if (!activeKind) return;
+        const current = ++serial;
+        note.textContent = 'Consultando ' + labels[activeKind].toLowerCase() + '…';
+        list.replaceChildren();
+        previous.disabled = true;
+        next.disabled = true;
+        try {
+            const url = new URL(panel.dataset.opsUrl, window.location.href);
+            url.searchParams.set('kind', activeKind);
+            url.searchParams.set('page', String(page));
+            url.searchParams.set('q', searchInput.value.trim());
+            const response = await fetch(url.toString(), {
+                method: 'GET', credentials: 'same-origin',
+                cache: 'no-store', headers: {'Accept': 'application/json'}
+            });
+            if (!response.ok) throw new Error('Consulta no disponible');
+            const result = await response.json();
+            if (current !== serial || result.kind !== activeKind) return;
+            pages = Math.max(1, Number(result.pages) || 1);
+            page = Math.max(1, Number(result.page) || 1);
+            const rows = Array.isArray(result.items) ? result.items : [];
+            rows.forEach(renderItem);
+            if (!rows.length) {
+                addText('p', 'No hay registros para este filtro.', list);
+            }
+            const total = Number(result.total) || 0;
+            note.textContent = formatted(total) + ' registros · se muestran hasta '
+                + formatted(result.page_size || 8) + ' por página';
+            pageText.textContent = 'Página ' + page + ' de ' + pages;
+            previous.disabled = page <= 1;
+            next.disabled = page >= pages;
+        } catch (error) {
+            if (current !== serial) return;
+            note.textContent = 'No se pudo consultar este grupo. Intente nuevamente.';
+            pageText.textContent = '';
+            addText('p', 'Los indicadores permanecen disponibles; la lista no se pudo cargar.', list);
+        }
+    };
+
+    const select = (kind) => {
+        if (!Object.hasOwn(labels, kind)) return;
+        activeKind = kind;
+        page = 1;
+        searchInput.value = '';
+        buttons.forEach(button => {
+            button.setAttribute('aria-pressed', button.dataset.opsKind === kind ? 'true' : 'false');
+        });
+        title.textContent = labels[kind];
+        intro.hidden = true;
+        content.hidden = false;
+        load();
+    };
+
+    buttons.forEach(button => button.addEventListener('click', () => select(button.dataset.opsKind)));
+    searchForm?.addEventListener('submit', event => {
+        event.preventDefault();
+        page = 1;
+        load();
+    });
+    previous?.addEventListener('click', () => {
+        if (page > 1) { page--; load(); }
+    });
+    next?.addEventListener('click', () => {
+        if (page < pages) { page++; load(); }
+    });
+    close?.addEventListener('click', () => {
+        serial++;
+        activeKind = null;
+        buttons.forEach(button => button.setAttribute('aria-pressed', 'false'));
+        intro.hidden = false;
+        content.hidden = true;
+        list.replaceChildren();
+        searchInput.value = '';
+    });
+})();

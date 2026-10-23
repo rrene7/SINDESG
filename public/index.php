@@ -18,6 +18,7 @@ use App\Controllers\AuditController;
 use App\Controllers\HistoricalImportController;
 use App\Repositories\CatalogRepository;
 use App\Repositories\DashboardRepository;
+use App\Services\DashboardOperationalFeed;
 
 require dirname(__DIR__) . '/app/bootstrap.php';
 
@@ -195,6 +196,45 @@ if (($requiredPermission !== null && !$authService->can($requiredPermission))
 
 if ($currentMethod === 'POST') {
     $authService->registerRequestAudit($currentModule, $currentAction, $_POST);
+}
+
+// Read-only operational detail, accessible only to institution-wide roles.
+// P4 users must never bypass their isolated dashboard through this endpoint.
+if ($currentModule === 'dashboard' && $currentAction === 'operational-feed') {
+    header('Content-Type: application/json; charset=utf-8');
+    header('Cache-Control: no-store, private');
+    header('X-Content-Type-Options: nosniff');
+    $user = (array) sindesg_user();
+    $roles = (array) ($user['role_codes'] ?? []);
+    if ($currentMethod !== 'GET'
+        || (!in_array('ADMIN', $roles, true) && !in_array('CENTRAL', $roles, true))) {
+        http_response_code(403);
+        echo json_encode(['error' => 'Acceso denegado al panel institucional.']);
+        exit;
+    }
+    try {
+        $kind = (string) ($_GET['kind'] ?? '');
+        $permission = DashboardOperationalFeed::permissionFor($kind);
+        if (!sindesg_can($permission)) {
+            http_response_code(403);
+            echo json_encode(['error' => 'No tiene permiso para consultar este módulo.']);
+            exit;
+        }
+        $page = filter_var($_GET['page'] ?? 1, FILTER_VALIDATE_INT, [
+            'options' => ['default' => 1, 'min_range' => 1],
+        ]);
+        $search = is_string($_GET['q'] ?? null) ? $_GET['q'] : '';
+        $feed = new DashboardOperationalFeed($database->connection('sindesg'));
+        echo json_encode($feed->fetch($kind, (int) $page, $search),
+            JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
+    } catch (\InvalidArgumentException $exception) {
+        http_response_code(400);
+        echo json_encode(['error' => 'Filtro o búsqueda no válidos.']);
+    } catch (\Throwable $exception) {
+        http_response_code(503);
+        echo json_encode(['error' => 'No se pudo consultar el panel operativo.']);
+    }
+    exit;
 }
 
 if ($currentModule === 'dashboard'

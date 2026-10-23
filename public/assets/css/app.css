@@ -621,3 +621,44 @@ button { color: inherit; }
     .dashboard-mini-list .dashboard-receipt-quantity {min-width:70px}
     .dashboard-mini-list .dashboard-receipt-product {font-size:.91rem}
 }
+
+
+/* Dashboard institucional: indicadores navegables y detalle paginado.
+   El panel conserva altura controlada incluso con cientos de zonas/P4. */
+.dashboard-ops-summary button,
+.dashboard-ops-summary span{padding:10px 6px;border:1px solid rgba(53,178,255,.16);border-radius:11px;background:rgba(3,19,37,.4);text-align:center;color:inherit;min-width:0}
+.dashboard-ops-summary button{cursor:pointer;font:inherit;transition:border-color .15s,background .15s}
+.dashboard-ops-summary button:hover,.dashboard-ops-summary button:focus-visible{border-color:rgba(37,196,255,.75);background:rgba(19,84,131,.46)}
+.dashboard-ops-summary button[aria-pressed="true"]{border-color:#49caff;background:rgba(12,112,192,.33);box-shadow:inset 0 0 0 1px rgba(37,196,255,.3)}
+.dashboard-ops-summary button strong,.dashboard-ops-summary button small{display:block}
+.dashboard-ops-summary button strong{font-size:1.15rem;color:#d8f3ff}
+.dashboard-ops-summary button small{margin-top:3px;color:#b5d2e8;font-size:.72rem;line-height:1.3}
+.dashboard-ops-results{margin-top:12px}
+.dashboard-ops-intro{margin:0;color:#b9d5e7;line-height:1.55;font-size:.81rem;padding:9px 4px}
+.dashboard-ops-filter-head{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.dashboard-ops-filter-head h3{margin:0;font-size:.98rem}
+.dashboard-ops-close{background:none;border:0;color:#8cdaff;cursor:pointer;padding:10px}
+.dashboard-ops-search{display:flex;gap:8px;margin:10px 0}
+.dashboard-ops-search input{flex:1;min-width:0;min-height:42px;padding:9px 12px;border:1px solid rgba(53,178,255,.35);background:rgba(2,16,31,.85);color:#eef8ff;border-radius:10px}
+.dashboard-ops-search button,.dashboard-ops-pagination button{min-height:42px;padding:8px 12px;border:1px solid rgba(53,178,255,.4);border-radius:10px;background:rgba(9,57,99,.68);color:#e1f6ff;cursor:pointer}
+.dashboard-ops-pagination button:disabled{opacity:.38;cursor:default}
+.dashboard-ops-scroll{max-height:290px;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
+.dashboard-ops-items{margin-top:6px}
+.dashboard-ops-items a{align-items:center;min-width:0}
+.dashboard-ops-items a>span{min-width:0}
+.dashboard-ops-items a>span:first-child{flex:1}
+.dashboard-ops-items a>span:last-child{text-align:right}
+.dashboard-ops-result-note{font-size:.76rem;color:#bdddf0;margin:7px 0}
+.dashboard-ops-pagination{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:11px}
+.dashboard-ops-pagination span{font-size:.75rem;color:#c2deef;text-align:center}
+@media(max-width:760px){
+  .dashboard-ops-results{max-width:100%}
+  .dashboard-ops-filter-head{flex-wrap:wrap}
+  .dashboard-ops-scroll{max-height:260px}
+}
+@media(max-width:480px){
+  .dashboard-ops-summary button small{font-size:.68rem}
+  .dashboard-ops-search{flex-wrap:wrap}
+  .dashboard-ops-search input{flex:1 1 100%}
+  .dashboard-ops-search button{flex:1}
+}

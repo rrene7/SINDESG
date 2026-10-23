@@ -41,8 +41,10 @@ foreach ([
     'recentDashboardReceipts',
     'dashboard-receipt-product',
     'receiptProductName',
-    'recentDashboardRequests',
     'dashboardOperationalSummary',
+    'data-operations-browser',
+    'data-ops-kind',
+    'data-ops-search-form',
     'dashboardProductFocus',
     'data-dashboard-product-id',
     'data-dashboard-product-focus',
@@ -57,8 +59,8 @@ foreach ([
     'Comprometido',
     'institucionales',
     'Solicitudes y distribución',
-    'listas para distribuir',
-    'en tránsito',
+    'Listas para distribuir',
+    'En tránsito',
     'P4 activos',
 ] as $fragment) {
     if (!str_contains($view, $fragment)) {
