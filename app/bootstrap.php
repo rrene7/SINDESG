@@ -388,7 +388,7 @@ function sindesg_role_action_allowed(string $module, string $action, string $met
         if ($module === 'dashboard' || $module === 'auth') return true;
         if ($module === 'deliveries') {
             return strtoupper($method) === 'POST'
-                ? in_array($action, ['save', 'confirm'], true)
+                ? in_array($action, ['save', 'confirm', 'deliver-now'], true)
                 : in_array($action, ['index', 'new', 'show', 'nominal-report'], true);
         }
         if ($module === 'distribution') {
