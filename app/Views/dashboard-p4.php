@@ -47,7 +47,9 @@ foreach (($p4OperationalSummary ?? []) as $warehouseId => $operations) {
 }
 usort($activity, static fn(array $a,array $b):int =>
     strcmp((string)($b['event_at']??''),(string)($a['event_at']??'')));
-$activity = array_slice($activity, 0, 8);
+// Fixed-size visual digest: 3 rows on the dashboard, 5 more on demand.
+// The original records remain in SINDESG; this only limits the homepage.
+[$activityPreview, $activityExtra] = \App\Services\P4ActivityList::split($activity);
 $ready = !empty($p4ScopeReady) && !empty($p4OperationsReadable)
     && !empty($p4DashboardDataReady) && $warehouses !== [];
 ?>
@@ -75,7 +77,20 @@ $ready = !empty($p4ScopeReady) && !empty($p4OperationsReadable)
 .p4-dashboard-v2 .p4-v2-stock-row span:nth-child(2){color:#a7cce3}
 .p4-dashboard-v2 .p4-v2-stock-row strong{text-align:right;font-variant-numeric:tabular-nums}
 .p4-dashboard-v2 .p4-v2-activity{display:grid;gap:6px}
-.p4-dashboard-v2 .p4-v2-activity-row{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr) minmax(115px,.6fr);gap:12px;align-items:center;border:1px solid #204b6a;border-radius:8px;padding:10px 12px}
+.p4-dashboard-v2 .p4-v2-activity-row{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr) minmax(115px,.6fr);gap:10px;align-items:center;border:1px solid #204b6a;border-radius:8px;padding:9px 12px;min-width:0}
+.p4-dashboard-v2 .p4-v2-activity-row>div{min-width:0}
+.p4-dashboard-v2 .p4-v2-activity-row a,.p4-dashboard-v2 .p4-v2-activity-row strong{line-height:1.35}
+.p4-dashboard-v2 .p4-v2-activity-row a{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.p4-dashboard-v2 .p4-v2-activity-more{margin-top:4px;border:1px solid #275875;border-radius:9px;background:#08233a;overflow:hidden}
+.p4-dashboard-v2 .p4-v2-activity-more summary{cursor:pointer;min-height:40px;padding:11px 14px;color:#a0e0ff;font-size:.83rem;font-weight:750}
+.p4-dashboard-v2 .p4-v2-activity-more summary:hover{background:#0b3454}
+.p4-dashboard-v2 .p4-v2-activity-more summary:focus-visible{outline:2px solid #75d9ff;outline-offset:-3px}
+.p4-dashboard-v2 .p4-v2-activity-more .p4-v2-open-label{display:none}
+.p4-dashboard-v2 .p4-v2-activity-more[open] .p4-v2-open-label{display:inline}
+.p4-dashboard-v2 .p4-v2-activity-more[open] .p4-v2-closed-label{display:none}
+.p4-dashboard-v2 .p4-v2-activity-overflow{max-height:320px;overflow-y:auto;overscroll-behavior:contain;padding:0 7px 8px;display:grid;gap:6px}
+.p4-dashboard-v2 .p4-v2-activity-overflow .p4-v2-activity-row{background:#061b30}
+
 .p4-dashboard-v2 .p4-v2-activity-row a{color:#8bdcff;text-decoration:none;font-weight:700;overflow-wrap:anywhere}
 .p4-dashboard-v2 .p4-v2-activity-row div{font-size:.84rem}
 .p4-dashboard-v2 .p4-v2-activity-row small{display:block;font-size:.72rem;color:#9bc1d8;margin-top:3px}
@@ -153,10 +168,10 @@ $ready = !empty($p4ScopeReady) && !empty($p4OperationsReadable)
         <section class="p4-v2-panel">
             <div class="p4-v2-heading">
                 <div><span class="eyebrow">SEGUIMIENTO</span><h2>Últimos movimientos y trámites</h2></div>
-                <small>Hasta 8 registros recientes · referencias para auditoría</small>
+                <small>3 movimientos recientes · hasta 8 al desplegar</small>
             </div>
             <div class="p4-v2-activity">
-            <?php foreach ($activity as $record): ?>
+            <?php foreach ($activityPreview as $record): ?>
                 <div class="p4-v2-activity-row">
                     <div>
                         <?php if (sindesg_role_action_allowed($record['module'],'show','GET',(array)sindesg_user())): ?>
@@ -168,7 +183,29 @@ $ready = !empty($p4ScopeReady) && !empty($p4OperationsReadable)
                     <span><?= !empty($record['event_at']) ? e(date('d/m/Y H:i', strtotime((string)$record['event_at']))) : '—' ?></span>
                 </div>
             <?php endforeach; ?>
-            <?php if (!$activity): ?><p class="p4-v2-note">Aún no hay trámites registrados para tus almacenes.</p><?php endif; ?>
+            <?php if ($activityExtra): ?>
+                <details class="p4-v2-activity-more">
+                    <summary>
+                        <span class="p4-v2-closed-label">Ver <?= e(count($activityExtra)) ?> movimientos más ↓</span>
+                        <span class="p4-v2-open-label">Ocultar movimientos adicionales ↑</span>
+                    </summary>
+                    <div class="p4-v2-activity-overflow">
+                        <?php foreach ($activityExtra as $record): ?>
+                            <div class="p4-v2-activity-row">
+                                <div>
+                                    <?php if (sindesg_role_action_allowed($record['module'],'show','GET',(array)sindesg_user())): ?>
+                                        <a href="<?= e(sindesg_url('?module='.$record['module'].'&action=show&id='.(int)$record['id'])) ?>"><?= e($record['title']) ?></a>
+                                    <?php else: ?><strong><?= e($record['title']) ?></strong><?php endif; ?>
+                                    <small><?= e($record['warehouse_name']) ?></small>
+                                </div>
+                                <span><?= e($statusLabels[(string)$record['status']] ?? (string)$record['status']) ?></span>
+                                <span><?= !empty($record['event_at']) ? e(date('d/m/Y H:i', strtotime((string)$record['event_at']))) : '—' ?></span>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                </details>
+            <?php endif; ?>
+            <?php if (!$activityPreview): ?><p class="p4-v2-note">Aún no hay trámites registrados para tus almacenes.</p><?php endif; ?>
             </div>
         </section>
         <section class="p4-v2-panel">

@@ -51,6 +51,8 @@ $required = [
     'app/Controllers/DeliveryController.php',
     'app/Views/deliveries/p4-quick.php',
     'tests/p4_direct_nominal_delivery_test.php',
+    'app/Services/P4ActivityList.php',
+    'tests/p4_recent_activity_compact_test.php',
     'app/Controllers/P4IncidentController.php',
     'app/Repositories/P4IncidentRepository.php',
     'app/Services/P4IncidentMigrationPlan.php',
