@@ -24,7 +24,8 @@ if (!str_contains($bootstrap, 'function sindesg_units(')) {
     throw new RuntimeException('Missing shared unit-formatting function.');
 }
 $view = (string)file_get_contents(dirname(__DIR__) . '/app/Views/dashboard-p4.php');
-if (substr_count($view, 'P4QuantityDisplay::units(') !== 2
+$partial = (string)file_get_contents(dirname(__DIR__) . '/app/Views/partials/p4-inventory-product.php');
+if (substr_count($view.$partial, 'P4QuantityDisplay::units(') !== 2
     || !str_contains($view, 'Incluye reservas')
     || !str_contains($view, 'no equivale a disponibilidad libre')
     || !str_contains($view, 'Saldo físico · no disponible libre')) {
