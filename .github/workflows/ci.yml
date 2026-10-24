@@ -139,6 +139,12 @@ jobs:
       - name: P4 operational SQL isolation test
         run: php tests/p4_operational_summary_isolation_test.php
 
+      - name: P4 compact inventory per article and size
+        run: |
+          php -l app/Services/P4InventoryDigest.php
+          php -l app/Views/partials/p4-inventory-product.php
+          php tests/p4_stock_compact_digest_test.php
+
       - name: P4 actual metrics and physical-stock isolation
         run: |
           php -l app/Services/P4DashboardData.php
