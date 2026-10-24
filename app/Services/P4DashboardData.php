@@ -47,6 +47,11 @@ final class P4DashboardData
             'stock_variants' =>
                 "SELECT COUNT(*) FROM v_inventory_stock
                  WHERE warehouse_id=:wh AND quantity_on_hand > 0",
+            'stock_products' =>
+                "SELECT COUNT(DISTINCT pv.product_id)
+                 FROM v_inventory_stock vs
+                 JOIN product_variants pv ON pv.id=vs.product_variant_id
+                 WHERE vs.warehouse_id=:wh AND vs.quantity_on_hand > 0",
         ];
         $counts = [];
         foreach ($queries as $name => $sql) {
@@ -56,8 +61,25 @@ final class P4DashboardData
             $counts[$name] = $name === 'physical_units' ? (float)$value : (int)$value;
         }
 
+        // Full article totals are computed independently of the 25-size UI
+        // sample. The summary cannot understate a product with 26+ variants.
+        $productTotals = $this->pdo->prepare(<<<'SQL'
+            SELECT pv.product_id, p.name AS product_name,
+                   SUM(vs.quantity_on_hand) AS physical_quantity,
+                   COUNT(*) AS variant_count
+            FROM v_inventory_stock vs
+            JOIN product_variants pv ON pv.id=vs.product_variant_id
+            JOIN products p ON p.id=pv.product_id
+            WHERE vs.warehouse_id=:wh AND vs.quantity_on_hand > 0
+            GROUP BY pv.product_id,p.name
+            ORDER BY p.name,pv.product_id
+            LIMIT 12
+SQL);
+        $productTotals->execute(['wh' => $warehouseId]);
+        $stockProducts = $productTotals->fetchAll(PDO::FETCH_ASSOC);
+
         $stmt = $this->pdo->prepare(<<<'SQL'
-            SELECT p.name AS product_name,
+            SELECT pv.product_id, p.name AS product_name,
                    COALESCE(sz.name, 'Sin talla') AS size_name,
                    vs.quantity_on_hand AS physical_quantity
             FROM v_inventory_stock vs
@@ -69,6 +91,10 @@ final class P4DashboardData
             LIMIT 25
 SQL);
         $stmt->execute(['wh' => $warehouseId]);
-        return ['metrics' => $counts, 'stock' => $stmt->fetchAll(PDO::FETCH_ASSOC)];
+        return [
+            'metrics' => $counts,
+            'stock_products' => $stockProducts,
+            'stock' => $stmt->fetchAll(PDO::FETCH_ASSOC),
+        ];
     }
 }

@@ -46,10 +46,14 @@ foreach ([
     'deliveries_confirmed'=>1,
     'physical_units'=>28,
     'stock_variants'=>28,
+    'stock_products'=>1,
 ] as $key=>$expected) {
     if ($m[$key] != $expected) throw new RuntimeException("$key count is incorrect.");
 }
-if(count($p['stock'])!==25 || $c['metrics']['physical_units']!==1.0
+if(count($p['stock'])!==25
+    || count($p['stock_products'])!==1
+    || (float)$p['stock_products'][0]['physical_quantity']!==28.0
+    || $c['metrics']['physical_units']!==1.0
     || $c['metrics']['requests_waiting_central']!==1) {
     throw new RuntimeException('Stock pagination or cross-unit count is incorrect.');
 }

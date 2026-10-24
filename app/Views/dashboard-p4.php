@@ -73,12 +73,30 @@ $ready = !empty($p4ScopeReady) && !empty($p4OperationsReadable)
 .p4-dashboard-v2 .p4-v2-heading{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:13px}
 .p4-dashboard-v2 .p4-v2-heading h2{font-size:1.15rem;margin:3px 0 0}
 .p4-dashboard-v2 .p4-v2-heading small,.p4-dashboard-v2 .p4-v2-note{font-size:.73rem;color:#a7c6d9;line-height:1.5}
-.p4-dashboard-v2 .p4-v2-inventory{display:grid;grid-template-columns:repeat(auto-fit,minmax(265px,1fr));gap:12px}
-.p4-dashboard-v2 .p4-v2-warehouse{border:1px solid #265575;border-radius:9px;padding:12px 14px}
-.p4-dashboard-v2 .p4-v2-warehouse h3{font-size:.95rem;margin:0 0 10px}
-.p4-dashboard-v2 .p4-v2-stock-row{display:grid;grid-template-columns:minmax(0,1fr) 72px 85px;gap:8px;padding:7px 2px;border-bottom:1px solid #153c59;align-items:center;font-size:.82rem}
-.p4-dashboard-v2 .p4-v2-stock-row span:nth-child(2){color:#a7cce3}
+.p4-dashboard-v2 .p4-v2-inventory{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:10px}
+.p4-dashboard-v2 .p4-v2-warehouse{border:1px solid #265575;border-radius:10px;padding:10px 12px;min-width:0}
+.p4-dashboard-v2 .p4-v2-warehouse h3{font-size:.9rem;margin:0 0 9px}
+.p4-dashboard-v2 .p4-v2-product-list{display:grid;gap:7px}
+.p4-dashboard-v2 .p4-v2-product{background:#082039;border:1px solid #285574;border-radius:9px;min-width:0}
+.p4-dashboard-v2 .p4-v2-product>summary{cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:12px;list-style:none;padding:11px 12px;min-height:46px}
+.p4-dashboard-v2 .p4-v2-product>summary::-webkit-details-marker{display:none}
+.p4-dashboard-v2 .p4-v2-product>summary:focus-visible,.p4-dashboard-v2 .p4-v2-stock-more>summary:focus-visible,.p4-dashboard-v2 .p4-v2-inventory-more>summary:focus-visible{outline:2px solid #86dbff;outline-offset:2px}
+.p4-dashboard-v2 .p4-v2-product>summary::after{content:'⌄';color:#8bccf4;font-weight:800}
+.p4-dashboard-v2 .p4-v2-product[open]>summary::after{content:'⌃'}
+.p4-dashboard-v2 .p4-v2-product-name{font-size:.89rem;font-weight:750;overflow-wrap:anywhere;flex:1;min-width:0}
+.p4-dashboard-v2 .p4-v2-product-total{font-size:.89rem;color:#aee4ff;font-weight:750;font-variant-numeric:tabular-nums;white-space:nowrap}
+.p4-dashboard-v2 .p4-v2-product-sizes{border-top:1px solid #265272;padding:4px 12px 8px}
+.p4-dashboard-v2 .p4-v2-stock-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid #153c59;font-size:.8rem}
+.p4-dashboard-v2 .p4-v2-stock-row span{color:#b9d4e7}
 .p4-dashboard-v2 .p4-v2-stock-row strong{text-align:right;font-variant-numeric:tabular-nums}
+.p4-dashboard-v2 .p4-v2-stock-row:last-child{border-bottom:0}
+.p4-dashboard-v2 .p4-v2-stock-more,.p4-dashboard-v2 .p4-v2-inventory-more{margin-top:5px;border:1px solid #295773;border-radius:7px;overflow:hidden}
+.p4-dashboard-v2 .p4-v2-stock-more>summary,.p4-dashboard-v2 .p4-v2-inventory-more>summary{cursor:pointer;min-height:39px;display:flex;align-items:center;padding:10px 11px;color:#9bdcff;font-weight:700;font-size:.78rem}
+.p4-dashboard-v2 .p4-v2-stock-extra{max-height:220px;overflow-y:auto;padding:0 10px 8px;overscroll-behavior:contain}
+.p4-dashboard-v2 .p4-v2-inventory-extra{max-height:320px;overflow-y:auto;padding:8px;display:grid;gap:7px;overscroll-behavior:contain}
+.p4-dashboard-v2 .p4-v2-inventory-note{margin:8px 2px 0;color:#a8c6d9;font-size:.73rem;line-height:1.5}
+@media(max-width:690px){.p4-dashboard-v2 .p4-v2-inventory{grid-template-columns:1fr}.p4-dashboard-v2 .p4-v2-product>summary{padding:10px}}
+
 .p4-dashboard-v2 .p4-v2-activity{display:grid;gap:6px}
 .p4-dashboard-v2 .p4-v2-activity-row{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr) minmax(115px,.6fr);gap:10px;align-items:center;border:1px solid #204b6a;border-radius:8px;padding:9px 12px;min-width:0}
 .p4-dashboard-v2 .p4-v2-activity-row>div{min-width:0}
@@ -230,22 +248,45 @@ $ready = !empty($p4ScopeReady) && !empty($p4OperationsReadable)
             </div>
             <div class="p4-v2-inventory">
             <?php foreach (($p4DashboardData ?? []) as $warehouseId => $data): ?>
+                <?php
+                // The complete article totals come from P4DashboardData SQL.
+                // Only size details are sampled (25 variants) for performance.
+                $products = \App\Services\P4InventoryDigest::group(
+                    $data['stock_products'] ?? [],
+                    $data['stock'] ?? []
+                );
+                $firstProducts = array_slice($products,0,4);
+                $otherProducts = array_slice($products,4);
+                ?>
                 <div class="p4-v2-warehouse">
-                    <h3><?= e($warehouses[(int)$warehouseId] ?? 'Almacén P4') ?></h3>
-                    <?php if (!$data['stock']): ?>
+                    <?php if (count($warehouses) > 1): ?>
+                        <h3><?= e($warehouses[(int)$warehouseId] ?? 'Almacén P4') ?></h3>
+                    <?php endif; ?>
+                    <?php if (!$products): ?>
                         <p class="p4-v2-note">No hay artículos con saldo físico positivo.</p>
                     <?php else: ?>
-                        <div class="p4-v2-stock-row"><strong>Artículo</strong><strong>Talla</strong><strong>Unidades</strong></div>
-                        <?php foreach ($data['stock'] as $line): ?>
-                            <div class="p4-v2-stock-row">
-                                <span><?= e($line['product_name']) ?></span>
-                                <span><?= e($line['size_name']) ?></span>
-                                <strong><?= e(\App\Services\P4QuantityDisplay::units((float)$line['physical_quantity'])) ?></strong>
-                            </div>
-                        <?php endforeach; ?>
-                    <?php endif; ?>
-                    <?php if ($data['metrics']['stock_variants'] > count($data['stock'])): ?>
-                        <p class="p4-v2-note">Se muestran las primeras 25 variantes de <?= e((int)$data['metrics']['stock_variants']) ?> con existencias. El saldo total incluye todas.</p>
+                        <div class="p4-v2-product-list">
+                            <?php foreach ($firstProducts as $index => $product): ?>
+                                <?php $expandFirst = $index === 0; require __DIR__.'/partials/p4-inventory-product.php'; ?>
+                            <?php endforeach; ?>
+                        </div>
+                        <?php if ($otherProducts): ?>
+                            <details class="p4-v2-inventory-more">
+                                <summary>Ver <?= e(count($otherProducts)) ?> artículos más ↓</summary>
+                                <div class="p4-v2-inventory-extra">
+                                    <?php foreach ($otherProducts as $product): ?>
+                                        <?php $expandFirst = false; require __DIR__.'/partials/p4-inventory-product.php'; ?>
+                                    <?php endforeach; ?>
+                                </div>
+                            </details>
+                        <?php endif; ?>
+                        <?php if (($data['metrics']['stock_products'] ?? 0) > count($products)): ?>
+                            <p class="p4-v2-inventory-note">
+                                Se resumen los primeros <?= e(count($products)) ?> artículos de
+                                <?= e((int)$data['metrics']['stock_products']) ?>.
+                                El indicador de unidades físicas incluye todos los artículos.
+                            </p>
+                        <?php endif; ?>
                     <?php endif; ?>
                 </div>
             <?php endforeach; ?>
