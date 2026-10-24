@@ -506,6 +506,12 @@ jobs:
           extensions: pdo_sqlite, sqlite3, mbstring, iconv
           coverage: none
 
+      - name: P4 compact inventory and size totals on Windows
+        shell: pwsh
+        run: |
+          php tests/p4_stock_compact_digest_test.php
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
       - name: P4 Central boots product names on Windows
         shell: pwsh
         run: |
