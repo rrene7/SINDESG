@@ -68,9 +68,13 @@ const selectors = {
     '[name="review_notes"]': notes
 };
 form.querySelector = selector => selectors[selector] || null;
+let nominalDomScans = 0;
 form.querySelectorAll = selector => {
     if (selector === '[data-central-variant]') return groups;
-    if (selector === '[data-central-item]') return items;
+    if (selector === '[data-central-item]') {
+        nominalDomScans++;
+        return items;
+    }
     return [];
 };
 let confirmationCount = 0;
@@ -93,6 +97,13 @@ function submit(action) {
 assert.equal(items.filter(x => Number(x.value) !== 0).length, 0,
     'No nominal quantity must be preselected');
 assert.equal(submit('approve'), true, 'Submit without validation must fail');
+// Submilésimas must not validate, even if group totals differ by less than prior epsilon.
+groups[0].items[0].value = '0.0000005';
+groups[0].items[0].fire('input');
+validateButton.fire('click');
+assert.equal(summary.dataset.checked, 'no', 'Submilésimas no deben validarse en la UI');
+groups[0].items[0].value = '0.000';
+groups[0].items[0].fire('input');
 
 completeAllButton.fire('click');
 assert.equal(items.filter(x => Number(x.value) > 0).length, 721,
@@ -130,4 +141,6 @@ assert.equal(summary.dataset.checked, 'no');
 validateButton.fire('click');
 assert.equal(summary.dataset.checked, 'yes');
 
-console.log('[OK] Central: 722 destinatarios, completar todo hasta 721, talla limitada, limpiar, editar nominal, validacion y aprobacion parcial protegidas.');
+assert.equal(nominalDomScans, 1,
+    'La revisión de 722 funcionarios debe consultar los inputs nominales una sola vez.');
+console.log('[OK] Central: 722 destinatarios, caché nominal, precisión de tres decimales, stock y aprobaciones parciales protegidas.');

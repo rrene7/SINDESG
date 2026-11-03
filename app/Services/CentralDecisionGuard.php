@@ -17,6 +17,12 @@ final class CentralDecisionGuard
      * @param array<int,float> $approved
      * @param array<int,float> $groups
      */
+    /** DB quantities are stored with three decimal places; never round a decision silently. */
+    private static function hasStockPrecision(float $quantity): bool
+    {
+        return is_finite($quantity) && abs($quantity - round($quantity, 3)) <= 0.000000001;
+    }
+
     public static function validate(
         array $items,
         array $approved,
@@ -46,6 +52,9 @@ final class CentralDecisionGuard
                 throw new InvalidArgumentException('Faltan asignaciones nominales. Actualice la página.');
             }
             $quantity = $approved[$id];
+            if (!self::hasStockPrecision($quantity)) {
+                throw new InvalidArgumentException('La cantidad nominal solo admite hasta tres decimales.');
+            }
             if (!is_finite($quantity) || $quantity < 0 || $quantity > $requested + 0.000001) {
                 throw new InvalidArgumentException('Cantidad nominal fuera del máximo solicitado.');
             }
@@ -61,7 +70,7 @@ final class CentralDecisionGuard
         }
         foreach ($groupApproved as $variant => $sum) {
             if (!array_key_exists($variant, $groups)
-                || !is_finite($groups[$variant])
+                || !self::hasStockPrecision($groups[$variant])
                 || abs($sum - $groups[$variant]) > 0.000001) {
                 throw new InvalidArgumentException(
                     'Una cantidad por talla no coincide con sus funcionarios. Valide y aplique el grupo antes de continuar.'
