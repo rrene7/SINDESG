@@ -485,8 +485,16 @@
             return Number.isFinite(number) && number >= 0 ? number : NaN;
         };
         const num = value => Number(value.toFixed(3)).toLocaleString('es-PA', {maximumFractionDigits: 3});
-        const inputsFor = group => Array.from(form.querySelectorAll('[data-central-item]'))
-            .filter(x => x.dataset.variantId === group.dataset.variantId);
+        const hasStockPrecision = value => Number.isFinite(value)
+            && Math.abs(value - Math.round(value * 1000) / 1000) <= 1e-9;
+        // A 500+ employee request should scan the DOM once, not on every input or validation.
+        const inputsByVariant = new Map();
+        form.querySelectorAll('[data-central-item]').forEach(input => {
+            const variant = input.dataset.variantId;
+            if (!inputsByVariant.has(variant)) inputsByVariant.set(variant, []);
+            inputsByVariant.get(variant).push(input);
+        });
+        const inputsFor = group => inputsByVariant.get(group.dataset.variantId) || [];
         const sum = inputs => inputs.reduce((count, input) => count + (parse(input.value) || 0), 0);
         let lastValidated = false;
         const markChanged = () => {
@@ -614,10 +622,10 @@
                 const chosen = sum(rows);
                 requested += expected;
                 approved += chosen;
-                if (!Number.isFinite(given) || given > Math.min(expected, available) + 0.000001
+                if (!hasStockPrecision(given) || given > Math.min(expected, available) + 0.000001
                     || Math.abs(given - chosen) > 0.000001 || rows.some(item => {
                         const q = parse(item.value), max = parse(item.dataset.requested);
-                        return !Number.isFinite(q) || q > max + 0.000001;
+                        return !hasStockPrecision(q) || q > max + 0.000001;
                     })) invalid = true;
             });
             if (invalid) {
