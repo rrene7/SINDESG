@@ -26,6 +26,13 @@ $fail(fn()=>CentralDecisionGuard::validate($rows,[1=>1.,2=>1.,3=>1.],[10=>2.,11=
     'Rechazo permitido con cantidades asignadas.');
 $fail(fn()=>CentralDecisionGuard::validate($rows,[1=>1.,2=>1.,3=>1.],[10=>2.,11=>1.],'',false),
     'Decisión sin acción explícita.');
+// RequestRepository stores DECIMAL(…,3): 0.0000005 could wrongly yield an approval
+// with zero persisted units; 0.9996 could be silently rounded up to 1.000.
+$fail(fn()=>CentralDecisionGuard::validate($rows,[1=>0.0000005,2=>0.,3=>0.],[10=>0.0000005,11=>0.],'approve',true),
+    'Se admitió aprobación submilésima que se guardaría como cero.');
+$fail(fn()=>CentralDecisionGuard::validate($rows,[1=>0.9996,2=>0.,3=>0.],[10=>0.9996,11=>0.],'approve',true),
+    'Se admitió cantidad de más de tres decimales que se redondearía al guardar.');
+CentralDecisionGuard::validate($rows,[1=>0.125,2=>0.875,3=>0.],[10=>1.,11=>0.],'approve',true);
 $fail(fn()=>CentralDecisionGuard::validate($rows,[1=>1.,2=>1.,3=>1.,777=>5.],[10=>2.,11=>1.],'approve',true),
     'Se aceptó beneficiario ajeno a solicitud.');
 $fail(fn()=>CentralDecisionGuard::validate($rows,[1=>1.,2=>1.],[10=>2.,11=>1.],'approve',true),
