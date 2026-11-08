@@ -1,5 +1,5 @@
 (() => {
-    const debounce = (callback, delay = 220) => {
+    const debounce = (callback, delay = 260) => {
         let timer = null;
         return (...args) => {
             window.clearTimeout(timer);
@@ -13,7 +13,18 @@
         const results = root.querySelector('[data-distribution-results]');
         const selection = root.querySelector('[data-distribution-selection]');
         const endpoint = root.dataset.searchUrl || '';
+        if (!input || !hiddenId || !results || !selection || !endpoint) return;
+
         let sequence = 0;
+        let activeRequest = null;
+
+        const cancelPending = () => {
+            sequence += 1;
+            if (activeRequest) {
+                activeRequest.abort();
+                activeRequest = null;
+            }
+        };
 
         const clear = () => {
             hiddenId.value = '';
@@ -37,15 +48,19 @@
                 return;
             }
 
-            const current = ++sequence;
+            const current = sequence;
+            const controller = new AbortController();
+            activeRequest = controller;
+            const timeout = window.setTimeout(() => controller.abort(), 8500);
             status('Buscando en RRHH2029...');
 
             try {
-                const response = await fetch(endpoint + '?q=' + encodeURIComponent(query), {
-                    headers: {'Accept': 'application/json'}
+                const separator = endpoint.includes('?') ? '&' : '?';
+                const response = await fetch(endpoint + separator + 'q=' + encodeURIComponent(query), {
+                    headers: {'Accept': 'application/json'},
+                    signal: controller.signal
                 });
                 const payload = await response.json();
-
                 if (current !== sequence) return;
 
                 if (!response.ok || !payload.ok) {
@@ -55,7 +70,7 @@
 
                 results.innerHTML = '';
                 if (!payload.items?.length) {
-                    status('No se encontraron funcionarios.');
+                    status('No se encontraron funcionarios. Verifique la posición o cédula completa.');
                     return;
                 }
 
@@ -77,6 +92,7 @@
 
                     button.append(title, meta);
                     button.addEventListener('click', () => {
+                        cancelPending();
                         hiddenId.value = employee.employee_id;
                         input.value = employee.display_name;
                         selection.textContent = meta.textContent;
@@ -85,22 +101,36 @@
                     });
                     results.appendChild(button);
                 });
-
                 results.hidden = false;
             } catch (error) {
                 if (current === sequence) {
-                    status('No fue posible consultar RRHH2029.');
+                    status(error?.name === 'AbortError'
+                        ? 'La búsqueda tardó demasiado. Compruebe la conexión e intente nuevamente.'
+                        : 'No fue posible consultar RRHH2029.');
                 }
+            } finally {
+                window.clearTimeout(timeout);
+                if (activeRequest === controller) activeRequest = null;
             }
         });
 
-        input?.addEventListener('input', () => {
+        input.addEventListener('input', () => {
+            // Invalidate stale responses as soon as the text changes,
+            // not only when the next debounced network call starts.
+            cancelPending();
             clear();
+            if (input.value.trim().length < 2) {
+                results.hidden = true;
+                return;
+            }
             search();
         });
 
-        input?.addEventListener('keydown', (event) => {
-            if (event.key === 'Escape') results.hidden = true;
+        input.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') {
+                cancelPending();
+                results.hidden = true;
+            }
         });
 
         document.addEventListener('click', (event) => {
