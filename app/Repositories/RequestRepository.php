@@ -102,6 +102,30 @@ final class RequestRepository
         return $row ?: null;
     }
 
+    /**
+     * Recupera una transferencia real para seguimiento. Una transferencia
+     * abierta tiene prioridad, incluso cuando existen otras ya recibidas.
+     * Las canceladas no deben ofrecerse como transferencias activas.
+     *
+     * @return array{id:int|string,status:string}|null
+     */
+    public function latestDistribution(int $requestId): ?array
+    {
+        $statement = $this->pdo->prepare(<<<'SQL'
+            SELECT id, status
+            FROM distributions
+            WHERE request_id = :request_id
+              AND status <> 'cancelled'
+            ORDER BY CASE
+                WHEN status IN ('prepared', 'authorized', 'dispatched') THEN 0
+                ELSE 1
+            END, id DESC
+            LIMIT 1
+        SQL);
+        $statement->execute(['request_id' => $requestId]);
+        return $statement->fetch() ?: null;
+    }
+
     public function items(int $requestId): array
     {
         $statement = $this->pdo->prepare(<<<'SQL'

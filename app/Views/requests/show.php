@@ -19,6 +19,22 @@ $totalReceived = array_sum(array_map(static fn (array $row): float => (float) ($
 $totalDelivered = array_sum(array_map(static fn (array $row): float => (float) ($row['quantity_delivered'] ?? 0), $requestItems));
 $remainingToDistribute = max(0.0, $totalApproved - $totalDispatched);
 
+// The existing transfer is read from the same SINDESG database, never
+// reconstructed from request totals or from client input.
+$existingDistribution = $requestDistribution ?? null;
+$existingDistributionStatus = is_array($existingDistribution)
+    ? (string) $existingDistribution['status'] : null;
+$canViewDistribution = sindesg_can('distribution.view')
+    && sindesg_role_action_allowed('distribution', 'show', 'GET', (array) sindesg_user());
+$canPrepareDistribution = sindesg_can('distribution.manage')
+    && sindesg_role_action_allowed('distribution', 'new', 'GET', (array) sindesg_user())
+    && \App\Services\DistributionNavigation::canPrepare(
+        (string) $serviceRequest['status'],
+        $remainingToDistribute,
+        (int) ($serviceRequest['p4_is_active'] ?? 0) === 1,
+        $existingDistributionStatus
+    );
+
 // Se consultan las variantes ACTIVAS aunque su existencia sea cero.
 // El filtro busca coincidencias en artículo, categoría, marca y códigos.
 $catalogVariantOptions = [];
@@ -149,11 +165,24 @@ foreach ($nominalProducts ?? [] as $product) {
                 <div class="request-note"><strong>Observación de revisión</strong><p><?= e($serviceRequest['review_notes']) ?></p></div>
             <?php endif; ?>
 
-            <?php if (in_array($serviceRequest['status'], ['approved', 'partially_approved'], true) && $remainingToDistribute > 0 && sindesg_role_action_allowed('distribution', 'new', 'GET', (array) sindesg_user())): ?>
+            <?php if ($canPrepareDistribution): ?>
                 <a class="primary-button request-full-button"
                    href="<?= e(sindesg_url('?module=distribution&action=new&request_id=' . (int) $serviceRequest['id'])) ?>">
                     Preparar distribución
                 </a>
+            <?php endif; ?>
+            <?php if (is_array($existingDistribution) && $canViewDistribution): ?>
+                <p class="request-cell-sub">
+                    <?= $existingDistributionStatus === 'received'
+                        ? 'La transferencia fue recibida por el P4. Consulte su historial; no repita la distribución.'
+                        : 'Esta solicitud ya tiene una transferencia registrada. Consulte su estado antes de continuar.' ?>
+                </p>
+                <a class="secondary-button request-full-button"
+                   href="<?= e(sindesg_url('?module=distribution&action=show&id=' . (int) $existingDistribution['id'])) ?>">
+                    Ver transferencia
+                </a>
+            <?php elseif ($serviceRequest['status'] === 'fulfilled'): ?>
+                <p class="request-cell-sub">Solicitud atendida: no quedan unidades pendientes de distribución.</p>
             <?php endif; ?>
         <?php endif; ?>
     </aside>

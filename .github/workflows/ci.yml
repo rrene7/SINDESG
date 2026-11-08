@@ -270,6 +270,9 @@ jobs:
       - name: Distribution schema test
         run: php tests/distribution_schema_test.php
 
+      - name: Distribution navigation regression
+        run: php tests/distribution_navigation_test.php
+
       - name: Distribution logic test
         run: php tests/distribution_logic_test.php
 

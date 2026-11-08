@@ -213,6 +213,7 @@ final class RequestsController
                     'serviceRequest' => $request,
                     'requestItems' => $requestItems,
                     'requestCommitmentEvidence' => $this->repository->commitmentEvidence($requestId),
+                    'requestDistribution' => $this->repository->latestDistribution($requestId),
                     'requestTracking' => P4RequestTracking::build(
                         $request,
                         $this->requestProgressQuantities($requestId, $requestItems),

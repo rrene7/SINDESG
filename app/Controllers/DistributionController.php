@@ -63,6 +63,18 @@ final class DistributionController
 
             return $this->handleGet($action, $query);
         } catch (InvalidArgumentException|RuntimeException $exception) {
+            // A GET failure must never redirect back to the same failing URL.
+            // Show the cause with safe navigation; keep POST error handling as PRG.
+            if (strtoupper($method) !== 'POST') {
+                return [
+                    'view' => SINDESG_ROOT . '/app/Views/distribution/notice.php',
+                    'title' => 'Distribución no disponible',
+                    'data' => [
+                        'distributionNotice' => $exception->getMessage(),
+                        'distributionRequestId' => max(0, (int) ($query['request_id'] ?? 0)),
+                    ],
+                ];
+            }
             flash('error', $exception->getMessage());
             $distributionId = (int) ($post['distribution_id'] ?? 0);
             $requestId = (int) ($post['request_id'] ?? $query['request_id'] ?? 0);
@@ -94,7 +106,10 @@ final class DistributionController
             $request = $this->repository->requestForPreparation($requestId);
 
             if ($request === null) {
-                throw new InvalidArgumentException('La solicitud seleccionada no está aprobada o no existe.');
+                throw new InvalidArgumentException(
+                    'La solicitud no está disponible para una nueva distribución. '
+                    . 'Si ya fue atendida, consulte la transferencia desde el detalle de la solicitud.'
+                );
             }
 
             if ((int) $request['p4_is_active'] !== 1) {
