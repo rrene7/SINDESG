@@ -101,6 +101,7 @@ final class RrhhEmployeeDirectory
                        e.last_name
                    ) AS last_name,
                    e.legacy_position,
+                   e.is_position_placeholder,
                    pa.position_number AS assignment_position,
                    r.name AS rank_name,
                    s.name AS status_name,
@@ -120,7 +121,8 @@ final class RrhhEmployeeDirectory
                AND ua.status = "active" AND ua.end_date IS NULL
             LEFT JOIN organization_units_current ou
                 ON ou.id = ua.organization_unit_id
-            WHERE (
+            WHERE COALESCE(e.is_position_placeholder, 0) = 0
+              AND (
                 e.document_number LIKE :document_term
                 OR e.first_name LIKE :first_term
                 OR e.last_name LIKE :last_term
@@ -181,7 +183,8 @@ final class RrhhEmployeeDirectory
     /** @param array<string,mixed> $row */
     private static function isP4NomineeEligible(array $row): bool
     {
-        return trim((string) ($row['document_number'] ?? '')) !== ''
+        return (int) ($row['is_position_placeholder'] ?? 0) === 0
+            && trim((string) ($row['document_number'] ?? '')) !== ''
             && P4NominalStatusPolicy::isAllowed($row);
     }
 
@@ -304,6 +307,7 @@ final class RrhhEmployeeDirectory
                        ) AS last_name,
                        e.legacy_position,
                        e.last_position_number,
+                       e.is_position_placeholder,
                        pa.position_number AS assignment_position,
                        r.name AS rank_name,
                        s.name AS status_name,
@@ -337,12 +341,20 @@ final class RrhhEmployeeDirectory
                 if ($reason === null && trim((string) ($row['document_number'] ?? '')) === '') {
                     $reason = 'El funcionario no tiene documento de identidad verificable.';
                 }
+                // A vacancy placeholder is not an identified RRHH officer, even if
+                // an administrative status or previous position appears valid.
+                $placeholder = (int) ($row['is_position_placeholder'] ?? 0) !== 0;
+                if ($placeholder) {
+                    $eligible = false;
+                    $reason = 'Posición vacante o sin titular identificado en RRHH. Verifique la posición vigente y la cédula del funcionario.';
+                }
                 $row['p4_rejection_reason'] = $reason;
 
                 if ($field === 'employee_id') {
                     $position = $current ?: $assigned;
                     $row['position_number'] = $position ?: null;
-                    $row['position_source'] = $current ? 'current' : ($assigned ? 'assignment' : 'missing');
+                    $row['position_source'] = $placeholder
+                        ? 'vacant' : ($current ? 'current' : ($assigned ? 'assignment' : 'missing'));
                     $row['is_rrhh_eligible'] = $eligible;
                     $result[] = $this->normalize($row);
                     continue;
@@ -352,7 +364,7 @@ final class RrhhEmployeeDirectory
                 foreach ($sources as $position => $source) {
                     $match = $row;
                     $match['position_number'] = (string) $position;
-                    $match['position_source'] = $source;
+                    $match['position_source'] = $placeholder ? 'vacant' : $source;
                     $match['is_rrhh_eligible'] = $eligible;
                     $result[] = $this->normalize($match);
                 }
