@@ -11,6 +11,12 @@ final class RrhhEmployeeDirectory
     {
     }
 
+    /**
+     * Búsqueda del funcionario que interviene en movimientos físicos.
+     * Una posición o cédula digitada se resuelve primero por índices exactos:
+     * no explorar todas las filas de RRHH con LIKE '%16972%'.
+     * El buscador por nombre conserva las coincidencias parciales.
+     */
     public function search(string $query, int $limit = 20): array
     {
         $query = trim($query);
@@ -19,7 +25,63 @@ final class RrhhEmployeeDirectory
         }
 
         $limit = max(1, min($limit, 30));
-        $term = '%' . $query . '%';
+        $identifier = self::isExactSearchIdentifier($query);
+        $params = [];
+
+        if ($identifier) {
+            // Dos pasos: primero localizar IDs sin hacer JOIN ni CAST sobre
+            // tablas grandes; después recuperar solo los expedientes hallados.
+            // Incluye employees.legacy_position, usado por RRHH2029.
+            $candidates = $this->database->rrhhRead('
+                SELECT candidate.employee_id
+                FROM (
+                    SELECT e.id AS employee_id, 0 AS priority
+                    FROM employees e
+                    WHERE e.document_number = :document_number
+                    UNION ALL
+                    SELECT e.id AS employee_id, 1 AS priority
+                    FROM employees e
+                    WHERE e.legacy_position = :legacy_position
+                    UNION ALL
+                    SELECT pa.employee_id AS employee_id, 2 AS priority
+                    FROM employee_position_assignments pa
+                    WHERE pa.position_number = :assignment_position
+                      AND pa.end_date IS NULL
+                ) candidate
+                GROUP BY candidate.employee_id
+                ORDER BY MIN(candidate.priority), candidate.employee_id
+                LIMIT 60', [
+                'document_number' => $query,
+                'legacy_position' => $query,
+                'assignment_position' => $query,
+            ]);
+            $ids = [];
+            foreach ($candidates as $candidate) {
+                $id = (int) ($candidate['employee_id'] ?? 0);
+                if ($id > 0) {
+                    $ids[$id] = $id;
+                }
+            }
+            if ($ids === []) {
+                return [];
+            }
+            // IDs proceden de consultas de RRHH y se convierten a enteros.
+            $filter = 'e.id IN (' . implode(', ', array_values($ids)) . ')';
+        } else {
+            $term = '%' . $query . '%';
+            $filter = '(
+                    e.document_number LIKE :document_term
+                 OR e.first_name LIKE :first_term
+                 OR e.last_name LIKE :last_term
+                 OR CONCAT_WS(" ", e.first_name, e.last_name) LIKE :full_term
+            )';
+            $params = [
+                'document_term' => $term,
+                'first_term' => $term,
+                'last_term' => $term,
+                'full_term' => $term,
+            ];
+        }
 
         $sql = '
             SELECT
@@ -27,7 +89,7 @@ final class RrhhEmployeeDirectory
                 e.document_number,
                 e.first_name,
                 e.last_name,
-                pa.position_number,
+                COALESCE(NULLIF(e.legacy_position, 0), pa.position_number) AS position_number,
                 r.name AS rank_name,
                 s.name AS status_name,
                 ou.id AS organization_unit_id,
@@ -49,29 +111,33 @@ final class RrhhEmployeeDirectory
                 ON ou.id = ua.organization_unit_id
             WHERE e.document_number IS NOT NULL
               AND TRIM(e.document_number) <> ""
+              AND COALESCE(e.is_position_placeholder, 0) = 0
               AND COALESCE(s.blocks_actions, 0) = 0
               AND COALESCE(s.is_active, 1) = 1
-              AND (
-                    e.document_number LIKE :document_term
-                 OR e.first_name LIKE :first_term
-                 OR e.last_name LIKE :last_term
-                 OR CONCAT_WS(" ", e.first_name, e.last_name) LIKE :full_term
-                 OR CAST(pa.position_number AS CHAR) LIKE :position_term
-              )
+              AND ' . $filter . '
             ORDER BY e.last_name, e.first_name, e.id
             LIMIT ' . $limit;
 
-        $rows = $this->database->rrhhRead($sql, [
-            'document_term' => $term,
-            'first_term' => $term,
-            'last_term' => $term,
-            'full_term' => $term,
-            'position_term' => $term,
-        ]);
-
+        $rows = $this->database->rrhhRead($sql, $params);
         $rows = $this->withOrganizationContext($rows);
 
-        return array_map([$this, 'normalize'], $rows);
+        // Un funcionario puede tener más de una asignación abierta; en el
+        // selector solo debe aparecer una vez por employee_id.
+        $found = [];
+        foreach ($rows as $row) {
+            $id = (int) ($row['employee_id'] ?? 0);
+            if ($id > 0 && !isset($found[$id])) {
+                $found[$id] = $this->normalize($row);
+            }
+        }
+
+        return array_values($found);
+    }
+
+    /** Posiciones numéricas y documentos con guiones: búsqueda exacta. */
+    private static function isExactSearchIdentifier(string $query): bool
+    {
+        return preg_match('/^[0-9][0-9-]{1,29}$/D', $query) === 1;
     }
 
     /**
@@ -221,6 +287,7 @@ final class RrhhEmployeeDirectory
             LEFT JOIN organization_units_current ou
                 ON ou.id = ua.organization_unit_id
             WHERE e.id = :employee_id
+              AND COALESCE(e.is_position_placeholder, 0) = 0
               AND e.document_number IS NOT NULL
               AND TRIM(e.document_number) <> ""
               AND COALESCE(s.blocks_actions, 0) = 0
