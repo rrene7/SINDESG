@@ -16,11 +16,11 @@ header('Cache-Control: no-store');
 
 $query = trim((string) ($_GET['q'] ?? ''));
 
-if (mb_strlen($query) < 2) {
+if (mb_strlen($query) < 2 || mb_strlen($query) > 100) {
     http_response_code(422);
     echo json_encode([
         'ok' => false,
-        'message' => 'Escriba al menos 2 caracteres.',
+        'message' => 'Escriba entre 2 y 100 caracteres.',
         'items' => [],
     ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     exit;
@@ -38,6 +38,13 @@ try {
         ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         exit;
     }
+    // Endpoint de solo lectura: la consulta RRHH puede tardar y no debe
+    // bloquear otras acciones del mismo usuario con el candado de sesión.
+    // La autorización y los permisos ya se verificaron anteriormente.
+    if (session_status() === PHP_SESSION_ACTIVE) {
+        session_write_close();
+    }
+
     echo json_encode([
         'ok' => true,
         'items' => $forP4
