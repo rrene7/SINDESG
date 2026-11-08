@@ -645,11 +645,12 @@ foreach ($nominalProducts ?? [] as $product) {
                                 'assignment' => 'Asignación vigente',
                                 'assignment_conflict' => 'Asignación distinta al expediente',
                                 'historical' => 'Posición anterior',
+                                'vacant' => 'Vacante / sin titular',
                                 default => 'No determinada',
                             };
                             ?>
                             <?= e($sourceLabel) ?>
-                            <?php if (!empty($issue['rrhh_status'])): ?>
+                            <?php if (!empty($issue['rrhh_status']) && ($issue['position_source'] ?? '') !== 'vacant'): ?>
                                 <small class="request-cell-sub"><?= e($issue['rrhh_status']) ?></small>
                             <?php endif; ?>
                         </td>
