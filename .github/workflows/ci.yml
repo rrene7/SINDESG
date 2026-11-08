@@ -73,6 +73,14 @@ jobs:
       - name: Production logic test
         run: php tests/production_logic_test.php
 
+      - name: Fast RRHH receiver lookup and session policy
+        run: php tests/rrhh_search_performance_test.php
+
+      - name: Distribution employee picker cancellation and timeout
+        run: |
+          node --check public/assets/js/distribution.js
+          node tests/distribution_employee_search_test.js
+
       - name: RRHH receiver test
         run: php tests/rrhh_receiver_test.php
 
