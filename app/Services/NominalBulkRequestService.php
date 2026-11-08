@@ -503,9 +503,12 @@ final class NominalBulkRequestService
             } elseif (count($matches) > 1) {
                 $cause = 'La posición corresponde a varios funcionarios distintos en RRHH2029; requiere aclaración.';
             } elseif (!in_array((string) ($person['position_source'] ?? ''), ['current', 'assignment'], true)) {
-                $cause = (string) ($person['position_source'] ?? '') === 'historical'
-                    ? 'RRHH reconoce esta posición como anterior, no vigente. Confirme la posición actual antes de asignar.'
-                    : 'La asignación abierta difiere de la posición actual del expediente RRHH; conciliar antes de asignar.';
+                $source = (string) ($person['position_source'] ?? '');
+                $cause = $source === 'vacant'
+                    ? 'La posición está vacante o sin titular identificado en RRHH. Confirme cédula y posición vigente antes de asignar.'
+                    : ($source === 'historical'
+                        ? 'RRHH reconoce esta posición como anterior, no vigente. Confirme la posición actual antes de asignar.'
+                        : 'La asignación abierta difiere de la posición actual del expediente RRHH; conciliar antes de asignar.');
             } elseif (empty($person['is_rrhh_eligible'])) {
                 $cause = (string) ($person['p4_rejection_reason']
                     ?? 'No puede verificarse el documento o estado RRHH del funcionario.');

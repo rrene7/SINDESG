@@ -408,6 +408,9 @@ jobs:
       - name: P4 duplicate nominal rows test
         run: php tests/p4_duplicate_nominal_rows_test.php
 
+      - name: P4 vacant position and manual review protections
+        run: php tests/p4_vacant_position_test.php
+
       - name: P4 RRHH canonical position test
         run: php tests/p4_rrhh_canonical_position_test.php
 
