@@ -359,6 +359,11 @@ jobs:
       - name: Admin employee picker wiring test
         run: php tests/admin_employee_picker_wiring_test.php
 
+      - name: Admin RRHH picker cancellation and timeout
+        run: |
+          node --check public/assets/js/security.js
+          node tests/admin_employee_picker_timeout_test.js
+
       - name: Role workflow boundaries test
         run: php tests/role_operation_boundaries_test.php
 
