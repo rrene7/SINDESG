@@ -76,6 +76,7 @@ $required = [
     'database/schema/024_p4_subordinate_warehouses.sql',
     'scripts/install_p4_subordinate_warehouses.php',
     'tests/p4_subordinate_warehouses_test.php',
+    'tests/p4_subordinate_picker_test.js',
     'tests/p4_incident_intake_test.php',
     'docs/P4_INCIDENCIAS_PRESENCIALES.md',
     'app/Controllers/AdjustmentController.php',
