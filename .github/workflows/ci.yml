@@ -252,6 +252,14 @@ jobs:
       - name: Warehouses RRHH test
         run: php tests/warehouses_rrhh_test.php
 
+      - name: P4 subordinate centers and warehouse isolation
+        run: |
+          php tests/p4_subordinate_warehouses_test.php
+          node --check public/assets/js/warehouses.js
+          node tests/p4_subordinate_picker_test.js
+          php scripts/check.php
+
+
       - name: Requests schema test
         run: php tests/requests_schema_test.php
 

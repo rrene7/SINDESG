@@ -81,6 +81,7 @@ final class WarehousesController
                 'title' => 'Nuevo P4',
                 'data' => [
                     'unitSearchUrl' => sindesg_url('public/api/units.php?scope=p4'),
+                    'subunitSearchUrl' => sindesg_url('public/api/units.php?scope=p4-subunits'),
                     'employeeSearchUrl' => sindesg_url('public/api/employees.php'),
                     'rrhhAvailable' => $this->database->health('rrhh')['ok'],
                 ],
@@ -96,17 +97,22 @@ final class WarehousesController
             }
 
             $currentUnit = null;
+            $currentHeadUnit = null;
             $currentResponsible = null;
 
             try {
                 if (!empty($warehouse['organization_unit_id'])) {
                     $currentUnit = $this->rrhh->findUnit((int) $warehouse['organization_unit_id']);
                 }
+                if (!empty($warehouse['p4_head_unit_id'])) {
+                    $currentHeadUnit = $this->rrhh->findUnit((int) $warehouse['p4_head_unit_id']);
+                }
                 if (!empty($warehouse['responsible_employee_id'])) {
                     $currentResponsible = $this->rrhh->findPerson((int) $warehouse['responsible_employee_id']);
                 }
             } catch (Throwable $exception) {
                 $currentUnit = null;
+                $currentHeadUnit = null;
                 $currentResponsible = null;
             }
 
@@ -120,6 +126,7 @@ final class WarehousesController
                         ? $this->warehouses->requestsForP4($warehouseId)
                         : [],
                     'currentUnit' => $currentUnit,
+                    'currentHeadUnit' => $currentHeadUnit,
                     'currentResponsible' => $currentResponsible,
                 ],
             ];

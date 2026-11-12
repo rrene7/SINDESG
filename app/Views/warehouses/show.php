@@ -35,6 +35,12 @@ $heroLabel = $isCentral ? 'ALMACÉN CENTRAL' : ($isTransit ? 'INVENTARIO EN TRÁ
                 
                 <div><dt>Unidad actual</dt><dd><?= e($currentUnit['official_name'] ?? 'RRHH no disponible') ?></dd></div>
                 <div><dt>Tipo actual</dt><dd><?= e($currentUnit['unit_type'] ?? '—') ?></dd></div>
+                <?php if (!empty($warehouse['p4_head_unit_id'])): ?>
+                    <div><dt>Cabecera institucional</dt><dd><?= e($currentHeadUnit['official_name'] ?? $warehouse['p4_head_unit_name_snapshot'] ?? '—') ?></dd></div>
+                    <div><dt>Modalidad del P4</dt><dd><?= (int) $warehouse['p4_head_unit_id'] === (int) $warehouse['organization_unit_id']
+                        ? 'P4 directo de cabecera'
+                        : 'P4 propio de dependencia subordinada' ?></dd></div>
+                <?php endif; ?>
                 
             <?php endif; ?>
         </dl>
@@ -44,6 +50,9 @@ $heroLabel = $isCentral ? 'ALMACÉN CENTRAL' : ($isTransit ? 'INVENTARIO EN TRÁ
                 <strong>Snapshot al crear el P4</strong>
                 <span><?= e($warehouse['organization_unit_name_snapshot'] ?: '—') ?></span>
                 <small><?= e($warehouse['organization_unit_code_snapshot'] ?: 'Sin código') ?> · <?= e($warehouse['organization_unit_type_snapshot'] ?: 'Sin tipo') ?></small>
+                <?php if (!empty($warehouse['p4_head_unit_name_snapshot'])): ?>
+                    <small>Cabecera registrada: <?= e($warehouse['p4_head_unit_name_snapshot']) ?> · <?= e($warehouse['p4_head_unit_code_snapshot'] ?: 'Sin código') ?></small>
+                <?php endif; ?>
             </div>
         <?php endif; ?>
     </article>

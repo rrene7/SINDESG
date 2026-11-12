@@ -281,6 +281,27 @@ if (!$skipDatabase) {
 
         if ($database->health('sindesg')['ok']) {
             $pdo = $database->connection('sindesg');
+            $p4HeadColumns = (int) $pdo->query(
+                "SELECT COUNT(*) FROM information_schema.columns
+                 WHERE table_schema = DATABASE()
+                   AND table_name = 'warehouses'
+                   AND column_name IN (
+                       'p4_head_unit_id',
+                       'p4_head_unit_code_snapshot',
+                       'p4_head_unit_name_snapshot',
+                       'p4_head_unit_type_snapshot'
+                   )"
+            )->fetchColumn();
+            $p4HeadMigration = (int) $pdo->query(
+                "SELECT COUNT(*) FROM schema_migrations
+                 WHERE migration = '024_p4_subordinate_warehouses'"
+            )->fetchColumn();
+            if ($p4HeadColumns === 4 && $p4HeadMigration > 0) {
+                $ok('P4 subordinados', 'Migración 024 instalada');
+            } else {
+                $error('P4 subordinados', 'Falta migración 024. Ejecute scripts/install_p4_subordinate_warehouses.php con respaldo verificado.');
+            }
+
 
             $migrationRows = $pdo
                 ->query('SELECT migration FROM schema_migrations ORDER BY id')

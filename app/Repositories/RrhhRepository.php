@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace App\Repositories;
 
 use App\Support\Database;
+use App\Services\P4UnitHierarchy;
 
 final class RrhhRepository
 {
@@ -13,6 +14,7 @@ final class RrhhRepository
         'direccion_general',
         'direccion',
         'zona_policial',
+        'servicio',
     ];
 
     public function __construct(private Database $database)
@@ -342,6 +344,71 @@ final class RrhhRepository
                 'institutional_term' => $term,
                 'abbreviation_term' => $term,
             ]);
+    }
+
+    /**
+     * Browse/search only the active descendants of a selected P4 head.
+     * Supports multiple levels (e.g. Dirección > Centro > Dependencia).
+     * RRHH2029 is queried using WITH RECURSIVE/SELECT only.
+     */
+    public function searchP4Subunits(int $headUnitId, string $query = '', int $limit = 50): array
+    {
+        if ($headUnitId <= 0 || !P4UnitHierarchy::isCurrent($this->findUnit($headUnitId))) {
+            return [];
+        }
+        $query = trim($query);
+        if (mb_strlen($query) > 100) {
+            return [];
+        }
+        $limit = max(1, min($limit, 100));
+        $term = '%' . $query . '%';
+
+        return $this->database->rrhhRead('
+            WITH RECURSIVE p4_tree AS (
+                SELECT ou.id, 0 AS depth
+                FROM organization_units_current ou
+                WHERE ou.id = :root_id
+                  AND ou.is_active = 1
+                  AND COALESCE(ou.lifecycle_status, "vigente") = "vigente"
+                UNION ALL
+                SELECT child.id, p4_tree.depth + 1
+                FROM organization_units_current child
+                INNER JOIN p4_tree ON child.parent_id = p4_tree.id
+                WHERE p4_tree.depth < 63
+                  AND child.is_active = 1
+                  AND COALESCE(child.lifecycle_status, "vigente") = "vigente"
+            )
+            SELECT
+                ou.id, ou.parent_id, ou.system_code, ou.institutional_code,
+                ou.official_name, ou.official_abbreviation, ou.unit_type,
+                ou.hierarchy_path, ou.lifecycle_status, ou.is_active,
+                p4_tree.depth
+            FROM p4_tree
+            INNER JOIN organization_units_current ou ON ou.id = p4_tree.id
+            WHERE p4_tree.depth > 0
+              AND (
+                    ou.official_name LIKE :name_term
+                 OR ou.system_code LIKE :system_term
+                 OR ou.institutional_code LIKE :institutional_term
+                 OR ou.official_abbreviation LIKE :abbreviation_term
+              )
+            ORDER BY p4_tree.depth, ou.official_name
+            LIMIT ' . $limit, [
+                'root_id' => $headUnitId,
+                'name_term' => $term,
+                'system_term' => $term,
+                'institutional_term' => $term,
+                'abbreviation_term' => $term,
+            ]);
+    }
+
+    public function isDescendantOf(int $childUnitId, int $headUnitId): bool
+    {
+        return P4UnitHierarchy::isDescendant(
+            $childUnitId,
+            $headUnitId,
+            fn (int $unitId): ?array => $this->findUnit($unitId)
+        );
     }
 
     public function unitsByIds(array $unitIds): array
