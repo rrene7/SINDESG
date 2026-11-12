@@ -16,7 +16,9 @@ $units = [
     45 => ['id' => 45, 'parent_id' => 46, 'is_active' => 1, 'lifecycle_status' => 'vigente'],
     46 => ['id' => 46, 'parent_id' => 45, 'is_active' => 1, 'lifecycle_status' => 'vigente'],
 ];
-$find = static fn (int $id): ?array => $units[$id] ?? null;
+$find = static function (int $id) use (&$units): ?array {
+    return $units[$id] ?? null;
+};
 $cases = [
     [40, 39, true, 'direct child'],
     [41, 39, true, 'deep descendant'],
