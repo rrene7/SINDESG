@@ -81,6 +81,7 @@ final class WarehousesController
                 'title' => 'Nuevo P4',
                 'data' => [
                     'unitSearchUrl' => sindesg_url('public/api/units.php?scope=p4'),
+                    'subunitSearchUrl' => sindesg_url('public/api/units.php?scope=p4-subunits'),
                     'employeeSearchUrl' => sindesg_url('public/api/employees.php'),
                     'rrhhAvailable' => $this->database->health('rrhh')['ok'],
                 ],
