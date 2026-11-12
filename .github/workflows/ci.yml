@@ -256,6 +256,7 @@ jobs:
         run: |
           php tests/p4_subordinate_warehouses_test.php
           node --check public/assets/js/warehouses.js
+          node tests/p4_subordinate_picker_test.js
           php scripts/check.php
 
 
