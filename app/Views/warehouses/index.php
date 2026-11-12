@@ -47,7 +47,12 @@ declare(strict_types=1);
             <h2><?= e($displayName) ?></h2>
             <code><?= e($warehouse['code']) ?></code>
             <?php if ($isP4): ?>
-                <p><?= e($currentUnit['unit_type'] ?? $warehouse['organization_unit_type_snapshot'] ?? 'Unidad RRHH') ?></p>
+                <?php if (!empty($warehouse['p4_head_unit_id'])
+                    && (int) $warehouse['p4_head_unit_id'] !== (int) $warehouse['organization_unit_id']): ?>
+                    <p>Dependencia de: <?= e($warehouse['p4_head_unit_name_snapshot'] ?? 'Cabecera RRHH') ?></p>
+                <?php else: ?>
+                    <p><?= e($currentUnit['unit_type'] ?? $warehouse['organization_unit_type_snapshot'] ?? 'Unidad RRHH') ?></p>
+                <?php endif; ?>
             <?php elseif ($isTransit): ?>
                 <p>Inventario temporal entre el Almacén Central y los P4</p>
             <?php else: ?>
