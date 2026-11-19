@@ -83,7 +83,21 @@ final class RrhhRepository
                 ou.system_code AS organization_unit_code,
                 ou.official_name AS organization_unit_name,
                 ou.unit_type,
-                ou.hierarchy_path
+                ou.hierarchy_path,
+                ua.organization_unit_id AS assignment_unit_id,
+                current_moi.id AS rrhh_master_unit_id,
+                current_moi.official_name AS rrhh_master_unit_name,
+                CASE
+                    WHEN ua.organization_unit_id IS NOT NULL
+                     AND current_moi.id IS NOT NULL
+                     AND ua.organization_unit_id <> current_moi.id THEN 1
+                    ELSE 0
+                END AS unit_source_discrepancy,
+                CASE
+                    WHEN ua.id IS NOT NULL THEN 'assignment'
+                    WHEN current_moi.id IS NOT NULL THEN 'employee'
+                    ELSE 'missing'
+                END AS unit_source
             FROM employees e
             LEFT JOIN ranks r ON r.id = e.rank_id
             LEFT JOIN statuses s ON s.id = e.status_id
@@ -91,12 +105,22 @@ final class RrhhRepository
                 ON pa.employee_id = e.id
                AND pa.end_date IS NULL
             LEFT JOIN employee_unit_assignments ua
-                ON ua.employee_id = e.id
-               AND ua.is_primary = 1
-               AND ua.status = "active"
-               AND ua.end_date IS NULL
+                ON ua.id = (
+                    SELECT latest_ua.id
+                    FROM employee_unit_assignments latest_ua
+                    WHERE latest_ua.employee_id = e.id
+                      AND latest_ua.is_primary = 1
+                      AND latest_ua.status = "active"
+                      AND latest_ua.end_date IS NULL
+                    ORDER BY latest_ua.start_date DESC, latest_ua.id DESC
+                    LIMIT 1
+                )
+            LEFT JOIN organization_units_current current_moi
+                ON current_moi.id = e.current_moi_unit_id
+               AND current_moi.is_active = 1
+               AND COALESCE(current_moi.lifecycle_status, "vigente") = "vigente"
             LEFT JOIN organization_units_current ou
-                ON ou.id = ua.organization_unit_id
+                ON ou.id = COALESCE(ua.organization_unit_id, current_moi.id)
             WHERE e.document_number IS NOT NULL
               AND TRIM(e.document_number) <> ""
               AND (
@@ -147,7 +171,21 @@ final class RrhhRepository
                 ou.unit_type,
                 ou.moi_level,
                 ou.hierarchy_path,
-                ua.start_date AS unit_assignment_start_date
+                ua.start_date AS unit_assignment_start_date,
+                ua.organization_unit_id AS assignment_unit_id,
+                current_moi.id AS rrhh_master_unit_id,
+                current_moi.official_name AS rrhh_master_unit_name,
+                CASE
+                    WHEN ua.organization_unit_id IS NOT NULL
+                     AND current_moi.id IS NOT NULL
+                     AND ua.organization_unit_id <> current_moi.id THEN 1
+                    ELSE 0
+                END AS unit_source_discrepancy,
+                CASE
+                    WHEN ua.id IS NOT NULL THEN 'assignment'
+                    WHEN current_moi.id IS NOT NULL THEN 'employee'
+                    ELSE 'missing'
+                END AS unit_source
             FROM employees e
             LEFT JOIN ranks r ON r.id = e.rank_id
             LEFT JOIN statuses s ON s.id = e.status_id
@@ -155,12 +193,22 @@ final class RrhhRepository
                 ON pa.employee_id = e.id
                AND pa.end_date IS NULL
             LEFT JOIN employee_unit_assignments ua
-                ON ua.employee_id = e.id
-               AND ua.is_primary = 1
-               AND ua.status = 'active'
-               AND ua.end_date IS NULL
+                ON ua.id = (
+                    SELECT latest_ua.id
+                    FROM employee_unit_assignments latest_ua
+                    WHERE latest_ua.employee_id = e.id
+                      AND latest_ua.is_primary = 1
+                      AND latest_ua.status = 'active'
+                      AND latest_ua.end_date IS NULL
+                    ORDER BY latest_ua.start_date DESC, latest_ua.id DESC
+                    LIMIT 1
+                )
+            LEFT JOIN organization_units_current current_moi
+                ON current_moi.id = e.current_moi_unit_id
+               AND current_moi.is_active = 1
+               AND COALESCE(current_moi.lifecycle_status,  'vigente') = 'vigente'
             LEFT JOIN organization_units_current ou
-                ON ou.id = ua.organization_unit_id
+                ON ou.id = COALESCE(ua.organization_unit_id, current_moi.id)
             WHERE e.id = :employee_id
             ORDER BY pa.position_number DESC
             LIMIT 1
