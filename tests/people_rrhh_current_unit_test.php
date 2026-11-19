@@ -53,10 +53,11 @@ $repo = new RrhhRepository($database);
 
 $one = $repo->searchPeople('25583');
 if (count($one) !== 1
-    || $one[0]['organization_unit_name'] !== 'Oficina de Capellanía'
+    || $one[0]['organization_unit_name'] !== 'Dirección Nacional de Telemática'
     || $one[0]['rrhh_master_unit_name'] !== 'Dirección Nacional de Telemática'
     || (int) $one[0]['unit_source_discrepancy'] !== 1
-    || $one[0]['unit_source'] !== 'assignment') {
+    || $one[0]['assignment_unit_name'] !== 'Oficina de Capellanía'
+    || $one[0]['unit_source'] !== 'employee') {
     throw new RuntimeException('Debe identificar la discrepancia entre asignación y expediente RRHH sin ocultarla.');
 }
 $two = $repo->searchPeople('25584');
@@ -74,14 +75,16 @@ if (count($three) !== 1
 }
 $detail = $repo->findPerson(1);
 if (!$detail || (int) $detail['unit_source_discrepancy'] !== 1
-    || $detail['rrhh_master_unit_name'] !== 'Dirección Nacional de Telemática') {
+    || $detail['rrhh_master_unit_name'] !== 'Dirección Nacional de Telemática'
+    || $detail['assignment_unit_name'] !== 'Oficina de Capellanía') {
     throw new RuntimeException('La ficha debe reflejar el mismo conflicto que el buscador.');
 }
 
 foreach (['app/Views/people/index.php', 'app/Views/people/show.php'] as $file) {
     $content = file_get_contents(dirname(__DIR__) . '/' . $file);
     if (!is_string($content) || !str_contains($content, 'unit_source_discrepancy')
-        || !str_contains($content, 'rrhh_master_unit_name')) {
+        || !str_contains($content, 'rrhh_master_unit_name')
+        || !str_contains($content, 'assignment_unit_name')) {
         throw new RuntimeException('La interfaz no muestra el conflicto RRHH: ' . $file);
     }
 }
