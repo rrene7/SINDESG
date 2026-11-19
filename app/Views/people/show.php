@@ -43,7 +43,7 @@ $fullName = trim((string) $person['first_name'] . ' ' . (string) $person['last_n
                 <div><dt>Nivel MOI</dt><dd><?= e($person['moi_level'] ?: '—') ?></dd></div>
                 <div><dt>Asignado desde</dt><dd><?= e($person['unit_assignment_start_date'] ?: '—') ?></dd></div>
                 <?php if ((int) ($person['unit_source_discrepancy'] ?? 0) === 1): ?>
-                    <div class="people-source-warning"><dt>Discrepancia RRHH2029</dt><dd>La asignación principal actual muestra <?= e($person['organization_unit_name'] ?: '—') ?>; el expediente maestro registra <?= e($person['rrhh_master_unit_name'] ?: '—') ?>. Debe revisarse en RRHH2029.</dd></div>
+                    <div class="people-source-warning"><dt>Discrepancia RRHH2029</dt><dd>El expediente RRHH registra <?= e($person['rrhh_master_unit_name'] ?: '—') ?>; la asignación principal activa todavía indica <?= e($person['assignment_unit_name'] ?: '—') ?>. Debe revisarse en RRHH2029.</dd></div>
                 <?php elseif (($person['unit_source'] ?? '') === 'employee'): ?>
                     <div><dt>Fuente de unidad</dt><dd>Expediente maestro RRHH2029 (sin asignación principal activa)</dd></div>
                 <?php endif; ?>
