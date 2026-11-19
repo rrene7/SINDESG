@@ -54,6 +54,11 @@ declare(strict_types=1);
                                 <span><b>Dirección:</b> <?= e($person['direction_name'] ?: '—') ?></span>
                                 <span><b>Oficina:</b> <?= e($person['office_name'] ?: '—') ?></span>
                                 <span><b>Dependencia actual:</b> <?= e($person['organization_unit_name'] ?: 'Sin asignación territorial vigente') ?></span>
+                                <?php if ((int) ($person['unit_source_discrepancy'] ?? 0) === 1): ?>
+                                    <span class="people-source-warning"><b>Verificar RRHH:</b> La asignación principal indica <?= e($person['organization_unit_name'] ?: '—') ?>; el expediente actual registra <?= e($person['rrhh_master_unit_name'] ?: '—') ?>. Son fuentes distintas de RRHH2029.</span>
+                                <?php elseif (($person['unit_source'] ?? '') === 'employee'): ?>
+                                    <span class="people-source-note"><b>Origen:</b> Unidad actual del expediente RRHH (sin asignación principal activa).</span>
+                                <?php endif; ?>
                             </div>
                         </div>
                         <span class="person-arrow">→</span>
