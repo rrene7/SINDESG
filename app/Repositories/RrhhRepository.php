@@ -95,9 +95,9 @@ final class RrhhRepository
                     ELSE 0
                 END AS unit_source_discrepancy,
                 CASE
-                    WHEN current_moi.id IS NOT NULL THEN 'employee'
-                    WHEN ua.id IS NOT NULL THEN 'assignment'
-                    ELSE 'missing'
+                    WHEN current_moi.id IS NOT NULL THEN \'employee\'
+                    WHEN ua.id IS NOT NULL THEN \'assignment\'
+                    ELSE \'missing\'
                 END AS unit_source
             FROM employees e
             LEFT JOIN ranks r ON r.id = e.rank_id
