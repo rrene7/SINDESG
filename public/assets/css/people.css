@@ -28,3 +28,8 @@
 .person-delivery-grid strong,.person-delivery-grid small{display:block}
 .person-delivery-grid small{margin-top:4px;color:var(--muted);font-size:.72rem}
 @media(max-width:720px){.person-delivery-grid>a{grid-template-columns:1fr}.person-delivery-grid span:last-child{text-align:left}}
+
+/* Show conflicting RRHH authoritative projections without silently overriding a transfer. */
+.people-source-warning{display:block;margin-top:7px;padding:9px 11px;border:1px solid rgba(255,190,69,.34);border-radius:10px;background:rgba(255,190,69,.09);color:#f9dfa0;line-height:1.5}
+.people-source-warning b{color:#ffe5a9}
+.person-org-context .people-source-note{display:block;color:#a5d6ec;font-size:.77rem;line-height:1.4;margin-top:5px}
